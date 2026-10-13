@@ -11,7 +11,7 @@ heads, **Headless** = offscreen Skia (UI tests).
 | API | Desktop | Android | iOS | Browser | Headless | Gaps |
 |---|---|---|---|---|---|---|
 | `Form` (Text, ClientSize, title-bar chrome render) | — | — | — | — | ✅ | |
-| `Application.Run` | — | | | | | |
+| `Application.Run` | ✅ Linux (starts and runs; not yet checked by eye) | | | | | |
 | `Application.RunAndroid` | | — | | | | |
 | `Application.RunIOS` | | | — | | | [GAP-001](FRAMEWORK_GAPS.md#gap-001-majorsilenceformsavalonia-on-nugetorg-has-no-net100-ios-asset) |
 | `Application.RunBrowserAsync` | | | | — | | |
@@ -21,5 +21,6 @@ heads, **Headless** = offscreen Skia (UI tests).
 | `PrivateFontCollection.AddMemoryFont (byte[])` | | | | | ✅ | |
 | `MF_FORCE_CUSTOM_CHROME` | | | | | ✅ | [GAP-003](FRAMEWORK_GAPS.md#gap-003-headless-renders-depend-on-the-host-os) |
 
-Phase 1 status: the host entry points compile; run-time checks on each device happen in Phase 4,
-when there is a UI worth running.
+Phase 1 status: every host entry point compiles in CI (Desktop on all three OSes, Android, iOS
+simulator, Browser publish: 47 MB wwwroot). Only the Linux desktop host has been run. On-device
+checks happen in Phase 4, when there is a UI worth running.
