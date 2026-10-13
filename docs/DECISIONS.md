@@ -48,6 +48,10 @@ Every UI test starts with `HeadlessTestEnvironment.Use ()`. It forces custom win
 framework's embedded Noto Sans (GAP-003), so a baseline does not depend on the machine's installed
 fonts or, on macOS, the native title bar.
 
-A missing or mismatched baseline fails the test and writes `<name>.<os>.actual.png` beside the test
-assembly; CI uploads those as artifacts. To accept a render, commit it as the baseline, or regenerate
-locally with `RECITAL_UPDATE_BASELINES=1 dotnet test`.
+Even then, Linux text rasterizes through the system FreeType, so two Linux machines differ by as much as
+a real one-character change. The baselines are therefore the renders from the **pinned CI runner
+images** (`ubuntu-24.04`, `windows-2025`, `macos-26`). In CI (or with `RECITAL_STRICT_PIXELS=1`) a missing or
+mismatched baseline fails the test; elsewhere it is reported as skipped. Either way the render is
+written as `<name>.<os>.actual.png` beside the test assembly, and CI uploads it. To accept a render,
+download that artifact, review it, and commit it as the baseline. Moving a runner image means
+re-accepting its baselines.

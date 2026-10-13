@@ -23,9 +23,9 @@ dotnet run --project hosts/Majorsilence.Recital.Desktop
 - **iOS:** macOS only. `dotnet build hosts/Majorsilence.Recital.iOS -p:EnableIOSHead=true`.
 - **Browser:** builds with no workload. Running it needs native Skia linked into the WASM bundle,
   which needs the `wasm-tools` workload: `dotnet publish hosts/Majorsilence.Recital.Browser -c Release`.
-- **UI baselines:** one PNG per OS. `RECITAL_UPDATE_BASELINES=1 dotnet test tests/Majorsilence.Recital.UI.Tests`
-  rewrites this OS's baselines; CI uploads mismatched renders for the other OSes. Review the PNG
-  before committing.
+- **UI baselines:** one PNG per OS, taken from the pinned CI runner images. They are enforced only in
+  CI (`RECITAL_STRICT_PIXELS=1` enforces them locally); a CI mismatch uploads the actual render as an
+  artifact to review and commit. See `docs/DECISIONS.md` D-006.
 
 ## License
 

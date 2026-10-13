@@ -17,7 +17,8 @@ heads, **Headless** = offscreen Skia (UI tests).
 | `Application.RunBrowserAsync` | | | | — | | |
 | `AvaloniaPlatformBackend.RaiseBackRequested` / `RegisterAndroidActivity` / `ReportAndroidIntent` | | — | | | | |
 | `HeadlessRenderer.Use` / `CapturePng` | | | | | ⚠️ | [GAP-002](FRAMEWORK_GAPS.md#gap-002-no-pixel-diffbaseline-helper-for-headless-renders), [GAP-003](FRAMEWORK_GAPS.md#gap-003-headless-renders-depend-on-the-host-os) |
-| `Theme.UIFont` / `UIFontBold` (setters; the title bar uses them) | | | | | ✅ | |
+| `Theme.UIFont` / `UIFontBold` (setters; the title bar uses them) | | | | | ⚠️ | [GAP-004](FRAMEWORK_GAPS.md#gap-004-themeuifont-honours-only-the-typefaces-family-name) |
+| `PrivateFontCollection.AddMemoryFont (byte[])` | | | | | ✅ | |
 | `MF_FORCE_CUSTOM_CHROME` | | | | | ✅ | [GAP-003](FRAMEWORK_GAPS.md#gap-003-headless-renders-depend-on-the-host-os) |
 
 Phase 1 status: the host entry points compile; run-time checks on each device happen in Phase 4,

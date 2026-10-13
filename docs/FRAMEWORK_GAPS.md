@@ -13,6 +13,7 @@ should cover, not a bug).
 | GAP-001 | Packaging: no `net10.0-ios` asset in `Majorsilence.Forms.Avalonia` | Avalonia iOS | blocker (iOS) | Fix on Forms branch `fix/avalonia-ios-package` |
 | GAP-002 | No pixel-diff/baseline helper for Headless renders | Headless | scope | Local helper |
 | GAP-003 | Headless renders depend on the host OS (chrome policy, system fonts) | Headless | major (for UI tests) | Local workaround |
+| GAP-004 | `Theme.UIFont` honours only the typeface's family name, not the typeface | all | major | Local workaround |
 
 ---
 
@@ -61,10 +62,34 @@ should cover, not a bug).
 - **Repro:** `HeadlessRenderer.Use (); HeadlessRenderer.CapturePng (new Form { Text = "Recital" }, 1000, 700);`
   on macOS vs Linux, or on two Linux machines with different fonts installed.
 - **Severity:** major for pixel tests. Without a workaround, every baseline is tied to one machine image.
+  3. *Rasterization.* Even with the same font file, SkiaSharp on Linux links the system
+     `libfreetype.so.6`, so text pixels follow the distro's FreeType. That noise (about 320 pixels
+     on the title) is as large as a real one-character title change, so no tolerance separates the
+     two.
 - **Workaround:** `tests/Majorsilence.Recital.UI.Tests/HeadlessTestEnvironment.cs` sets
-  `MF_FORCE_CUSTOM_CHROME=1`, the switch Majorsilence.Forms' own CI uses, and assigns `Theme.UIFont`/`UIFontBold`
-  from the Noto Sans faces `Majorsilence.Forms.Drawing.Common` embeds. It finds them by manifest
-  resource name, which is not a public contract. Baselines stay per OS anyway, because each OS's Skia
-  rasterizes the same font a little differently.
+  `MF_FORCE_CUSTOM_CHROME=1`, the switch Majorsilence.Forms' own CI uses. It also registers the Noto Sans faces
+  that `Majorsilence.Forms.Drawing.Common` embeds as the UI font (see GAP-004), finding them by manifest
+  resource name, which is not a public contract. For (3), baselines are per OS, CI runner images are
+  pinned, and a mismatch fails only in CI; locally it is reported as skipped (D-006).
 - **Proposed fix:** a `HeadlessRenderer.UseDeterministic ()` (or an option on `Use`) that forces custom
   chrome and the embedded fonts, plus a public accessor for the bundled typefaces.
+
+## GAP-004: `Theme.UIFont` honours only the typeface's family name
+
+- **Found:** Phase 1, reviewing CI renders after the GAP-003 workaround.
+- **Expected:** `Theme.UIFont = someTypeface` makes controls draw with that typeface, as the property's
+  type (`SKTypeface`) suggests.
+- **Actual:** Text layout goes through `CachingFontMapper`, which resolves a face from the style's
+  family *name*: first `PrivateFontRegistry`, then the platform font manager. A typeface created with
+  `SKTypeface.FromData`/`FromStream` is never used directly. Where its family is not installed, text
+  silently renders in the system UI font: Helvetica on the macOS runner, Segoe UI on Windows.
+- **Repro:** On Windows or macOS without Noto Sans installed,
+  `Theme.UIFont = SKTypeface.FromStream (notoSansStream);` then render a `Form` with a title. The
+  title is not Noto Sans.
+- **Severity:** major. An app bundling its own UI font (Recital will, for consistent typography across
+  devices) has to know to go through `PrivateFontCollection` as well.
+- **Workaround:** register the same font bytes with `PrivateFontCollection.AddMemoryFont` before
+  assigning `Theme.UIFont`, which is what WinForms code that bundles a font does anyway.
+- **Proposed fix:** have the `Theme.UIFont`/`UIFontBold` setters add a typeface that the font manager
+  cannot resolve by family name to `PrivateFontRegistry`, or at least document the requirement on the
+  property.
