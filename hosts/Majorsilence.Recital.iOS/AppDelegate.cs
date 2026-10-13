@@ -7,7 +7,9 @@ using MSForms = Majorsilence.Forms;
 
 namespace Majorsilence.Recital.iOS
 {
+    // "AppDelegate" is UIKit's own name for this role.
     [Register ("AppDelegate")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage ("Naming", "CA1711", Justification = "UIKit app delegate")]
     public class RecitalAppDelegate : AvaloniaAppDelegate<RecitalAvaloniaApp>
     {
     }

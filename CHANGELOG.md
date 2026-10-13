@@ -7,4 +7,4 @@
 - Avalonia hosts: `Majorsilence.Recital.Desktop`, `.Android`, `.iOS`, `.Browser`.
 - `Majorsilence.Recital.UI.Tests`: renders `MainForm` on the Headless backend and pixel-diffs it against a baseline.
 - GitHub Actions: build + test on Windows/macOS/Linux, plus Android, iOS and WASM head builds.
-- Docs: plan, decisions, framework gaps (GAP-001 iOS package asset, GAP-002 pixel-diff helper), coverage, sync format draft.
+- Docs: plan, decisions, framework gaps (GAP-001 iOS package asset, GAP-002 pixel-diff helper, GAP-003 host-dependent Headless renders), coverage, sync format draft.

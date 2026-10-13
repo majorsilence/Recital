@@ -12,6 +12,7 @@ should cover, not a bug).
 |---|---|---|---|---|
 | GAP-001 | Packaging: no `net10.0-ios` asset in `Majorsilence.Forms.Avalonia` | Avalonia iOS | blocker (iOS) | Fix on Forms branch `fix/avalonia-ios-package` |
 | GAP-002 | No pixel-diff/baseline helper for Headless renders | Headless | scope | Local helper |
+| GAP-003 | Headless renders depend on the host OS (chrome policy, system fonts) | Headless | major (for UI tests) | Local workaround |
 
 ---
 
@@ -43,3 +44,27 @@ should cover, not a bug).
 - **Severity:** scope. Should every consumer write its own, or should `Majorsilence.Forms.Headless`
   offer `AssertMatchesBaseline`?
 - **Workaround:** `tests/Majorsilence.Recital.UI.Tests/PixelBaseline.cs` (about 70 lines, SkiaSharp).
+
+## GAP-003: Headless renders depend on the host OS
+
+- **Found:** Phase 1, the first CI run of `Majorsilence.Recital.UI.Tests`, on framework 26.11.4.
+- **Expected:** An offscreen test backend whose output depends only on the code under test, so one
+  machine can produce a baseline that another machine reproduces.
+- **Actual:** Two kinds of host dependence:
+  1. *Chrome.* `Form`'s constructor sets `UseSystemDecorations = true` on macOS, so a Headless render
+     there has no title bar while Windows and Linux draw the custom one. The CI macOS render of an
+     empty `MainForm` is a blank grey rectangle.
+  2. *Fonts.* `Theme`'s default UI font is `"Segoe UI Emoji"` on Windows and `"sans-serif"` elsewhere, resolved
+     through the machine's font manager. `FontSubstitution.ResolveWhereNoSystemFonts` only uses the embedded
+     Noto/Liberation faces when the platform has *no* fonts. Two Linux machines (Ubuntu 24.04 in CI,
+     26.04 locally) rendered the same title 319 pixels apart.
+- **Repro:** `HeadlessRenderer.Use (); HeadlessRenderer.CapturePng (new Form { Text = "Recital" }, 1000, 700);`
+  on macOS vs Linux, or on two Linux machines with different fonts installed.
+- **Severity:** major for pixel tests. Without a workaround, every baseline is tied to one machine image.
+- **Workaround:** `tests/Majorsilence.Recital.UI.Tests/HeadlessTestEnvironment.cs` sets
+  `MF_FORCE_CUSTOM_CHROME=1`, the switch Majorsilence.Forms' own CI uses, and assigns `Theme.UIFont`/`UIFontBold`
+  from the Noto Sans faces `Majorsilence.Forms.Drawing.Common` embeds. It finds them by manifest
+  resource name, which is not a public contract. Baselines stay per OS anyway, because each OS's Skia
+  rasterizes the same font a little differently.
+- **Proposed fix:** a `HeadlessRenderer.UseDeterministic ()` (or an option on `Use`) that forces custom
+  chrome and the embedded fonts, plus a public accessor for the bundled typefaces.

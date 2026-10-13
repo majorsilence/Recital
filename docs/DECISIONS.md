@@ -44,6 +44,10 @@ OS (`<name>.linux.png`, `.windows.png`, `.macos.png`), because the title bar and
 each OS's own fonts. The comparison allows a per-channel difference of 8 and up to 0.01% of pixels
 differing. A looser 0.1% let a one-character title change (about 380 pixels at 1000x700) pass.
 
+Every UI test starts with `HeadlessTestEnvironment.Use ()`. It forces custom window chrome and the
+framework's embedded Noto Sans (GAP-003), so a baseline does not depend on the machine's installed
+fonts or, on macOS, the native title bar.
+
 A missing or mismatched baseline fails the test and writes `<name>.<os>.actual.png` beside the test
 assembly; CI uploads those as artifacts. To accept a render, commit it as the baseline, or regenerate
 locally with `RECITAL_UPDATE_BASELINES=1 dotnet test`.

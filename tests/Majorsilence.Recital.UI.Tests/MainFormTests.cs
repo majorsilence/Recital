@@ -8,7 +8,7 @@ namespace Majorsilence.Recital.UI.Tests
         [Fact]
         public void EmptyMainFormMatchesBaseline ()
         {
-            HeadlessRenderer.Use ();
+            HeadlessTestEnvironment.Use ();
             using var form = new MainForm ();
 
             var png = HeadlessRenderer.CapturePng (form, 1000, 700);
