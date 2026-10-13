@@ -57,20 +57,17 @@ should cover, not a bug).
      empty `MainForm` is a blank grey rectangle.
   2. *Fonts.* `Theme`'s default UI font is `"Segoe UI Emoji"` on Windows and `"sans-serif"` elsewhere, resolved
      through the machine's font manager. `FontSubstitution.ResolveWhereNoSystemFonts` only uses the embedded
-     Noto/Liberation faces when the platform has *no* fonts. Two Linux machines (Ubuntu 24.04 in CI,
-     26.04 locally) rendered the same title 319 pixels apart.
+     Noto/Liberation faces when the platform has *no* fonts. The CI Ubuntu 24.04 image and a local
+     Ubuntu 26.04 machine rendered the same title 319 pixels apart.
 - **Repro:** `HeadlessRenderer.Use (); HeadlessRenderer.CapturePng (new Form { Text = "Recital" }, 1000, 700);`
   on macOS vs Linux, or on two Linux machines with different fonts installed.
 - **Severity:** major for pixel tests. Without a workaround, every baseline is tied to one machine image.
-  3. *Rasterization.* Even with the same font file, SkiaSharp on Linux links the system
-     `libfreetype.so.6`, so text pixels follow the distro's FreeType. That noise (about 320 pixels
-     on the title) is as large as a real one-character title change, so no tolerance separates the
-     two.
 - **Workaround:** `tests/Majorsilence.Recital.UI.Tests/HeadlessTestEnvironment.cs` sets
   `MF_FORCE_CUSTOM_CHROME=1`, the switch Majorsilence.Forms' own CI uses. It also registers the Noto Sans faces
   that `Majorsilence.Forms.Drawing.Common` embeds as the UI font (see GAP-004), finding them by manifest
-  resource name, which is not a public contract. For (3), baselines are per OS, CI runner images are
-  pinned, and a mismatch fails only in CI; locally it is reported as skipped (D-006).
+  resource name, which is not a public contract. With both in place, a local Ubuntu 26.04 render matches
+  the CI Ubuntu 24.04 baseline. Baselines are still per OS, because each OS's Skia anti-aliases the same
+  font differently (about 200 pixels on the title); that is expected, not a gap.
 - **Proposed fix:** a `HeadlessRenderer.UseDeterministic ()` (or an option on `Use`) that forces custom
   chrome and the embedded fonts, plus a public accessor for the bundled typefaces.
 

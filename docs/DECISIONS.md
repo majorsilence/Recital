@@ -40,18 +40,18 @@ Majorsilence.Forms rule, errors in Release only, which is what CI builds.
 ## D-006: Pixel baselines are per OS, with a tight tolerance (2026-10-13)
 
 Headless renders are compared to PNGs under `tests/Majorsilence.Recital.UI.Tests/Baselines/`, one per
-OS (`<name>.linux.png`, `.windows.png`, `.macos.png`), because the title bar and other text render with
-each OS's own fonts. The comparison allows a per-channel difference of 8 and up to 0.01% of pixels
-differing. A looser 0.1% let a one-character title change (about 380 pixels at 1000x700) pass.
+OS (`<name>.linux.png`, `.windows.png`, `.macos.png`). Even with the same font file, each OS's Skia
+anti-aliases text differently: about 200 pixels on the title bar alone. The comparison allows a
+per-channel difference of 8 and up to 0.01% of pixels differing. A looser 0.1% let a one-character
+title change (about 380 pixels at 1000x700) pass.
 
-Every UI test starts with `HeadlessTestEnvironment.Use ()`. It forces custom window chrome and the
-framework's embedded Noto Sans (GAP-003), so a baseline does not depend on the machine's installed
-fonts or, on macOS, the native title bar.
+Every UI test starts with `HeadlessTestEnvironment.Use ()`. It forces custom window chrome and
+registers the framework's embedded Noto Sans as the UI font (GAP-003, GAP-004), so a render depends on
+neither the machine's installed fonts nor, on macOS, the native title bar. With that, a local Ubuntu
+26.04 render matches the CI Ubuntu 24.04 baseline.
 
-Even then, Linux text rasterizes through the system FreeType, so two Linux machines differ by as much as
-a real one-character change. The baselines are therefore the renders from the **pinned CI runner
-images** (`ubuntu-24.04`, `windows-2025`, `macos-26`). In CI (or with `RECITAL_STRICT_PIXELS=1`) a missing or
-mismatched baseline fails the test; elsewhere it is reported as skipped. Either way the render is
-written as `<name>.<os>.actual.png` beside the test assembly, and CI uploads it. To accept a render,
-download that artifact, review it, and commit it as the baseline. Moving a runner image means
-re-accepting its baselines.
+The Windows and macOS baselines come from CI: a missing or mismatched baseline fails the test and
+writes `<name>.<os>.actual.png` beside the test assembly, which CI uploads as an artifact. Review it,
+then commit it as the baseline, or regenerate locally on that OS with `RECITAL_UPDATE_BASELINES=1 dotnet test`.
+CI runner images are pinned (`ubuntu-24.04`, `windows-2025`, `macos-26`), so an image change shows up as a
+deliberate baseline update and never as a surprise failure.
