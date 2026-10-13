@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- All Majorsilence.Forms forms and custom controls. Backend-agnostic: no host package here, the
+       hosts under hosts/ pick the backend. -->
+
+  <PropertyGroup>
+    <TargetFramework>$(_TargetFramework)</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Majorsilence.Forms" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Majorsilence.Recital.Core\Majorsilence.Recital.Core.csproj" />
+  </ItemGroup>
+
+</Project>

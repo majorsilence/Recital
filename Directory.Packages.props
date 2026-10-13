@@ -1,0 +1,26 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Majorsilence.Forms: pinned, never floated (PLAN.md 0.2). Bump all of these together. -->
+    <PackageVersion Include="Majorsilence.Forms" Version="26.11.4" />
+    <PackageVersion Include="Majorsilence.Forms.Avalonia" Version="26.11.4" />
+    <PackageVersion Include="Majorsilence.Forms.Headless" Version="26.11.4" />
+
+    <!-- Avalonia platform heads. Same versions Majorsilence.Forms.Avalonia 26.11.4 was built against. -->
+    <PackageVersion Include="Avalonia.Desktop" Version="12.1.1" />
+    <PackageVersion Include="Avalonia.Browser" Version="12.1.1" />
+    <PackageVersion Include="Avalonia.Android" Version="12.1.1" />
+    <PackageVersion Include="Avalonia.iOS" Version="12.1.1" />
+
+    <!-- Already a transitive dependency of Majorsilence.Forms; referenced directly by the UI tests
+         for pixel diffs. Same version the framework ships with. -->
+    <PackageVersion Include="SkiaSharp" Version="3.119.4" />
+
+    <!-- Tests -->
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
+    <PackageVersion Include="xunit.v3" Version="3.2.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
+  </ItemGroup>
+</Project>

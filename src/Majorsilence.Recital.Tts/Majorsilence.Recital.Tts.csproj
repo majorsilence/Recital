@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ITtsEngine abstraction, utterance planner, prosody annotator, audio queue. -->
+
+  <PropertyGroup>
+    <TargetFramework>$(_TargetFramework)</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Majorsilence.Recital.Core\Majorsilence.Recital.Core.csproj" />
+  </ItemGroup>
+
+</Project>

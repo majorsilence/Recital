@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <PropertyGroup>
+    <_TargetFramework>net10.0</_TargetFramework>
+    <Version>0.1.0</Version>
+
+    <Authors>Majorsilence</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+
+    <!-- Nothing is packed yet; library projects opt in when they are meant for nuget.org. -->
+    <IsPackable>false</IsPackable>
+
+    <!-- NU1507: multiple NuGet sources under central package management is a machine setting, not
+         something the repo controls. -->
+    <NoWarn>$(NoWarn);NU1507</NoWarn>
+  </PropertyGroup>
+
+  <!-- PLAN.md 0.3: warnings are errors in src/ (every configuration). Hosts and tests get the
+       Majorsilence.Forms rule instead: errors in Release only, so CI still catches them. -->
+  <PropertyGroup>
+    <_RecitalIsSrc Condition="$(MSBuildProjectDirectory.Replace('\', '/').Contains('/src/'))">true</_RecitalIsSrc>
+    <TreatWarningsAsErrors Condition="'$(_RecitalIsSrc)' == 'true'">true</TreatWarningsAsErrors>
+    <TreatWarningsAsErrors Condition="'$(Configuration)' == 'Release'">true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <!--
+    Mobile heads, same scheme as Majorsilence.Forms' Directory.Build.props. A net10.0-android or
+    net10.0-ios TFM needs its workload even to compile, so each head builds as a tiny empty net10.0
+    stub unless its workload is present. Force with -p:EnableAndroidHead=true / -p:EnableIOSHead=true.
+  -->
+  <PropertyGroup>
+    <_DotNetRoot>$([System.IO.Path]::GetFullPath('$(MSBuildToolsPath)/../..'))</_DotNetRoot>
+    <_AndroidWorkloadInstalled Condition="
+        Exists('$(_DotNetRoot)/packs/Microsoft.Android.Sdk.Windows') or
+        Exists('$(_DotNetRoot)/packs/Microsoft.Android.Sdk.Darwin') or
+        Exists('$(_DotNetRoot)/packs/Microsoft.Android.Sdk.Linux')">true</_AndroidWorkloadInstalled>
+    <EnableAndroidHead Condition="'$(EnableAndroidHead)' == '' and '$(_AndroidWorkloadInstalled)' == 'true'">true</EnableAndroidHead>
+    <EnableAndroidHead Condition="'$(EnableAndroidHead)' == ''">false</EnableAndroidHead>
+    <!-- iOS only builds on macOS, and only when asked: the ios workload is not auto-detected (its pack
+         folder is version-stamped). CI's macOS job passes -p:EnableIOSHead=true. -->
+    <EnableIOSHead Condition="'$(EnableIOSHead)' == ''">false</EnableIOSHead>
+  </PropertyGroup>
+</Project>

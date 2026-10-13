@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Android head, on the Majorsilence.Forms Avalonia backend's net10.0-android row.
+
+       A net10.0-android TFM needs the android workload even to compile, so without it (EnableAndroidHead
+       false, see Directory.Build.props) this builds as an empty net10.0 library referenced by nothing.
+       Run on a device or emulator: `dotnet build -t:Run` from this directory. -->
+
+  <PropertyGroup>
+    <TargetFramework Condition="'$(EnableAndroidHead)' == 'true'">net10.0-android</TargetFramework>
+    <TargetFramework Condition="'$(EnableAndroidHead)' != 'true'">net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(EnableAndroidHead)' == 'true'">
+    <OutputType>Exe</OutputType>
+    <ApplicationId>com.majorsilence.recital</ApplicationId>
+    <ApplicationTitle>Recital</ApplicationTitle>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>0.1</ApplicationDisplayVersion>
+    <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(EnableAndroidHead)' == 'true'">
+    <PackageReference Include="Majorsilence.Forms.Avalonia" />
+    <PackageReference Include="Avalonia.Android" />
+    <ProjectReference Include="..\..\src\Majorsilence.Recital.UI\Majorsilence.Recital.UI.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(EnableAndroidHead)' != 'true'">
+    <Compile Remove="App.cs" />
+    <Compile Remove="MainActivity.cs" />
+    <None Remove="AndroidManifest.xml" />
+  </ItemGroup>
+
+</Project>

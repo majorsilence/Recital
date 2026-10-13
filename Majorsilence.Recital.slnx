@@ -1,0 +1,19 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Majorsilence.Recital.Core/Majorsilence.Recital.Core.csproj" />
+    <Project Path="src/Majorsilence.Recital.Epub/Majorsilence.Recital.Epub.csproj" />
+    <Project Path="src/Majorsilence.Recital.Layout/Majorsilence.Recital.Layout.csproj" />
+    <Project Path="src/Majorsilence.Recital.Storage/Majorsilence.Recital.Storage.csproj" />
+    <Project Path="src/Majorsilence.Recital.Tts/Majorsilence.Recital.Tts.csproj" />
+    <Project Path="src/Majorsilence.Recital.UI/Majorsilence.Recital.UI.csproj" />
+  </Folder>
+  <Folder Name="/hosts/">
+    <Project Path="hosts/Majorsilence.Recital.Android/Majorsilence.Recital.Android.csproj" />
+    <Project Path="hosts/Majorsilence.Recital.Browser/Majorsilence.Recital.Browser.csproj" />
+    <Project Path="hosts/Majorsilence.Recital.Desktop/Majorsilence.Recital.Desktop.csproj" />
+    <Project Path="hosts/Majorsilence.Recital.iOS/Majorsilence.Recital.iOS.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Majorsilence.Recital.UI.Tests/Majorsilence.Recital.UI.Tests.csproj" />
+  </Folder>
+</Solution>

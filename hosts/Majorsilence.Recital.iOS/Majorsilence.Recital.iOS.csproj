@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- iOS head, on the Majorsilence.Forms Avalonia backend.
+
+       Only builds for real on macOS with the ios workload and -p:EnableIOSHead=true (CI's macOS job);
+       otherwise it is an empty net10.0 library referenced by nothing.
+
+       FRAMEWORK-GAP: GAP-001. Majorsilence.Forms.Avalonia 26.11.4 on nuget.org has no net10.0-ios
+       asset, so NuGet resolves its plain net10.0 (desktop) asset here. -->
+
+  <PropertyGroup>
+    <TargetFramework Condition="'$(EnableIOSHead)' == 'true'">net10.0-ios</TargetFramework>
+    <TargetFramework Condition="'$(EnableIOSHead)' != 'true'">net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(EnableIOSHead)' == 'true'">
+    <OutputType>Exe</OutputType>
+    <ApplicationId>com.majorsilence.recital</ApplicationId>
+    <ApplicationTitle>Recital</ApplicationTitle>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>0.1</ApplicationDisplayVersion>
+    <SupportedOSPlatformVersion>13.0</SupportedOSPlatformVersion>
+    <!-- .NET for iOS trims during a plain Release build; Avalonia.DesignerSupport is not trim-annotated
+         (IL2104). Keep trim warnings visible but not fatal, as Majorsilence.Forms' Gallery.iOS does. -->
+    <ILLinkTreatWarningsAsErrors>false</ILLinkTreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(EnableIOSHead)' == 'true'">
+    <PackageReference Include="Majorsilence.Forms.Avalonia" />
+    <PackageReference Include="Avalonia.iOS" />
+    <ProjectReference Include="..\..\src\Majorsilence.Recital.UI\Majorsilence.Recital.UI.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(EnableIOSHead)' != 'true'">
+    <Compile Remove="AppDelegate.cs" />
+    <Compile Remove="Main.cs" />
+    <None Remove="Info.plist" />
+  </ItemGroup>
+
+</Project>

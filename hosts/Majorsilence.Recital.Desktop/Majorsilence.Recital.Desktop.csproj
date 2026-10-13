@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Windows/macOS/Linux, on the Majorsilence.Forms Avalonia backend. -->
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>$(_TargetFramework)</TargetFramework>
+    <AssemblyName>Recital</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Majorsilence.Forms.Avalonia" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Majorsilence.Recital.UI\Majorsilence.Recital.UI.csproj" />
+  </ItemGroup>
+
+</Project>

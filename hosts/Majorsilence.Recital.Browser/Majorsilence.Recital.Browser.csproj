@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+
+  <!-- Browser (WASM) head, on the Majorsilence.Forms Avalonia backend's net10.0-browser row. Building
+       needs no workload; publishing needs wasm-tools. -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-browser</TargetFramework>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Majorsilence.Forms.Avalonia" />
+    <PackageReference Include="Avalonia.Browser" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Majorsilence.Recital.UI\Majorsilence.Recital.UI.csproj" />
+  </ItemGroup>
+
+</Project>

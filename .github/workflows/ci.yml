@@ -1,0 +1,107 @@
+name: CI
+
+# Build + test on the three desktop OSes; build-only for the Android, iOS and browser heads (plan Phase 1).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+      fail-fast: false
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # Some runner images ship the android workload, which would auto-enable the real Android head.
+      # Keep this job the same everywhere; the android job below covers that head.
+      - name: Build
+        run: dotnet build Majorsilence.Recital.slnx --configuration Release -p:EnableAndroidHead=false
+
+      - name: Test
+        run: dotnet test Majorsilence.Recital.slnx --configuration Release --no-build -p:EnableAndroidHead=false
+
+      # Mismatched renders are written next to the test assembly as *.actual.png.
+      - name: Upload mismatched UI renders
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-actual-${{ matrix.os }}
+          path: tests/**/bin/**/*.actual.png
+          if-no-files-found: ignore
+
+  android:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install android workload
+        run: dotnet workload install android
+
+      - name: Build Android head
+        run: dotnet build hosts/Majorsilence.Recital.Android --configuration Release -p:EnableAndroidHead=true
+
+  ios:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # Pinned to workload set 10.0.401 like Majorsilence.Forms' CI: later sets bring .NET for iOS 27,
+      # which needs an Xcode the macOS runner image does not ship yet.
+      - name: Install ios workload
+        run: dotnet workload install ios --version 10.0.401
+
+      - name: Build iOS head (simulator)
+        run: >-
+          dotnet build hosts/Majorsilence.Recital.iOS --configuration Release
+          -p:EnableIOSHead=true -p:RuntimeIdentifier=iossimulator-arm64
+
+  wasm:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # `publish`, not `build`: only publish links native Skia into the bundle, which needs wasm-tools.
+      - name: Install wasm-tools workload
+        run: dotnet workload install wasm-tools
+
+      - name: Publish browser head
+        run: dotnet publish hosts/Majorsilence.Recital.Browser --configuration Release
+
+      - name: Report bundle size
+        run: du -sh hosts/Majorsilence.Recital.Browser/bin/Release/net10.0-browser/publish/wwwroot
