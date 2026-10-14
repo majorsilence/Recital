@@ -38,10 +38,14 @@
   -->
   <PropertyGroup>
     <_DotNetRoot>$([System.IO.Path]::GetFullPath('$(MSBuildToolsPath)/../..'))</_DotNetRoot>
+    <!-- A distro-packaged SDK (e.g. /usr/lib/dotnet) installs workloads user-locally, into ~/.dotnet. -->
+    <_DotNetUserRoot Condition="'$(HOME)' != ''">$(HOME)/.dotnet</_DotNetUserRoot>
+    <_DotNetUserRoot Condition="'$(HOME)' == '' and '$(USERPROFILE)' != ''">$(USERPROFILE)/.dotnet</_DotNetUserRoot>
+    <!-- Probe the net10.0 reference pack, not just the Microsoft.Android.Sdk.* folder: that folder also
+         exists when only the .NET 9 pack is installed, which cannot build net10.0-android. -->
     <_AndroidWorkloadInstalled Condition="
-        Exists('$(_DotNetRoot)/packs/Microsoft.Android.Sdk.Windows') or
-        Exists('$(_DotNetRoot)/packs/Microsoft.Android.Sdk.Darwin') or
-        Exists('$(_DotNetRoot)/packs/Microsoft.Android.Sdk.Linux')">true</_AndroidWorkloadInstalled>
+        Exists('$(_DotNetRoot)/packs/Microsoft.Android.Ref.36') or
+        ('$(_DotNetUserRoot)' != '' and Exists('$(_DotNetUserRoot)/packs/Microsoft.Android.Ref.36'))">true</_AndroidWorkloadInstalled>
     <EnableAndroidHead Condition="'$(EnableAndroidHead)' == '' and '$(_AndroidWorkloadInstalled)' == 'true'">true</EnableAndroidHead>
     <EnableAndroidHead Condition="'$(EnableAndroidHead)' == ''">false</EnableAndroidHead>
     <!-- iOS only builds on macOS, and only when asked: the ios workload is not auto-detected (its pack

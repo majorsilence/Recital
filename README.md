@@ -19,7 +19,14 @@ dotnet run --project hosts/Majorsilence.Recital.Desktop
 ```
 
 - **Android:** with the `android` workload installed the head builds automatically; force it with
-  `-p:EnableAndroidHead=true`. Without the workload it builds as an empty stub.
+  `-p:EnableAndroidHead=true`. Without the workload it builds as an empty stub. The build also needs
+  the Android SDK and a JDK. If you have neither, this installs both into your home directory
+  (it accepts the Android SDK licenses); then set `ANDROID_HOME` and `JAVA_HOME` to the same paths:
+  ```bash
+  dotnet build hosts/Majorsilence.Recital.Android -t:InstallAndroidDependencies -f net10.0-android \
+    -p:EnableAndroidHead=true -p:AndroidSdkDirectory=$HOME/Android/Sdk \
+    -p:JavaSdkDirectory=$HOME/.jdk/microsoft-17 -p:AcceptAndroidSDKLicenses=True
+  ```
 - **iOS:** macOS only. `dotnet build hosts/Majorsilence.Recital.iOS -p:EnableIOSHead=true`.
 - **Browser:** builds with no workload. Running it needs native Skia linked into the WASM bundle,
   which needs the `wasm-tools` workload: `dotnet publish hosts/Majorsilence.Recital.Browser -c Release`.
