@@ -1,6 +1,6 @@
 # Recital — Build Plan
 
-> Copied from the original plan with two decisions applied (see `docs/DECISIONS.md`): projects are named `Majorsilence.Recital.*` (D-001), and Avalonia is the only interactive host (D-002).
+> Copied from the original plan with later decisions applied (see `docs/DECISIONS.md`): projects are named `Majorsilence.Recital.*` (D-001), Avalonia is the only interactive host (D-002), and text is shaped with HarfBuzz directly instead of RichTextKit (D-010).
 
 A cross-platform EPUB reader in the spirit of Readest, built on **Majorsilence.Forms**, where **all storage and sync live in the user's own cloud storage** (Google Drive, Dropbox, OneDrive, WebDAV, iCloud Drive, or any synced local folder). There is no central server and no accounts we operate.
 
@@ -47,7 +47,7 @@ The project has two goals, and they carry equal weight:
 src/
   Majorsilence.Recital.Core/            Domain model, library service, sync engine, settings. No UI, no platform APIs.
   Majorsilence.Recital.Epub/            EPUB container + OPF/NCX/nav parsing, CFI generation/resolution.
-  Majorsilence.Recital.Layout/          XHTML+CSS subset → styled box tree → paginated pages (Skia + RichTextKit). Pure, deterministic.
+  Majorsilence.Recital.Layout/          XHTML+CSS subset → styled box tree → paginated pages (Skia + HarfBuzz; see D-010). Pure, deterministic.
   Majorsilence.Recital.Storage/         IStorageProvider abstraction + InMemory + LocalFolder providers.
   Majorsilence.Recital.Storage.GoogleDrive/
   Majorsilence.Recital.Storage.Dropbox/
@@ -82,7 +82,7 @@ docs/
 - **Majorsilence.Forms** + backends (Avalonia, Headless). Avalonia is the only interactive host; see DECISIONS.md D-002.
 - **VersOne.Epub** (Unlicense) or an equivalent permissive EPUB parser. If none fits, write a small one; EPUB is just ZIP + XML.
 - **AngleSharp** + **AngleSharp.Css** (MIT) for XHTML and CSS parsing.
-- **Topten.RichTextKit**: already a Majorsilence.Forms dependency; use it for text shaping and line layout.
+- **Topten.RichTextKit**: already a Majorsilence.Forms dependency; use it for text shaping and line layout. *(Superseded by D-010: RichTextKit cannot justify or indent, so Layout shapes with HarfBuzzSharp directly.)*
 - **Piper** voices via ONNX Runtime (MIT). Check each voice model's license individually.
 - Official or REST-level clients for Google Drive v3, Dropbox v2, Microsoft Graph and WebDAV. Prefer thin hand-written `HttpClient` wrappers over heavy SDKs where it keeps WASM size and trimming sane.
 
@@ -240,7 +240,7 @@ Each phase ends with: all tests green, `docs/FRAMEWORK_GAPS.md` updated, and a s
 - **Accept:** every corpus book parses, and CFI round-trip tests pass on every paragraph of every corpus book.
 
 ### Phase 3 — Layout engine
-- Build the styled box tree from XHTML + CSS (user-agent stylesheet + book CSS + user overrides), then line layout via RichTextKit, then pagination with widow/orphan control and image scaling.
+- Build the styled box tree from XHTML + CSS (user-agent stylesheet + book CSS + user overrides), then line layout (HarfBuzz shaping, our own line breaking; D-010), then pagination with widow/orphan control and image scaling.
 - Map every glyph run back to a DOM range, which gives layout ↔ CFI.
 - **Accept:**
   - Golden JSON snapshots for page breaks at three viewport sizes.

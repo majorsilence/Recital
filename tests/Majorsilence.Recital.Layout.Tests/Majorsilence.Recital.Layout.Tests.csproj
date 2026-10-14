@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Layout tests: cascade, line breaking, pagination, golden JSON snapshots (box trees and page breaks),
+       cross-viewport CFI round trips and the whole-book timing. -->
+
+  <PropertyGroup>
+    <TargetFramework>$(_TargetFramework)</TargetFramework>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Majorsilence.Recital.Layout\Majorsilence.Recital.Layout.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\corpus\*.epub" LinkBase="corpus" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Snapshots\**\*.json" CopyToOutputDirectory="PreserveNewest" LinkBase="Snapshots" />
+    <!-- The EPUB tests' in-memory book builder. -->
+    <Compile Include="..\Majorsilence.Recital.Epub.Tests\TestEpub.cs" Link="TestEpub.cs" />
+  </ItemGroup>
+
+</Project>

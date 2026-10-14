@@ -1,5 +1,28 @@
 # Changelog
 
+## Phase 3: Layout engine (2026-10-14)
+
+- `Majorsilence.Recital.Layout`: XHTML + CSS → styled box tree → shaped lines → pages, deterministic on every OS (D-011).
+  - Cascade over the user-agent sheet, the book's sheets (with `@import`, `@media`, `@supports`,
+    `@font-face`) and inline styles, using AngleSharp.Css for parsing and selector matching. Reader
+    overrides cover font size, family, line height and justification (D-012).
+  - Text is shaped with HarfBuzz from bundled DejaVu fonts or the book's own fonts, with font fallback.
+    Line breaking, justification, indents, soft hyphens, nowrap/pre, small caps, super/subscript and
+    list markers are our own (D-010).
+  - Pagination honours widows, orphans, keep-with-next headings, `break-inside: avoid`, forced breaks,
+    margin truncation at unforced breaks, image scaling to the page, and atomic table rows.
+  - Layout ↔ DOM ↔ CFI: every line maps back to DOM positions; `ChapterLayout.PageOf` finds the page
+    for a position or a CFI; `TextLine.HitTest` finds the position under a point.
+  - `PageRenderer` draws pages with Skia (for the reader view in Phase 4, and for tests).
+- Tests (69): cascade, line layout, pagination, a golden box-tree snapshot, golden page-break snapshots
+  for *Alice* and the opening of the Standard Ebooks *Pride and Prejudice* at phone, tablet and desktop
+  sizes, CFI round trips at 10/50/90% across viewports for all four books, layout invariants on every
+  page of every book, and the plan's timing target (D-014).
+- Bugs found along the way: AngleSharp compound selectors are enumerable, and splitting them as if they
+  were selector lists made `div.x` match every `div`; a segmentation bug split every lowercase letter
+  into its own shaping call, which lost kerning and ligatures and cost 0.5 s per book; a GC-movable
+  font buffer gave HarfBuzz garbage glyphs.
+
 ## Phase 2: EPUB model (2026-10-14)
 
 - `Majorsilence.Recital.Epub`: opens EPUB 2 and 3 from a path or any stream, async throughout. Parses the container, the OPF

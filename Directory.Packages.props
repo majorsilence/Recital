@@ -14,14 +14,20 @@
     <PackageVersion Include="Avalonia.Android" Version="12.1.1" />
     <PackageVersion Include="Avalonia.iOS" Version="12.1.1" />
 
-    <!-- Already a transitive dependency of Majorsilence.Forms; referenced directly by the UI tests
-         for pixel diffs. Same version the framework ships with. -->
+    <!-- SkiaSharp and HarfBuzzSharp are already transitive dependencies of Majorsilence.Forms. Layout shapes
+         text with HarfBuzz directly and decodes image headers / draws with Skia; the UI tests pixel-diff
+         with Skia. Same versions the framework ships with. -->
     <PackageVersion Include="SkiaSharp" Version="3.119.4" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="3.119.4" />
+    <PackageVersion Include="HarfBuzzSharp" Version="8.3.1.3" />
+    <PackageVersion Include="HarfBuzzSharp.NativeAssets.Linux" Version="8.3.1.3" />
 
     <!-- XHTML parsing for EPUB content documents (Majorsilence.Recital.Epub). AngleSharp.Xml gives the exact XML
          tree; it is rebuilt as an AngleSharp HTML document so Layout can style it with AngleSharp.Css. -->
     <PackageVersion Include="AngleSharp" Version="1.8.3" />
     <PackageVersion Include="AngleSharp.Xml" Version="1.2.0" />
+    <!-- CSS parsing and selector matching for Majorsilence.Recital.Layout's cascade. -->
+    <PackageVersion Include="AngleSharp.Css" Version="1.1.2" />
 
     <!-- Tests -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />

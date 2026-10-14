@@ -21,7 +21,7 @@ heads, **Headless** = offscreen Skia (UI tests).
 | `PrivateFontCollection.AddMemoryFont (byte[])` | | | | | ✅ | |
 | `MF_FORCE_CUSTOM_CHROME` | | | | | ✅ | [GAP-003](FRAMEWORK_GAPS.md#gap-003-headless-renders-depend-on-the-host-os) |
 
-Phase 2 used no Majorsilence.Forms APIs (EPUB parsing only), so this table is unchanged.
+Phases 2 and 3 used no Majorsilence.Forms APIs (EPUB parsing and the layout engine are UI-free by design), so this table is unchanged.
 
 Phase 1 status: every host entry point compiles in CI (Desktop on all three OSes, Android, iOS
 simulator, Browser publish: 47 MB wwwroot). Only the Linux desktop host has been run. On-device

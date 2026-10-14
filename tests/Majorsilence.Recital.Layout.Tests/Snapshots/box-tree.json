@@ -1,0 +1,47 @@
+{ "box": "block", "element": "html", "style": "Block 18px 400 margin 0px 0px 0px 0px", "children": [
+  { "box": "block", "element": "body", "style": "Block 18px 400 margin 0px 0px 0px 0px", "children": [
+    { "box": "block", "element": "h1", "style": "Block 36px 700 margin 24.12px 0px 24.12px 0px break-after Avoid", "children": [
+      { "box": "paragraph", "text": "A Title", "align": "Left", "indent": "0px", "runs": ["h1 36px 700"] }
+    ] },
+    { "box": "block", "element": "p", "style": "Block 18px 400 margin 9px 0px 9px 0px", "children": [
+      { "box": "paragraph", "text": "First emphasised text,\nthen a break.", "align": "Left", "indent": "0px", "runs": ["p 18px 400", "em 18px 400 italic", "p 18px 400", "br", "p 18px 400"] }
+    ] },
+    { "box": "block", "element": "div", "style": "Block 18px 400 margin 0px 0px 0px 0px", "children": [
+      { "box": "paragraph", "text": "Loose text inline", "align": "Left", "indent": "0px", "runs": ["div 18px 400", "span 18px 400"] },
+      { "box": "block", "element": "p", "style": "Block 18px 400 margin 9px 0px 9px 0px", "children": [
+        { "box": "paragraph", "text": "a nested paragraph", "align": "Left", "indent": "18px", "runs": ["p 18px 400"] }
+      ] },
+      { "box": "paragraph", "text": "after it", "align": "Left", "indent": "0px", "runs": ["div 18px 400"] }
+    ] },
+    { "box": "block", "element": "ol", "style": "Block 18px 400 margin 18px 0px 18px 0px padding-left 45px", "children": [
+      { "box": "block", "element": "li", "style": "ListItem 18px 400 margin 0px 0px 0px 0px", "marker": "1.", "children": [
+        { "box": "paragraph", "text": "one", "align": "Left", "indent": "0px", "runs": ["li 18px 400"], "marker": "1." }
+      ] },
+      { "box": "block", "element": "li", "style": "ListItem 18px 400 margin 0px 0px 0px 0px", "marker": "5.", "children": [
+        { "box": "paragraph", "text": "five", "align": "Left", "indent": "0px", "runs": ["li 18px 400"], "marker": "5." }
+      ] },
+      { "box": "block", "element": "li", "style": "ListItem 18px 400 margin 0px 0px 0px 0px", "marker": "6.", "children": [
+        { "box": "paragraph", "text": "six", "align": "Left", "indent": "0px", "runs": ["li 18px 400"], "marker": "6." }
+      ] }
+    ] },
+    { "box": "block", "element": "blockquote.note", "style": "Block 15px 400 margin 0px 30px 0px 30px", "children": [
+      { "box": "block", "element": "p", "style": "Block 15px 400 margin 7.5px 0px 7.5px 0px", "children": [
+        { "box": "paragraph", "text": "Quoted.", "align": "Left", "indent": "15px", "runs": ["p 15px 400"] }
+      ] }
+    ] },
+    { "box": "block", "element": "p.figure", "style": "Block 18px 400 margin 9px 0px 9px 0px", "children": [
+      { "box": "image", "element": "img", "style": "Inline 18px 400 margin 0px 0px 0px 0px", "src": "OEBPS/images/fig.png", "size": "120x80" }
+    ] },
+    { "box": "table", "element": "table", "style": "Table 18px 400 margin 0px 0px 0px 0px", "rows": [
+      [
+        { "box": "block", "element": "th", "style": "TableCell 18px 700 margin 0px 0px 0px 0px", "children": [
+          { "box": "paragraph", "text": "H", "align": "Center", "indent": "0px", "runs": ["th 18px 700"] }
+        ] },
+        { "box": "block", "element": "td", "style": "TableCell 18px 400 margin 0px 0px 0px 0px", "children": [
+          { "box": "paragraph", "text": "cell", "align": "Left", "indent": "0px", "runs": ["td 18px 400"] }
+        ] }
+      ]
+    ] },
+    { "box": "block", "element": "hr", "style": "Block 18px 400 margin 9px 0px 9px 0px border-top 1.13px" }
+  ] }
+] }

@@ -1,9 +1,32 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- XHTML+CSS subset to styled box tree to paginated pages (Skia + RichTextKit). Pure, deterministic. -->
+  <!-- XHTML+CSS subset → styled box tree → paginated pages. Pure and deterministic: text is shaped with
+       HarfBuzz from font bytes, and every metric comes from the font's own tables, never from a
+       platform font engine, so the same book paginates identically on every OS. -->
 
   <PropertyGroup>
     <TargetFramework>$(_TargetFramework)</TargetFramework>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AngleSharp.Css" />
+    <PackageReference Include="HarfBuzzSharp" />
+    <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" />
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Majorsilence.Recital.Epub\Majorsilence.Recital.Epub.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Fonts\DejaVu\*.ttf" LogicalName="Majorsilence.Recital.Layout.Fonts.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Css\ua.css" LogicalName="Majorsilence.Recital.Layout.Css.ua.css" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Majorsilence.Recital.Layout.Tests" />
+  </ItemGroup>
 
 </Project>

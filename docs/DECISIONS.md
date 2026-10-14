@@ -93,3 +93,71 @@ consistent within Recital but may not match other readers'. All four corpus book
 - Equality and ordering ignore assertions; ordering is document order (an element sorts before
   anything inside it). Temporal (`~`) and spatial (`@`) offsets are rejected; EPUB reflowable text
   has no use for them.
+
+## D-010: Shape text with HarfBuzz directly; line breaking and justification are ours (2026-10-14)
+
+Plan 1.2 names Topten.RichTextKit for shaping and line layout. Its `TextAlignment` has no `Justify`, it
+has no first-line indent, and its line breaker and shaper are internal. Justified text and
+`text-indent` are basic e-reader requirements, so `Majorsilence.Recital.Layout` shapes with HarfBuzzSharp (the
+engine RichTextKit uses underneath, already a framework dependency) and does its own:
+
+- line breaking: greedy first-fit over simplified UAX #14 opportunities (spaces, hyphens and dashes
+  inside words, soft hyphens with a visible hyphen, zero-width spaces, CJK), with nowrap/pre honoured
+  and an emergency break for words longer than the line;
+- justification (extra space shared between the spaces of every line but the last);
+- the CSS inline box model for line heights (half-leading per inline box, plus the block's strut).
+
+## D-011: Layout is deterministic: bundled fonts, metrics from font tables (2026-10-14)
+
+Golden page-break snapshots must match on Linux, Windows and macOS, so nothing in layout consults
+the platform:
+
+- Fonts are the bundled DejaVu Serif/Sans/Sans Mono, plus the book's own `@font-face` fonts. Installed
+  fonts are never used, for fallback either. DejaVu's license (Bitstream Vera, with DejaVu changes in
+  the public domain) is permissive. OFL fonts such as Literata or Noto would read better, but OFL has
+  copyleft-like terms and plan 0.1 says to ask first, so that is an open question for the user.
+- Glyph advances, kerning and ligatures come from HarfBuzz reading the font file's own tables (the
+  OpenType font functions, not Skia's or FreeType's). Ascent and descent come from the same tables.
+  Skia is used only to draw, and to read image headers.
+- The font bytes live in unmanaged memory the HarfBuzz blob owns. `Blob.FromStream` left HarfBuzz
+  reading memory the GC could move, and shaping returned garbage glyph ids after a collection.
+
+## D-012: The reader's font size scales the book's absolute lengths (2026-10-14)
+
+`LayoutSettings.FontSize` is what CSS `medium` (and `1rem`) means, and every absolute length in book CSS
+(px, pt, cm, ...) is multiplied by `FontSize / 16`. Many books pin `body { font-size: 12pt }`, and
+without this scaling the reader's size control would do nothing for them. Proportions inside the
+book's design are kept.
+
+## D-013: Layout scope and known limitations (2026-10-14)
+
+Supported, per plan 1.3: block and inline flow, margins (with collapsing) and padding, top/bottom
+borders (rules), `text-align`, `text-indent` (including hanging), `font-family/size/weight/style`,
+small caps (synthesised: lowercase letters as 75%-size capitals), `line-height`, `letter-/word-spacing`,
+`text-transform`, `white-space`, `vertical-align: super/sub`, lists with markers, images and SVG-wrapped
+images, simple tables, `page-break-*` / `break-*`, widows and orphans, keep-with-next for headings,
+embedded fonts and media queries.
+
+Not supported yet, and how each degrades:
+- No hyphenation dictionary: justified narrow columns can have loose lines. Soft hyphens in the
+  text are honoured.
+- Left-to-right text only, with no bidi; RTL books render in logical order.
+- Floats are laid out as blocks. Inline images are pulled out as their own block.
+- Tables use equal-width columns and ignore colspan; each row stays on one page.
+- Inline SVG without a raster `<image>` is not drawn. `vw`/`vh` lengths resolve to 0.
+- `@supports` with a positive condition never matches, because books test for features this
+  engine lacks.
+- `::first-letter`, `::before` and `::after` rules are ignored rather than misapplied to the whole
+  element.
+
+## D-014: Layout caching (2026-10-14)
+
+`LayoutEngine` caches parsed content documents (per chapter), parsed stylesheets (per text) and style
+resolvers (per set of sheets plus settings), so a book's chapters share one parse of `core.css`. It
+also caches styled box trees per (chapter, typography, page size); each tree keeps its shaped
+paragraphs. Re-paginating a shaped chapter for a new page size then costs only line breaking and
+pagination. Measured on the user's Linux desktop (Release build): the whole Standard Ebooks *Pride
+and Prejudice* at 768x1024 (275 pages) takes about 1.2 s cold in a fresh process (parse 0.15 s, styles
+0.48 s, shaping and pagination 0.5 s) and about 0.7 s warm. Re-paginating it at a new size takes
+45–90 ms. The timing test lays out Gutenberg's *Pride and Prejudice* (438 pages at the test's tablet
+settings) in about 0.55 s and fails above 2 s.

@@ -1,0 +1,164 @@
+{
+  "book": "pg-11-alice-epub3.epub",
+  "viewport": "768x1024, margins 72/64/72/64, font 20px",
+  "chapters": [
+    { "spine": 0, "pages": [
+      ["epubcfi(/6/2!/4/2/2)", 0, "[image OEBPS/7981341119032183217"]
+    ] },
+    { "spine": 1, "pages": [
+      ["epubcfi(/6/4!/4/2[pg-header]/2[pg-header-heading]/1:0)", 24, "The Project Gutenberg eBook of"],
+      ["epubcfi(/6/4!/4/8[pgepubid00000]/1:0)", 4, "Alice\u2019s"],
+      ["epubcfi(/6/4!/4/10/1:0)", 3, "by Lewis Carroll"],
+      ["epubcfi(/6/4!/4/16[pgepubid00002]/1:0)", 29, "Contents"]
+    ] },
+    { "spine": 2, "pages": [
+      ["epubcfi(/6/6!/4/2[pgepubid00003]/2/3:0)", 28, "CHAPTER I."],
+      ["epubcfi(/6/6!/4/2[pgepubid00003]/8/7:194)", 36, "of it, and burning with curiosit"],
+      ["epubcfi(/6/6!/4/2[pgepubid00003]/18/3:54)", 37, "by this time?\u201D she said aloud. \u201C"],
+      ["epubcfi(/6/6!/4/2[pgepubid00003]/22/1:483)", 37, "in a dreamy sort of way, \u201CDo cat"],
+      ["epubcfi(/6/6!/4/2[pgepubid00003]/28/1:434)", 37, "was a little door about fifteen "],
+      ["epubcfi(/6/6!/4/2[pgepubid00003]/34/7:86)", 35, "poker will burn you if you hold "],
+      ["epubcfi(/6/6!/4/2[pgepubid00003]/44/1:140)", 37, "the door, she found she had forg"],
+      ["epubcfi(/6/6!/4/2[pgepubid00003]/50/1:287)", 11, "had got so much into the way of "]
+    ] },
+    { "spine": 3, "pages": [
+      ["epubcfi(/6/8!/4/2[pgepubid00004]/2/3:0)", 27, "CHAPTER II."],
+      ["epubcfi(/6/8!/4/2[pgepubid00004]/10/1:1)", 36, "Oh dear, what nonsense I\u2019m talki"],
+      ["epubcfi(/6/8!/4/2[pgepubid00004]/20/1:196)", 36, "on just as usual. I wonder if I\u2019"],
+      ["epubcfi(/6/8!/4/2[pgepubid00004]/24/15:1)", 36, "And welcome little fishes in"],
+      ["epubcfi(/6/8!/4/2[pgepubid00004]/30/3:290)", 36, "glass table as before, \u201Cand thin"],
+      ["epubcfi(/6/8!/4/2[pgepubid00004]/38/1:245)", 37, "out of this pool? I am very tire"],
+      ["epubcfi(/6/8!/4/2[pgepubid00004]/44/1:594)", 36, "offended. \u201CWe won\u2019t talk about h"],
+      ["epubcfi(/6/8!/4/2[pgepubid00004]/52/1:146)", 3, "a Lory and an Eaglet, and severa"]
+    ] },
+    { "spine": 4, "pages": [
+      ["epubcfi(/6/10!/4/2[pgepubid00005]/2/3:0)", 27, "CHAPTER III."],
+      ["epubcfi(/6/10!/4/2[pgepubid00005]/10/1:1)", 34, "\u201CAhem!\u201D said the Mouse with an i"],
+      ["epubcfi(/6/10!/4/2[pgepubid00005]/30/1:1)", 36, "\u201CIn that case,\u201D said the Dodo so"],
+      ["epubcfi(/6/10!/4/2[pgepubid00005]/42/1:134)", 35, "forehead (the position in which "],
+      ["epubcfi(/6/10!/4/2[pgepubid00005]/62/1:142)", 36, "and the small ones choked and ha"],
+      ["epubcfi(/6/10!/4/2[pgepubid00005]/70/5:207)", 36, "        a trial,"],
+      ["epubcfi(/6/10!/4/2[pgepubid00005]/82/1:1)", 35, "\u201CI didn\u2019t mean it!\u201D pleaded poor"],
+      ["epubcfi(/6/10!/4/2[pgepubid00005]/98/1:1)", 11, "\u201CI wish I hadn\u2019t mentioned Dinah"]
+    ] },
+    { "spine": 5, "pages": [
+      ["epubcfi(/6/12!/4/2[pgepubid00006]/2/3:0)", 27, "CHAPTER IV."],
+      ["epubcfi(/6/12!/4/2[pgepubid00006]/8/1:94)", 37, "he finds out who I am! But I\u2019d b"],
+      ["epubcfi(/6/12!/4/2[pgepubid00006]/14/1:145)", 35, "and had to stoop to save her nec"],
+      ["epubcfi(/6/12!/4/2[pgepubid00006]/22/1:1)", 36, "\u201CBut then,\u201D thought Alice, \u201Cshal"],
+      ["epubcfi(/6/12!/4/2[pgepubid00006]/34/1:1)", 36, "Next came an angry voice\u2014the Rab"],
+      ["epubcfi(/6/12!/4/2[pgepubid00006]/50/1:377)", 35, "enough yet\u2014Oh! they\u2019ll do well e"],
+      ["epubcfi(/6/12!/4/2[pgepubid00006]/62/1:1)", 36, "\u201CWe must burn the house down!\u201D s"],
+      ["epubcfi(/6/12!/4/2[pgepubid00006]/72/1:100)", 37, "grow to my right size again; and"],
+      ["epubcfi(/6/12!/4/2[pgepubid00006]/80/1:1)", 30, "This seemed to Alice a good oppo"]
+    ] },
+    { "spine": 6, "pages": [
+      ["epubcfi(/6/14!/4/2[pgepubid00007]/2/3:0)", 26, "CHAPTER V."],
+      ["epubcfi(/6/14!/4/2[pgepubid00007]/20/1:145)", 34, "that into a butterfly, I should "],
+      ["epubcfi(/6/14!/4/2[pgepubid00007]/46/1:1)", 38, "\u201CI\u2019m afraid I am, sir,\u201D said Ali"],
+      ["epubcfi(/6/14!/4/2[pgepubid00007]/56/45:1)", 37, "Yet you finished the goose, with"],
+      ["epubcfi(/6/14!/4/2[pgepubid00007]/76/1:1)", 36, "\u201CWell, I should like to be a lit"],
+      ["epubcfi(/6/14!/4/2[pgepubid00007]/94/1:1)", 35, "She was a good deal frightened b"],
+      ["epubcfi(/6/14!/4/2[pgepubid00007]/102/1:389)", 35, "had been wandering, when a sharp"],
+      ["epubcfi(/6/14!/4/2[pgepubid00007]/126/1:1)", 35, "\u201CI\u2014I\u2019m a little girl,\u201D said Alic"],
+      ["epubcfi(/6/14!/4/2[pgepubid00007]/138/1:494)", 19, "had succeeded in bringing hersel"]
+    ] },
+    { "spine": 7, "pages": [
+      ["epubcfi(/6/16!/4/2[pgepubid00008]/2/3:0)", 28, "CHAPTER VI."],
+      ["epubcfi(/6/16!/4/2[pgepubid00008]/10/1:97)", 36, "her; and when she next peeped ou"],
+      ["epubcfi(/6/16!/4/2[pgepubid00008]/26/1:1)", 34, "\u201CHow am I to get in?\u201D asked Alic"],
+      ["epubcfi(/6/16!/4/2[pgepubid00008]/46/1:1)", 36, "\u201CPlease would you tell me,\u201D said"],
+      ["epubcfi(/6/16!/4/2[pgepubid00008]/62/5:14)", 32, "unusually large saucepan flew cl"],
+      ["epubcfi(/6/16!/4/2[pgepubid00008]/80/1:97)", 33, "down, and the poor little thing "],
+      ["epubcfi(/6/16!/4/2[pgepubid00008]/92/1:522)", 36, "\u201Cthat\u2019s not at all a proper way "],
+      ["epubcfi(/6/16!/4/2[pgepubid00008]/102/1:1)", 33, "The Cat only grinned when it saw"],
+      ["epubcfi(/6/16!/4/2[pgepubid00008]/128/1:1)", 35, "Alice didn\u2019t think that proved i"],
+      ["epubcfi(/6/16!/4/2[pgepubid00008]/152/1:391)", 25, "looked up, and there was the Cat"]
+    ] },
+    { "spine": 8, "pages": [
+      ["epubcfi(/6/18!/4/2[pgepubid00009]/2/3:0)", 26, "CHAPTER VII."],
+      ["epubcfi(/6/18!/4/2[pgepubid00009]/18/1:1)", 35, "\u201CI didn\u2019t know it was your table"],
+      ["epubcfi(/6/18!/4/2[pgepubid00009]/42/3:143)", 35, "all she could remember about rav"],
+      ["epubcfi(/6/18!/4/2[pgepubid00009]/64/1:93)", 35, "and yet it was certainly English"],
+      ["epubcfi(/6/18!/4/2[pgepubid00009]/90/1:1)", 33, "(\u201CI only wish it was,\u201D the March"],
+      ["epubcfi(/6/18!/4/2[pgepubid00009]/116/1:1)", 34, "\u201CAnd ever since that,\u201D the Hatte"],
+      ["epubcfi(/6/18!/4/2[pgepubid00009]/144/1:1)", 34, "\u201CWhat did they live on?\u201D said Al"],
+      ["epubcfi(/6/18!/4/2[pgepubid00009]/170/1:1)", 33, "\u201CNo, please go on!\u201D Alice said v"],
+      ["epubcfi(/6/18!/4/2[pgepubid00009]/190/1:1)", 35, "This answer so confused poor Ali"],
+      ["epubcfi(/6/18!/4/2[pgepubid00009]/210/1:105)", 14, "curious!\u201D she thought. \u201CBut ever"]
+    ] },
+    { "spine": 9, "pages": [
+      ["epubcfi(/6/20!/4/2[pgepubid00010]/2/3:0)", 26, "CHAPTER VIII."],
+      ["epubcfi(/6/20!/4/2[pgepubid00010]/18/1:95)", 37, "chanced to fall upon Alice, as s"],
+      ["epubcfi(/6/20!/4/2[pgepubid00010]/26/1:1)", 34, "Alice was rather doubtful whethe"],
+      ["epubcfi(/6/20!/4/2[pgepubid00010]/42/1:1)", 35, "The King laid his hand upon her "],
+      ["epubcfi(/6/20!/4/2[pgepubid00010]/66/1:1)", 35, "\u201CYes!\u201D shouted Alice."],
+      ["epubcfi(/6/20!/4/2[pgepubid00010]/86/1:98)", 37, "its body tucked away, comfortabl"],
+      ["epubcfi(/6/20!/4/2[pgepubid00010]/92/1:287)", 35, "\u201CIt\u2019s the Cheshire Cat: now I sh"],
+      ["epubcfi(/6/20!/4/2[pgepubid00010]/108/1:1)", 35, "\u201CIt\u2019s a friend of mine\u2014a Cheshir"],
+      ["epubcfi(/6/20!/4/2[pgepubid00010]/128/1:1)", 35, "By the time she had caught the f"],
+      ["epubcfi(/6/20!/4/2[pgepubid00010]/142/1:1)", 9, "\u201CShe\u2019s in prison,\u201D the Queen sai"]
+    ] },
+    { "spine": 10, "pages": [
+      ["epubcfi(/6/22!/4/2[pgepubid00011]/2/3:0)", 28, "CHAPTER IX."],
+      ["epubcfi(/6/22!/4/2[pgepubid00011]/12/1:1)", 33, "\u201CPerhaps it hasn\u2019t one,\u201D Alice v"],
+      ["epubcfi(/6/22!/4/2[pgepubid00011]/30/1:1)", 33, "\u201CHe might bite,\u201D Alice cautiousl"],
+      ["epubcfi(/6/22!/4/2[pgepubid00011]/52/1:1)", 35, "\u201COh, don\u2019t talk about trouble!\u201D "],
+      ["epubcfi(/6/22!/4/2[pgepubid00011]/72/1:185)", 36, "that a moment\u2019s delay would cost"],
+      ["epubcfi(/6/22!/4/2[pgepubid00011]/88/1:390)", 35, "of the creature, but on the whol"],
+      ["epubcfi(/6/22!/4/2[pgepubid00011]/108/1:1)", 34, "\u201COnce,\u201D said the Mock Turtle at "],
+      ["epubcfi(/6/22!/4/2[pgepubid00011]/128/1:1)", 33, "\u201CWe had the best of educations\u2014i"],
+      ["epubcfi(/6/22!/4/2[pgepubid00011]/158/1:1)", 34, "Alice did not feel encouraged to"],
+      ["epubcfi(/6/22!/4/2[pgepubid00011]/180/1:95)", 8, "remark. \u201CThen the eleventh day m"]
+    ] },
+    { "spine": 11, "pages": [
+      ["epubcfi(/6/24!/4/2[pgepubid00012]/2/3:0)", 27, "CHAPTER X."],
+      ["epubcfi(/6/24!/4/2[pgepubid00012]/16/1:1)", 33, "\u201C\u2014you advance twice\u2014\u201D"],
+      ["epubcfi(/6/24!/4/2[pgepubid00012]/48/1:1)", 40, "So they began solemnly dancing r"],
+      ["epubcfi(/6/24!/4/2[pgepubid00012]/50/37:52)", 34, "join the dance?"],
+      ["epubcfi(/6/24!/4/2[pgepubid00012]/72/1:1)", 35, "\u201CIt does the boots and shoes,\u201D t"],
+      ["epubcfi(/6/24!/4/2[pgepubid00012]/98/1:97)", 34, "it\u2019s no use going back to yester"],
+      ["epubcfi(/6/24!/4/2[pgepubid00012]/114/1:1)", 36, "\u201C\u2019Tis the voice of the Lobster; "],
+      ["epubcfi(/6/24!/4/2[pgepubid00012]/134/1:1)", 37, "\u201CI passed by his garden, and mar"],
+      ["epubcfi(/6/24!/4/2[pgepubid00012]/146/15:1)", 26, "Soo\u2014oop of the e\u2014e\u2014evening,"]
+    ] },
+    { "spine": 12, "pages": [
+      ["epubcfi(/6/26!/4/2[pgepubid00013]/2/3:0)", 27, "CHAPTER XI."],
+      ["epubcfi(/6/26!/4/2[pgepubid00013]/8/1:141)", 36, "did not look at all comfortable,"],
+      ["epubcfi(/6/26!/4/2[pgepubid00013]/20/3:111)", 34, "She did it so quickly that the p"],
+      ["epubcfi(/6/26!/4/2[pgepubid00013]/42/1:1)", 34, "\u201CSixteenth,\u201D added the Dormouse."],
+      ["epubcfi(/6/26!/4/2[pgepubid00013]/66/1:1)", 34, "\u201CYou\u2019ve no right to grow here,\u201D "],
+      ["epubcfi(/6/26!/4/2[pgepubid00013]/92/1:1)", 35, "\u201CHe denies it,\u201D said the King: \u201C"],
+      ["epubcfi(/6/26!/4/2[pgepubid00013]/118/1:1)", 34, "Here the other guinea-pig cheere"],
+      ["epubcfi(/6/26!/4/2[pgepubid00013]/144/1:91)", 18, "out of court! Suppress him! Pinc"]
+    ] },
+    { "spine": 13, "pages": [
+      ["epubcfi(/6/28!/4/2[pgepubid00014]/2/3:0)", 28, "CHAPTER XII."],
+      ["epubcfi(/6/28!/4/2[pgepubid00014]/10/1:233)", 35, "put it right; \u201Cnot that it signi"],
+      ["epubcfi(/6/28!/4/2[pgepubid00014]/30/1:94)", 33, "out \u201CSilence!\u201D and read out from"],
+      ["epubcfi(/6/28!/4/2[pgepubid00014]/62/1:1)", 36, "\u201CNo, they\u2019re not,\u201D said the Whit"],
+      ["epubcfi(/6/28!/4/2[pgepubid00014]/84/25:1)", 36, "They all returned from him to yo"],
+      ["epubcfi(/6/28!/4/2[pgepubid00014]/94/1:1)", 35, "The Knave shook his head sadly. "],
+      ["epubcfi(/6/28!/4/2[pgepubid00014]/114/1:1)", 33, "\u201CI won\u2019t!\u201D said Alice."],
+      ["epubcfi(/6/28!/4/2[pgepubid00014]/130/1:145)", 37, "into hers\u2014she could hear the ver"],
+      ["epubcfi(/6/28!/4/2[pgepubid00014]/136/1:98)", 11, "herself a grown woman; and how s"]
+    ] },
+    { "spine": 14, "pages": [
+      ["epubcfi(/6/30!/4/2[pg-footer]/2[pg-end-separator]/2/1:0)", 31, "*** END OF THE PROJECT GUTENBERG"],
+      ["epubcfi(/6/30!/4/2[pg-footer]/6/1:1129)", 3, "trademark license, especially co"],
+      ["epubcfi(/6/30!/4/2[pg-footer]/10[pg-footer-heading]/1:0)", 31, "THE FULL PROJECT GUTENBERG\u2122"],
+      ["epubcfi(/6/30!/4/2[pg-footer]/20/1:1)", 36, "1.B. \u201CProject Gutenberg\u201D is a re"],
+      ["epubcfi(/6/30!/4/2[pg-footer]/22/1:956)", 34, "attached full Project Gutenberg "],
+      ["epubcfi(/6/30!/4/2[pg-footer]/30/2/1:304)", 34, "at www.gutenberg.org. If you are"],
+      ["epubcfi(/6/30!/4/2[pg-footer]/36/1:138)", 33, "work or any other work associate"],
+      ["epubcfi(/6/30!/4/2[pg-footer]/44/1:80)", 35, "distributing Project Gutenberg e"],
+      ["epubcfi(/6/30!/4/2[pg-footer]/46/8/1:0)", 34, "\u2022 You comply with all other term"],
+      ["epubcfi(/6/30!/4/2[pg-footer]/54/1:234)", 36, "other party distributing a Proje"],
+      ["epubcfi(/6/30!/4/2[pg-footer]/58/1:1)", 35, "1.F.4. Except for the limited ri"],
+      ["epubcfi(/6/30!/4/2[pg-footer]/62/1:628)", 32, "Project Gutenberg work, and (c) "],
+      ["epubcfi(/6/30!/4/2[pg-footer]/72/1:166)", 33, "tax exempt status by the Interna"],
+      ["epubcfi(/6/30!/4/2[pg-footer]/80/1:217)", 33, "much paperwork and many fees to "],
+      ["epubcfi(/6/30!/4/2[pg-footer]/90/1:216)", 17, "eBooks with only a loose network"]
+    ] }
+  ]
+}

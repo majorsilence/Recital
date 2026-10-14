@@ -1,0 +1,52 @@
+/* Recital's user-agent stylesheet: the subset of the HTML default styles that the layout engine
+   understands, tuned for reading (justified text off by default; books turn it on themselves). */
+
+head, script, style, title, meta, link, template, noscript, [hidden], datalist, param, area, base { display: none }
+
+html, body, address, article, aside, blockquote, center, details, dialog, dd, dir, div, dl, dt,
+fieldset, figcaption, figure, footer, form, h1, h2, h3, h4, h5, h6, header, hgroup, hr, legend,
+main, menu, nav, ol, p, pre, section, summary, ul, li { display: block }
+
+li { display: list-item }
+table { display: table }
+tr { display: table-row }
+thead, tbody, tfoot { display: table-row-group }
+td, th { display: table-cell }
+caption { display: block; text-align: center }
+
+body { margin: 0 }
+p { margin-top: 1em; margin-bottom: 1em }
+blockquote, figure { margin: 1em 40px }
+dd { margin-left: 40px }
+dl, menu, dir { margin-top: 1em; margin-bottom: 1em }
+ol, ul { margin-top: 1em; margin-bottom: 1em; padding-left: 40px }
+ol ol, ol ul, ul ol, ul ul { margin-top: 0; margin-bottom: 0 }
+ul { list-style-type: disc }
+ol { list-style-type: decimal }
+ul ul { list-style-type: circle }
+ul ul ul { list-style-type: square }
+
+h1 { font-size: 2em; margin-top: 0.67em; margin-bottom: 0.67em }
+h2 { font-size: 1.5em; margin-top: 0.83em; margin-bottom: 0.83em }
+h3 { font-size: 1.17em; margin-top: 1em; margin-bottom: 1em }
+h4 { margin-top: 1.33em; margin-bottom: 1.33em }
+h5 { font-size: 0.83em; margin-top: 1.67em; margin-bottom: 1.67em }
+h6 { font-size: 0.67em; margin-top: 2.33em; margin-bottom: 2.33em }
+h1, h2, h3, h4, h5, h6, th, b, strong { font-weight: bold }
+h1, h2, h3, h4, h5, h6 { page-break-after: avoid; page-break-inside: avoid }
+
+i, cite, em, var, dfn, address { font-style: italic }
+pre, code, kbd, samp, tt { font-family: monospace }
+pre { white-space: pre; margin-top: 1em; margin-bottom: 1em }
+small { font-size: smaller }
+big { font-size: larger }
+sub { vertical-align: sub; font-size: smaller }
+sup { vertical-align: super; font-size: smaller }
+u, ins { text-decoration: underline }
+s, strike, del { text-decoration: line-through }
+center { text-align: center }
+th { text-align: center }
+nobr { white-space: nowrap }
+
+hr { margin-top: 0.5em; margin-bottom: 0.5em; border-top: 1px solid; page-break-inside: avoid }
+img, svg { page-break-inside: avoid }

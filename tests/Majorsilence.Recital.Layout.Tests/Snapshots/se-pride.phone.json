@@ -1,0 +1,82 @@
+{
+  "book": "se-austen-pride-and-prejudice.epub",
+  "viewport": "360x640, margins 28/20/28/20, font 18px",
+  "chapters": [
+    { "spine": 0, "pages": [
+      ["epubcfi(/6/2!/4/2[titlepage]/6)", 0, "[image epub/images/titlepage.png"]
+    ] },
+    { "spine": 1, "pages": [
+      ["epubcfi(/6/4!/4/2[imprint]/2/4)", 24, "[image epub/images/logo.png 80x5"],
+      ["epubcfi(/6/4!/4/2[imprint]/8/1:353)", 21, "contributors to, this ebook"]
+    ] },
+    { "spine": 2, "pages": [
+      ["epubcfi(/6/6!/4/2[chapter-1]/2/1:0)", 18, "I"],
+      ["epubcfi(/6/6!/4/2[chapter-1]/10/2/1:0)", 27, "Mr.\u00A0Bennet replied that he had"],
+      ["epubcfi(/6/6!/4/2[chapter-1]/28/1:0)", 26, "\u201CIs he married or single?\u201D"],
+      ["epubcfi(/6/6!/4/2[chapter-1]/42/1:0)", 27, "\u201CMy dear, you flatter me. I"],
+      ["epubcfi(/6/6!/4/2[chapter-1]/52/3:57)", 27, "few lines by you to assure him o"],
+      ["epubcfi(/6/6!/4/2[chapter-1]/60/1:125)", 27, "consideration these twenty years"],
+      ["epubcfi(/6/6!/4/2[chapter-1]/70/5:198)", 2, "was to get her daughters married"]
+    ] },
+    { "spine": 3, "pages": [
+      ["epubcfi(/6/8!/4/2[chapter-2]/2/1:0)", 18, "II"],
+      ["epubcfi(/6/8!/4/2[chapter-2]/8/5:26)", 27, "mother resentfully, \u201Csince we ar"],
+      ["epubcfi(/6/8!/4/2[chapter-2]/22/1:0)", 27, "\u201CI do not cough for my own"],
+      ["epubcfi(/6/8!/4/2[chapter-2]/34/5:50)", 27, "therefore, as she will think it "],
+      ["epubcfi(/6/8!/4/2[chapter-2]/46/3:112)", 26, "on him. It is very unlucky; but "],
+      ["epubcfi(/6/8!/4/2[chapter-2]/54/1:0)", 21, "\u201CWhat an excellent father you"]
+    ] },
+    { "spine": 4, "pages": [
+      ["epubcfi(/6/10!/4/2[chapter-3]/2/1:0)", 19, "III"],
+      ["epubcfi(/6/10!/4/2[chapter-3]/4/5:404)", 27, "the whole, he meant to be at the"],
+      ["epubcfi(/6/10!/4/2[chapter-3]/10/1:0)", 27, "An invitation to dinner was soon"],
+      ["epubcfi(/6/10!/4/2[chapter-3]/10/11:92)", 27, "grieved over such a number of"],
+      ["epubcfi(/6/10!/4/2[chapter-3]/12/7:260)", 27, "fine figure of a man, the ladies"],
+      ["epubcfi(/6/10!/4/2[chapter-3]/14/7:26)", 26, "Bingley, declined being introduc"],
+      ["epubcfi(/6/10!/4/2[chapter-3]/18/1:0)", 26, "\u201CCome, Darcy,\u201D said he, \u201CI must"],
+      ["epubcfi(/6/10!/4/2[chapter-3]/26/1:0)", 27, "\u201COh! she is the most beautiful"],
+      ["epubcfi(/6/10!/4/2[chapter-3]/30/5:192)", 27, "which delighted in anything"],
+      ["epubcfi(/6/10!/4/2[chapter-3]/32/7:68)", 27, "present occasion he had a good"],
+      ["epubcfi(/6/10!/4/2[chapter-3]/34/7:271)", 27, "and he seemed quite struck with"],
+      ["epubcfi(/6/10!/4/2[chapter-3]/40/3:30)", 20, "description of finery. She was"]
+    ] },
+    { "spine": 5, "pages": [
+      ["epubcfi(/6/12!/4/2[chapter-4]/2/1:0)", 18, "IV"],
+      ["epubcfi(/6/12!/4/2[chapter-4]/10/1:0)", 26, "\u201CI was very much flattered by"],
+      ["epubcfi(/6/12!/4/2[chapter-4]/18/1:0)", 26, "\u201CI would wish not to be hasty in"],
+      ["epubcfi(/6/12!/4/2[chapter-4]/24/1:0)", 27, "Elizabeth listened in silence, b"],
+      ["epubcfi(/6/12!/4/2[chapter-4]/24/1:879)", 27, "circumstance more deeply"],
+      ["epubcfi(/6/12!/4/2[chapter-4]/28/1:183)", 27, "nor was Mrs.\u00A0Hurst, who had"],
+      ["epubcfi(/6/12!/4/2[chapter-4]/30/1:385)", 27, "judgment the highest opinion. In"],
+      ["epubcfi(/6/12!/4/2[chapter-4]/32/1:499)", 16, "had felt the smallest interest, "]
+    ] },
+    { "spine": 6, "pages": [
+      ["epubcfi(/6/14!/4/2[chapter-5]/2/1:0)", 19, "V"],
+      ["epubcfi(/6/14!/4/2[chapter-5]/4/1:570)", 26, "think with pleasure of his own"],
+      ["epubcfi(/6/14!/4/2[chapter-5]/10/1:0)", 27, "\u201CYou began the evening well,"],
+      ["epubcfi(/6/14!/4/2[chapter-5]/16/7:122)", 27, "there cannot be two opinions on"],
+      ["epubcfi(/6/14!/4/2[chapter-5]/26/1:66)", 27, "he could not help answering her;"],
+      ["epubcfi(/6/14!/4/2[chapter-5]/38/1:0)", 27, "\u201CHis pride,\u201D said Miss Lucas,"],
+      ["epubcfi(/6/14!/4/2[chapter-5]/42/1:438)", 22, "are often used synonymously. A"]
+    ] },
+    { "spine": 7, "pages": [
+      ["epubcfi(/6/16!/4/2[chapter-6]/2/1:0)", 19, "VI"],
+      ["epubcfi(/6/16!/4/2[chapter-6]/4/5:249)", 27, "kindness to Jane, such as it was"],
+      ["epubcfi(/6/16!/4/2[chapter-6]/6/1:150)", 26, "guarded. If a woman conceals her"],
+      ["epubcfi(/6/16!/4/2[chapter-6]/10/1:0)", 27, "\u201CRemember, Eliza, that he does"],
+      ["epubcfi(/6/16!/4/2[chapter-6]/16/1:191)", 26, "should adopt it. But these are n"],
+      ["epubcfi(/6/16!/4/2[chapter-6]/20/1:164)", 26, "do not imagine that much has"],
+      ["epubcfi(/6/16!/4/2[chapter-6]/26/1:0)", 27, "Occupied in observing"],
+      ["epubcfi(/6/16!/4/2[chapter-6]/26/5:678)", 27, "fashionable world, he was caught"],
+      ["epubcfi(/6/16!/4/2[chapter-6]/36/1:0)", 27, "On his approaching them soon"],
+      ["epubcfi(/6/16!/4/2[chapter-6]/46/1:179)", 27, "invaluable, but as it is, I woul"],
+      ["epubcfi(/6/16!/4/2[chapter-6]/50/1:63)", 27, "her application, it had given he"],
+      ["epubcfi(/6/16!/4/2[chapter-6]/54/2/1:0)", 27, "Mr.\u00A0Darcy!\uFEFF\u2014There is nothing lik"],
+      ["epubcfi(/6/16!/4/2[chapter-6]/70/1:0)", 27, "\u201CYou have a house in town, I"],
+      ["epubcfi(/6/16!/4/2[chapter-6]/78/5:79)", 27, "she instantly drew back, and sai"],
+      ["epubcfi(/6/16!/4/2[chapter-6]/88/1:91)", 26, "complaisance; for who would"],
+      ["epubcfi(/6/16!/4/2[chapter-6]/98/1:161)", 27, "in the face of a pretty woman ca"],
+      ["epubcfi(/6/16!/4/2[chapter-6]/110/1:0)", 6, "He listened to her with perfect"]
+    ] }
+  ]
+}

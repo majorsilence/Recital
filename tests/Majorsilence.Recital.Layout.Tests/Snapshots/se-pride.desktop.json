@@ -1,0 +1,55 @@
+{
+  "book": "se-austen-pride-and-prejudice.epub",
+  "viewport": "1280x800, margins 56/300/56/300, font 20px",
+  "chapters": [
+    { "spine": 0, "pages": [
+      ["epubcfi(/6/2!/4/2[titlepage]/6)", 0, "[image epub/images/titlepage.png"]
+    ] },
+    { "spine": 1, "pages": [
+      ["epubcfi(/6/4!/4/2[imprint]/2/4)", 23, "[image epub/images/logo.png 170x"]
+    ] },
+    { "spine": 2, "pages": [
+      ["epubcfi(/6/6!/4/2[chapter-1]/2/1:0)", 21, "I"],
+      ["epubcfi(/6/6!/4/2[chapter-1]/22/3:212)", 28, "with Mr.\u00A0Morris immediately; tha"],
+      ["epubcfi(/6/6!/4/2[chapter-1]/50/1:0)", 28, "\u201CBut consider your daughters. On"],
+      ["epubcfi(/6/6!/4/2[chapter-1]/68/1:0)", 10, "\u201CDepend upon it, my dear, that w"]
+    ] },
+    { "spine": 3, "pages": [
+      ["epubcfi(/6/8!/4/2[chapter-2]/2/1:0)", 21, "II"],
+      ["epubcfi(/6/8!/4/2[chapter-2]/18/1:0)", 28, "\u201CDon\u2019t keep coughing so, Kitty, "],
+      ["epubcfi(/6/8!/4/2[chapter-2]/42/1:0)", 28, "\u201CWhile Mary is adjusting her ide"],
+      ["epubcfi(/6/8!/4/2[chapter-2]/58/1:0)", 3, "The rest of the evening was spen"]
+    ] },
+    { "spine": 4, "pages": [
+      ["epubcfi(/6/10!/4/2[chapter-3]/2/1:0)", 21, "III"],
+      ["epubcfi(/6/10!/4/2[chapter-3]/8/5:217)", 29, "were somewhat more fortunate, fo"],
+      ["epubcfi(/6/10!/4/2[chapter-3]/12/7:195)", 28, "having ten thousand a year. The "],
+      ["epubcfi(/6/10!/4/2[chapter-3]/18/1:0)", 28, "\u201CCome, Darcy,\u201D said he, \u201CI must "],
+      ["epubcfi(/6/10!/4/2[chapter-3]/30/5:157)", 29, "had a lively, playful dispositio"],
+      ["epubcfi(/6/10!/4/2[chapter-3]/34/7:325)", 25, "down the dance. So, he enquired "]
+    ] },
+    { "spine": 5, "pages": [
+      ["epubcfi(/6/12!/4/2[chapter-4]/2/1:0)", 20, "IV"],
+      ["epubcfi(/6/12!/4/2[chapter-4]/16/1:0)", 29, "\u201COh! you are a great deal too ap"],
+      ["epubcfi(/6/12!/4/2[chapter-4]/24/1:686)", 29, "of associating with people of ra"],
+      ["epubcfi(/6/12!/4/2[chapter-4]/30/1:385)", 22, "judgment the highest opinion. In"]
+    ] },
+    { "spine": 6, "pages": [
+      ["epubcfi(/6/14!/4/2[chapter-5]/2/1:0)", 20, "V"],
+      ["epubcfi(/6/14!/4/2[chapter-5]/8/1:0)", 29, "That the Miss Lucases and the Mi"],
+      ["epubcfi(/6/14!/4/2[chapter-5]/24/1:0)", 29, "\u201CAre you quite sure, Ma\u2019am?\uFEFF\u2014is "],
+      ["epubcfi(/6/14!/4/2[chapter-5]/42/1:194)", 15, "that human nature is particularl"]
+    ] },
+    { "spine": 7, "pages": [
+      ["epubcfi(/6/16!/4/2[chapter-6]/2/1:0)", 21, "VI"],
+      ["epubcfi(/6/16!/4/2[chapter-6]/6/1:0)", 28, "\u201CIt may perhaps be pleasant,\u201D re"],
+      ["epubcfi(/6/16!/4/2[chapter-6]/16/1:0)", 28, "\u201CYour plan is a good one,\u201D repli"],
+      ["epubcfi(/6/16!/4/2[chapter-6]/24/1:0)", 28, "\u201CYou make me laugh, Charlotte; b"],
+      ["epubcfi(/6/16!/4/2[chapter-6]/34/1:133)", 28, "begin by being impertinent mysel"],
+      ["epubcfi(/6/16!/4/2[chapter-6]/48/1:256)", 29, "being the only plain one in the "],
+      ["epubcfi(/6/16!/4/2[chapter-6]/64/1:0)", 29, "\u201CNever, sir.\u201D"],
+      ["epubcfi(/6/16!/4/2[chapter-6]/84/1:128)", 28, "dislikes the amusement in genera"],
+      ["epubcfi(/6/16!/4/2[chapter-6]/106/1:0)", 10, "\u201CThat is exactly the question wh"]
+    ] }
+  ]
+}

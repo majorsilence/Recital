@@ -1,0 +1,49 @@
+{
+  "book": "se-austen-pride-and-prejudice.epub",
+  "viewport": "768x1024, margins 72/64/72/64, font 20px",
+  "chapters": [
+    { "spine": 0, "pages": [
+      ["epubcfi(/6/2!/4/2[titlepage]/6)", 0, "[image epub/images/titlepage.png"]
+    ] },
+    { "spine": 1, "pages": [
+      ["epubcfi(/6/4!/4/2[imprint]/2/4)", 24, "[image epub/images/logo.png 160x"]
+    ] },
+    { "spine": 2, "pages": [
+      ["epubcfi(/6/6!/4/2[chapter-1]/2/1:0)", 28, "I"],
+      ["epubcfi(/6/6!/4/2[chapter-1]/30/1:0)", 37, "\u201COh! single, my dear, to be sure"],
+      ["epubcfi(/6/6!/4/2[chapter-1]/54/1:125)", 27, "Jane, nor half so good humoured "]
+    ] },
+    { "spine": 3, "pages": [
+      ["epubcfi(/6/8!/4/2[chapter-2]/2/1:0)", 29, "II"],
+      ["epubcfi(/6/8!/4/2[chapter-2]/28/1:0)", 37, "\u201CAye, so it is,\u201D cried her mothe"],
+      ["epubcfi(/6/8!/4/2[chapter-2]/50/3:83)", 18, "too well to neglect such an acqu"]
+    ] },
+    { "spine": 4, "pages": [
+      ["epubcfi(/6/10!/4/2[chapter-3]/2/1:0)", 29, "III"],
+      ["epubcfi(/6/10!/4/2[chapter-3]/10/5:39)", 37, "following day, and consequently "],
+      ["epubcfi(/6/10!/4/2[chapter-3]/14/3:238)", 37, "qualities must speak for themsel"],
+      ["epubcfi(/6/10!/4/2[chapter-3]/28/1:116)", 37, "own and coldly said, \u201CShe is tol"],
+      ["epubcfi(/6/10!/4/2[chapter-3]/34/7:158)", 30, "so vexed to see him stand up wit"]
+    ] },
+    { "spine": 5, "pages": [
+      ["epubcfi(/6/12!/4/2[chapter-4]/2/1:0)", 29, "IV"],
+      ["epubcfi(/6/12!/4/2[chapter-4]/20/5:56)", 36, "nonsense of others! Affectation "],
+      ["epubcfi(/6/12!/4/2[chapter-4]/28/1:0)", 37, "His sisters were very anxious fo"],
+      ["epubcfi(/6/12!/4/2[chapter-4]/34/3:118)", 4, "girl, and one whom they should n"]
+    ] },
+    { "spine": 6, "pages": [
+      ["epubcfi(/6/14!/4/2[chapter-5]/2/1:0)", 29, "V"],
+      ["epubcfi(/6/14!/4/2[chapter-5]/14/1:0)", 37, "\u201COh!\uFEFF\u2014you mean Jane, I suppose\uFEFF\u2014"],
+      ["epubcfi(/6/14!/4/2[chapter-5]/34/1:0)", 31, "\u201CAnother time, Lizzy,\u201D said her "]
+    ] },
+    { "spine": 7, "pages": [
+      ["epubcfi(/6/16!/4/2[chapter-6]/2/1:0)", 29, "VI"],
+      ["epubcfi(/6/16!/4/2[chapter-6]/6/1:431)", 37, "that it is not safe to leave any"],
+      ["epubcfi(/6/16!/4/2[chapter-6]/20/1:0)", 36, "\u201CYes; these four evenings have e"],
+      ["epubcfi(/6/16!/4/2[chapter-6]/28/1:0)", 36, "He began to wish to know more of"],
+      ["epubcfi(/6/16!/4/2[chapter-6]/48/1:0)", 36, "Her performance was pleasing, th"],
+      ["epubcfi(/6/16!/4/2[chapter-6]/66/1:0)", 37, "\u201CDo you not think it would be a "],
+      ["epubcfi(/6/16!/4/2[chapter-6]/90/1:117)", 32, "of her with some complacency, wh"]
+    ] }
+  ]
+}
