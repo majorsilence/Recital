@@ -10,7 +10,7 @@ should cover, not a bug).
 
 | ID | Area | Backends | Severity | Status |
 |---|---|---|---|---|
-| GAP-001 | Packaging: no `net10.0-ios` asset in `Majorsilence.Forms.Avalonia` | Avalonia iOS | blocker (iOS) | Fix on Forms branch `fix/avalonia-ios-package` |
+| GAP-001 | Packaging: no `net10.0-ios` asset in `Majorsilence.Forms.Avalonia` | Avalonia iOS | blocker (iOS) | Fix in [Forms PR #478](https://github.com/majorsilence/Majorsilence.Forms/pull/478) |
 | GAP-002 | No pixel-diff/baseline helper for Headless renders | Headless | scope | Local helper |
 | GAP-003 | Headless renders depend on the host OS (chrome policy, system fonts) | Headless | major (for UI tests) | Local workaround |
 | GAP-004 | `Theme.UIFont` honours only the typeface's family name, not the typeface | all | major | Local workaround |
@@ -32,7 +32,7 @@ should cover, not a bug).
   `curl -s https://api.nuget.org/v3-flatcontainer/majorsilence.forms.avalonia/26.11.4/majorsilence.forms.avalonia.nuspec | grep targetFramework`
 - **Severity:** blocker for the iOS head (plan phases 4, 8 and 10). Phase 1 only needs it to build.
 - **Workaround:** none. The iOS head builds against the fallback asset and is marked in its csproj.
-- **Fix:** Majorsilence.Forms branch `fix/avalonia-ios-package`. It packs `Majorsilence.Forms.Avalonia` in the
+- **Fix:** [Majorsilence.Forms PR #478](https://github.com/majorsilence/Majorsilence.Forms/pull/478) (branch `fix/avalonia-ios-package`). It packs `Majorsilence.Forms.Avalonia` in the
   macOS job with both mobile workloads, the way `Majorsilence.Forms.Essentials` already is.
 
 ## GAP-002: No pixel-diff/baseline helper for Headless renders
