@@ -6,4 +6,13 @@
     <TargetFramework>$(_TargetFramework)</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="AngleSharp" />
+    <PackageReference Include="AngleSharp.Xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Majorsilence.Recital.Epub.Tests" />
+  </ItemGroup>
+
 </Project>

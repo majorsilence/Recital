@@ -18,6 +18,11 @@
          for pixel diffs. Same version the framework ships with. -->
     <PackageVersion Include="SkiaSharp" Version="3.119.4" />
 
+    <!-- XHTML parsing for EPUB content documents (Majorsilence.Recital.Epub). AngleSharp.Xml gives the exact XML
+         tree; it is rebuilt as an AngleSharp HTML document so Layout can style it with AngleSharp.Css. -->
+    <PackageVersion Include="AngleSharp" Version="1.8.3" />
+    <PackageVersion Include="AngleSharp.Xml" Version="1.2.0" />
+
     <!-- Tests -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
     <PackageVersion Include="xunit.v3" Version="3.2.2" />

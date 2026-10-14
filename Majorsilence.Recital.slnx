@@ -14,6 +14,7 @@
     <Project Path="hosts/Majorsilence.Recital.iOS/Majorsilence.Recital.iOS.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Majorsilence.Recital.Epub.Tests/Majorsilence.Recital.Epub.Tests.csproj" />
     <Project Path="tests/Majorsilence.Recital.UI.Tests/Majorsilence.Recital.UI.Tests.csproj" />
   </Folder>
 </Solution>

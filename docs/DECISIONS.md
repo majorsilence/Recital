@@ -55,3 +55,41 @@ writes `<name>.<os>.actual.png` beside the test assembly, which CI uploads as an
 then commit it as the baseline, or regenerate locally on that OS with `RECITAL_UPDATE_BASELINES=1 dotnet test`.
 CI runner images are pinned (`ubuntu-24.04`, `windows-2025`, `macos-26`), so an image change shows up as a
 deliberate baseline update and never as a surprise failure.
+
+## D-007: A small EPUB parser of our own, not VersOne.Epub (2026-10-14)
+
+Plan 1.2 allows either. VersOne.Epub (Unlicense) parses packages well, but hands content documents
+back as strings, so Recital would parse every chapter a second time anyway, and CFIs depend on the tree
+that second parse builds. The package side is small (`System.IO.Compression` plus `System.Xml.Linq`),
+and owning it buys: forgiving opens that record `EpubWarning`s instead of failing (missing files,
+duplicate ids, bad case, no container), font de-obfuscation (IDPF and Adobe), DRM detection, and async
+I/O throughout (`ZipArchive.CreateAsync`). About 2,000 lines including comments.
+
+## D-008: Content documents are parsed as XML, then rebuilt as an AngleSharp HTML document (2026-10-14)
+
+CFIs count element and text children, so the tree must be exactly the source XML. AngleSharp's HTML
+parser is not: `<a id="x"/>` swallowed the next paragraph in a probe. AngleSharp.Xml gets the
+structure right but builds generic XML elements, which AngleSharp.Css (Phase 3) cannot style as HTML. So
+`XhtmlLoader` parses with AngleSharp.Xml and replays that tree through an HTML document's DOM API,
+which yields real `IHtmlElement`/`ISvgElement` types, keeps `epub:type` and other namespaced
+attributes, and keeps the XML tree.
+
+Real books use HTML named entities (`&nbsp;`) that strict XML rejects, so they are rewritten as numeric
+references first. A document that is still not well-formed goes through the HTML parser with an
+`xhtml-not-well-formed` warning and `ContentDocument.ParsedAsXml = false`. CFIs inside it are
+consistent within Recital but may not match other readers'. All four corpus books parse as XML.
+
+## D-009: CFI conventions (2026-10-14)
+
+- Character offsets count UTF-16 code units, the DOM's unit, across a whole text chunk, which can
+  span several text nodes split by comments or CDATA. A boundary offset resolves to the end of the
+  earlier node.
+- When a step's id assertion disagrees with its index, the id wins, for content steps and for the
+  itemref step alike. The document changed, and the id is the more stable of the two.
+- An offset past the end of its text is clamped, not rejected: a CFI saved against an older copy of
+  a book should still land in the right paragraph.
+- Itemref steps count the itemref's position in the source spine, including itemrefs Recital skipped
+  as broken, so a CFI means the same thing to every reader.
+- Equality and ordering ignore assertions; ordering is document order (an element sorts before
+  anything inside it). Temporal (`~`) and spatial (`@`) offsets are rejected; EPUB reflowable text
+  has no use for them.

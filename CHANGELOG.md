@@ -1,5 +1,21 @@
 # Changelog
 
+## Phase 2: EPUB model (2026-10-14)
+
+- `Majorsilence.Recital.Epub`: opens EPUB 2 and 3 from a path or any stream, async throughout. Parses the container, the OPF
+  (metadata with EPUB 3 refinements and EPUB 2 attributes, manifest, spine with fallbacks and
+  `linear`), the EPUB 3 nav or EPUB 2 NCX table of contents, the cover (four detection strategies),
+  embedded fonts (IDPF and Adobe de-obfuscation) and DRM. Problems become `Warnings`, not failures.
+- Content documents load as AngleSharp HTML documents with the exact source XML tree (D-008).
+- `EpubCfi`: parse, format, compare, points and ranges, id/text/side-bias assertions; generate from
+  and resolve to DOM positions (D-009).
+- Test corpus `tests/corpus/`: two Standard Ebooks (EPUB 3), two Project Gutenberg (EPUB 3 and EPUB 2).
+  CFIs round-trip on all 5,788 paragraphs (23,007 positions). Hand-built edge cases cover missing
+  nav, NCX only, no TOC, broken manifests, no container, case and percent-encoding in hrefs, named
+  entities, malformed XHTML, windows-1252, metadata refinements, cover variants, obfuscated fonts,
+  DRM, stale CFIs and a 20,000-paragraph chapter.
+- Framework: none of this phase touches Majorsilence.Forms, so there are no new gaps and no coverage changes.
+
 ## Phase 1: Skeleton and CI (2026-10-13)
 
 - `Majorsilence.Recital.slnx` with central package management, Majorsilence.Forms pinned at 26.11.4.

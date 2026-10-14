@@ -8,7 +8,7 @@ person reading.
 Recital is also a deliberate workout for Majorsilence.Forms: every framework rough edge it hits is
 logged in [docs/FRAMEWORK_GAPS.md](docs/FRAMEWORK_GAPS.md).
 
-Status: Phase 1 (skeleton). See [docs/PLAN.md](docs/PLAN.md).
+Status: Phase 2 (EPUB model) done; next is Phase 3 (layout engine). See [docs/PLAN.md](docs/PLAN.md) and [CHANGELOG.md](CHANGELOG.md).
 
 ## Build
 
