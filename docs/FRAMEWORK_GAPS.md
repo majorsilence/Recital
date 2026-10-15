@@ -11,16 +11,16 @@ should cover, not a bug).
 | ID | Area | Backends | Severity | Status |
 |---|---|---|---|---|
 | GAP-001 | Packaging: no `net10.0-ios` asset in `Majorsilence.Forms.Avalonia` | Avalonia iOS | blocker (iOS) | Fixed by [Forms PR #478](https://github.com/majorsilence/Majorsilence.Forms/pull/478) (merged; ships in 26.11.5, not yet on nuget.org) |
-| GAP-002 | No pixel-diff/baseline helper for Headless renders | Headless | scope | Local helper |
-| GAP-003 | Headless renders depend on the host OS (chrome policy, system fonts) | Headless | major (for UI tests) | Local workaround |
-| GAP-004 | `Theme.UIFont` honours only the typeface's family name, not the typeface | all | major | Local workaround |
-| GAP-005 | File dialogs return paths only; mobile and browser pickers give nothing openable | Avalonia Android, iOS, Browser | blocker (mobile/browser import) | Open |
-| GAP-006 | Headless cannot inject touch gestures (swipe, pinch, long press) | Headless | minor | Open |
-| GAP-007 | No UI `SynchronizationContext` on the Headless backend | Headless | minor | Local workaround (tests) |
-| GAP-008 | `ToolStripDropDownButton` text wraps: measured with 6px less arrow room than drawn | all | minor | Local workaround; fix on Forms branch `fix/toolstrip-dropdown-arrow-width` |
-| GAP-009 | Toolbar item text ignores `ToolStripItem.ForeColor` and `ToolStrip.ForeColor` | all | major (dark themes) | Local workaround; fix on Forms branch `fix/toolstrip-item-forecolor` |
-| GAP-010 | `SplitContainer.Panel1Collapsed` leaves the splitter bar showing | all | minor | Local workaround; fix on Forms branch `fix/splitcontainer-collapse-hides-splitter` |
-| GAP-011 | `Application.SetDefaultFont` does not change the typeface controls draw with | all | minor | Local workaround (tests); fix on Forms branch `fix/setdefaultfont-reaches-drawing` |
+| GAP-002 | No pixel-diff/baseline helper for Headless renders | Headless | scope | Local helper; fix in [Forms PR #489](https://github.com/majorsilence/Majorsilence.Forms/pull/489) |
+| GAP-003 | Headless renders depend on the host OS (chrome policy, system fonts) | Headless | major (for UI tests) | Local workaround; fix in [Forms PR #488](https://github.com/majorsilence/Majorsilence.Forms/pull/488) |
+| GAP-004 | `Theme.UIFont` honours only the typeface's family name, not the typeface | all | major | Local workaround; fix in [Forms PR #487](https://github.com/majorsilence/Majorsilence.Forms/pull/487) |
+| GAP-005 | File dialogs return paths only; mobile and browser pickers give nothing openable | Avalonia Android, iOS, Browser | blocker (mobile/browser import) | Fix in [Forms PR #484](https://github.com/majorsilence/Majorsilence.Forms/pull/484) |
+| GAP-006 | Headless cannot inject touch gestures (swipe, pinch, long press) | Headless | minor | Fix in [Forms PR #485](https://github.com/majorsilence/Majorsilence.Forms/pull/485) |
+| GAP-007 | No UI `SynchronizationContext` on the Headless backend | Headless | minor | Local workaround (tests); fix in [Forms PR #486](https://github.com/majorsilence/Majorsilence.Forms/pull/486) |
+| GAP-008 | `ToolStripDropDownButton` text wraps: measured with 6px less arrow room than drawn | all | minor | Local workaround; fix in [Forms PR #480](https://github.com/majorsilence/Majorsilence.Forms/pull/480) |
+| GAP-009 | Toolbar item text ignores `ToolStripItem.ForeColor` and `ToolStrip.ForeColor` | all | major (dark themes) | Local workaround; fix in [Forms PR #481](https://github.com/majorsilence/Majorsilence.Forms/pull/481) |
+| GAP-010 | `SplitContainer.Panel1Collapsed` leaves the splitter bar showing | all | minor | Local workaround; fix in [Forms PR #482](https://github.com/majorsilence/Majorsilence.Forms/pull/482) |
+| GAP-011 | `Application.SetDefaultFont` does not change the typeface controls draw with | all | minor | Local workaround (tests); fix in [Forms PR #483](https://github.com/majorsilence/Majorsilence.Forms/pull/483) |
 
 ---
 
@@ -52,6 +52,7 @@ should cover, not a bug).
 - **Severity:** scope. Should every consumer write its own, or should `Majorsilence.Forms.Headless`
   offer `AssertMatchesBaseline`?
 - **Workaround:** `tests/Majorsilence.Recital.UI.Tests/PixelBaseline.cs` (about 70 lines, SkiaSharp).
+- **Fix:** [Forms PR #489](https://github.com/majorsilence/Majorsilence.Forms/pull/489) adds `Majorsilence.Forms.Headless.PixelComparison` (tolerant compare, diff image).
 
 ## GAP-003: Headless renders depend on the host OS
 
@@ -75,8 +76,8 @@ should cover, not a bug).
   resource name, which is not a public contract. With both in place, a local Ubuntu 26.04 render matches
   the CI Ubuntu 24.04 baseline. Baselines are still per OS, because each OS's Skia anti-aliases the same
   font differently (about 200 pixels on the title); that is expected, not a gap.
-- **Proposed fix:** a `HeadlessRenderer.UseDeterministic ()` (or an option on `Use`) that forces custom
-  chrome and the embedded fonts, plus a public accessor for the bundled typefaces.
+- **Fix:** [Forms PR #488](https://github.com/majorsilence/Majorsilence.Forms/pull/488) adds `HeadlessRenderer.UseDeterministic ()`: custom chrome everywhere and
+  the bundled Noto Sans as UI, bold and default font, restored on dispose. It builds on #483 (GAP-011).
 
 - **Phase 4 addition:** controls that draw with `Control.Font` (the tree view, owner-drawn list tiles)
   use `SystemFonts.DefaultFont`, which also resolves to the machine's own sans-serif; `HeadlessTestEnvironment`
@@ -98,9 +99,8 @@ should cover, not a bug).
   devices) has to know to go through `PrivateFontCollection` as well.
 - **Workaround:** register the same font bytes with `PrivateFontCollection.AddMemoryFont` before
   assigning `Theme.UIFont`, which is what WinForms code that bundles a font does anyway.
-- **Proposed fix:** have the `Theme.UIFont`/`UIFontBold` setters add a typeface that the font manager
-  cannot resolve by family name to `PrivateFontRegistry`, or at least document the requirement on the
-  property.
+- **Fix:** [Forms PR #487](https://github.com/majorsilence/Majorsilence.Forms/pull/487): the `UIFont`/`UIFontBold` setters register a typeface the font manager
+  cannot find by name with `PrivateFontRegistry`, and unregister it when replaced.
 
 ## GAP-005: File dialogs return paths only
 
@@ -116,8 +116,9 @@ should cover, not a bug).
   `File.OpenRead (dialog.FileName)` throws.
 - **Severity:** blocker for importing on Android, iOS and the browser (Phase 10 needs it); none on desktop.
 - **Workaround:** none yet; `LibraryView.ImportFilesAsync` is marked. Desktop import works.
-- **Fix (proposed):** have the backend keep the picked `IStorageFile`s and let `OpenFile ()` /
-  a new `OpenFiles ()` open them with `IStorageFile.OpenReadAsync`.
+- **Fix:** [Forms PR #484](https://github.com/majorsilence/Majorsilence.Forms/pull/484): an optional `IPickedFileBackend` returns `PickedFile`s (name, path when
+  there is one, `OpenReadAsync`); the Avalonia hosts and Headless implement it, and `OpenFileDialog` gains
+  `SelectedFiles` and `OpenFileAsync`. Once released, `LibraryView.ImportFilesAsync` reads through them.
 
 ## GAP-006: Headless cannot inject touch gestures
 
@@ -128,7 +129,7 @@ should cover, not a bug).
   internal, and `HeadlessRenderer` has mouse, wheel, key and text injection only.
 - **Severity:** minor. `BookPageView.OnSwipe` is untested; the mouse-drag path, which is also what a
   touch drag arrives as, is tested.
-- **Fix (proposed):** `HeadlessRenderer.Swipe/Pinch/LongPress/ScrollGesture`, forwarding to the internals.
+- **Fix:** [Forms PR #485](https://github.com/majorsilence/Majorsilence.Forms/pull/485) adds `HeadlessRenderer.Swipe/Pinch/LongPress/ScrollGesture`.
 
 ## GAP-007: No UI `SynchronizationContext` on the Headless backend
 
@@ -139,6 +140,8 @@ should cover, not a bug).
 - **Severity:** minor (tests only).
 - **Workaround:** `UiTest` installs the framework's own `WindowsFormsSynchronizationContext` and pumps
   `Application.DoEvents`.
+- **Fix:** [Forms PR #486](https://github.com/majorsilence/Majorsilence.Forms/pull/486): the headless main loop installs the context (honouring `AutoInstall`),
+  and `HeadlessRenderer.UseSynchronizationContext ()` / `PumpUntil` replace this workaround in tests.
 
 ## GAP-008: `ToolStripDropDownButton` text wraps onto two lines
 
@@ -147,7 +150,7 @@ should cover, not a bug).
   `RenderItem` takes 16 + 4 = 20px out of the content box for it, so the text got 6px less than it was
   measured at and wrapped. `ToolStripItem.AutoSize` is stored-only, so an explicit width is not a way out.
 - **Workaround:** Recital's toolbar renderer (`ThemePainter`) widens the text rectangle of drop-down items by 6px.
-- **Fix:** Forms branch `fix/toolstrip-dropdown-arrow-width` (local, not yet pushed): both sides use one
+- **Fix:** [Forms PR #480](https://github.com/majorsilence/Majorsilence.Forms/pull/480): both sides use one
   `DropDownArrowGutter`, with a regression test.
 
 ## GAP-009: Toolbar item text ignores `ForeColor`
@@ -158,7 +161,7 @@ should cover, not a bug).
   a `ToolStripRenderer` is installed, so a dark strip drew near-black text.
 - **Workaround:** `ThemePainter` installs a `ToolStripProfessionalRenderer` subclass whose
   `OnRenderItemText` passes the item's `ForeColor` through.
-- **Fix:** Forms branch `fix/toolstrip-item-forecolor` (local, not yet pushed), with tests.
+- **Fix:** [Forms PR #481](https://github.com/majorsilence/Majorsilence.Forms/pull/481), with tests.
 
 ## GAP-010: `SplitContainer.Panel1Collapsed` leaves the splitter showing
 
@@ -166,7 +169,7 @@ should cover, not a bug).
 - **Actual:** collapsing a panel set only `Panel.Visible`; the 5px `Splitter` stayed docked at the edge,
   so the other panel never got the whole container. WinForms hides the splitter too.
 - **Workaround:** `ReaderView` moves the page out of the split and hides the split when no side panel is open.
-- **Fix:** Forms branch `fix/splitcontainer-collapse-hides-splitter` (local, not yet pushed), with a test.
+- **Fix:** [Forms PR #482](https://github.com/majorsilence/Majorsilence.Forms/pull/482), with a test.
 
 ## GAP-011: `Application.SetDefaultFont` does not reach drawing
 
@@ -176,6 +179,6 @@ should cover, not a bug).
   a fixed lookup of the system face that ignores the override.
 - **Severity:** minor for Recital (tests only); an app-wide font is not honoured in a real app either.
 - **Workaround:** `HeadlessTestEnvironment.PinFont` sets the window style's typeface.
-- **Fix:** Forms branch `fix/setdefaultfont-reaches-drawing` (local, not yet pushed): `DefaultTypeface`
+- **Fix:** [Forms PR #483](https://github.com/majorsilence/Majorsilence.Forms/pull/483): `DefaultTypeface`
   returns the override's face when there is one, with a test.
 
