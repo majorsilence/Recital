@@ -20,6 +20,7 @@ should cover, not a bug).
 | GAP-008 | `ToolStripDropDownButton` text wraps: measured with 6px less arrow room than drawn | all | minor | Local workaround; fix on Forms branch `fix/toolstrip-dropdown-arrow-width` |
 | GAP-009 | Toolbar item text ignores `ToolStripItem.ForeColor` and `ToolStrip.ForeColor` | all | major (dark themes) | Local workaround; fix on Forms branch `fix/toolstrip-item-forecolor` |
 | GAP-010 | `SplitContainer.Panel1Collapsed` leaves the splitter bar showing | all | minor | Local workaround; fix on Forms branch `fix/splitcontainer-collapse-hides-splitter` |
+| GAP-011 | `Application.SetDefaultFont` does not change the typeface controls draw with | all | minor | Local workaround (tests); fix on Forms branch `fix/setdefaultfont-reaches-drawing` |
 
 ---
 
@@ -166,4 +167,15 @@ should cover, not a bug).
   so the other panel never got the whole container. WinForms hides the splitter too.
 - **Workaround:** `ReaderView` moves the page out of the split and hides the split when no side panel is open.
 - **Fix:** Forms branch `fix/splitcontainer-collapse-hides-splitter` (local, not yet pushed), with a test.
+
+## GAP-011: `Application.SetDefaultFont` does not reach drawing
+
+- **Found:** Phase 4, CI's Linux render of the contents tree differed from a local one.
+- **Actual:** `SetDefaultFont` changes what `Control.Font` reports, but `Control.GetEffectiveFont` — the
+  typeface `TreeView`, `ListView` and most renderers draw with — falls back to `SystemFonts.DefaultTypeface`,
+  a fixed lookup of the system face that ignores the override.
+- **Severity:** minor for Recital (tests only); an app-wide font is not honoured in a real app either.
+- **Workaround:** `HeadlessTestEnvironment.PinFont` sets the window style's typeface.
+- **Fix:** Forms branch `fix/setdefaultfont-reaches-drawing` (local, not yet pushed): `DefaultTypeface`
+  returns the override's face when there is one, with a test.
 

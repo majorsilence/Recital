@@ -27,9 +27,9 @@ namespace Majorsilence.Recital.UI.Tests
             Theme.UIFont = fonts.Value.Regular;
             Theme.UIFontBold = fonts.Value.Bold;
 
-            // FRAMEWORK-GAP: GAP-003. Controls that draw with Control.Font (the tree view, owner-drawn
-            // list tiles) default to SystemFonts.DefaultFont, which is whatever sans-serif the machine
-            // has, not the Theme.UIFont above. Pin the default to the same embedded Noto Sans.
+            // FRAMEWORK-GAP: GAP-003. Code that draws with Control.Font (the owner-drawn list tiles)
+            // gets SystemFonts.DefaultFont, which is whatever sans-serif the machine has, not the
+            // Theme.UIFont above. Pin the default to the same embedded Noto Sans (see also PinFont).
             if (!default_font_set) {
                 Application.SetDefaultFont (new Majorsilence.Forms.Drawing.Font ("Noto Sans", SystemFonts.DefaultFont.Size));
                 default_font_set = true;
@@ -41,6 +41,16 @@ namespace Majorsilence.Recital.UI.Tests
         }
 
         private static bool default_font_set;
+
+        /// <summary>
+        /// Makes every control in <paramref name="window"/> draw in the embedded Noto Sans.
+        /// </summary>
+        public static void PinFont (WindowBase window)
+            // FRAMEWORK-GAP: GAP-011. Application.SetDefaultFont (above) changes Control.Font but not the
+            // typeface controls draw with: GetEffectiveFont falls back to the system face, so the tree view
+            // drew in each machine's own sans-serif. The window's style is the last stop before that
+            // fallback, and setting only the typeface there leaves every font size alone.
+            => window.Style.Font = fonts.Value.Regular;
 
         private static (SKTypeface, SKTypeface) LoadFonts ()
         {

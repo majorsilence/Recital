@@ -48,6 +48,7 @@ namespace Majorsilence.Recital.UI.Tests
         public MainForm OpenMainForm (InMemoryStorageProvider storage, DeviceIdentity device, int width = 1000, int height = 700)
         {
             var form = new MainForm (ct => AppServices.InMemoryAsync (storage, device, new FixedTime (), ct));
+            HeadlessTestEnvironment.PinFont (form);
             Resize (form, width, height);
             // Shown, as the hosts do: a form never shown has no focusable controls. Showing raises Load,
             // which opens the library.

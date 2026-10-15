@@ -19,6 +19,7 @@ heads, **Headless** = offscreen Skia (UI tests).
 | `HeadlessRenderer.Use` / `CapturePng` / `Click` / `MouseDown/Move/Up` / `MouseWheel` / `KeyDown` / `OpenFileResponse` | | | | | ⚠️ | [GAP-002](FRAMEWORK_GAPS.md#gap-002-no-pixel-diffbaseline-helper-for-headless-renders), [GAP-003](FRAMEWORK_GAPS.md#gap-003-headless-renders-depend-on-the-host-os), [GAP-006](FRAMEWORK_GAPS.md#gap-006-headless-cannot-inject-touch-gestures) |
 | `Theme.UIFont` / `UIFontBold` | | | | | ⚠️ | [GAP-004](FRAMEWORK_GAPS.md#gap-004-themeuifont-honours-only-the-typefaces-family-name) |
 | `PrivateFontCollection.AddMemoryFont (byte[])` | | | | | ✅ | |
+| `Application.SetDefaultFont`, `WindowBase.Style.Font` | | | | | ⚠️ | [GAP-011](FRAMEWORK_GAPS.md#gap-011-applicationsetdefaultfont-does-not-reach-drawing) |
 | `MF_FORCE_CUSTOM_CHROME` | | | | | ✅ | [GAP-003](FRAMEWORK_GAPS.md#gap-003-headless-renders-depend-on-the-host-os) |
 | Custom `Control` (`BookPageView`): `OnPaint` canvas in logical units, `IsInputKey`, `OnKeyDown`, `OnMouseDown/Up`, `OnMouseWheel`, `Focus`, `AccessibleRole/Description` | — | — | — | — | ✅ | |
 | `Control.OnSwipe` | — | — | — | — | — (cannot inject) | [GAP-006](FRAMEWORK_GAPS.md#gap-006-headless-cannot-inject-touch-gestures) |

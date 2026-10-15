@@ -21,7 +21,7 @@
 - Tests: Core 48, UI 12 (the plan's acceptance flow: open, ten page turns, theme switch and two resizes
   with the position checked by CFI each time; tap zones; drag and wheel; contents; typography; reopen
   at the saved place; library search, picker import and double-click open; four pixel baselines).
-- Framework: GAP-005 to GAP-010, three of them fixed on local Majorsilence.Forms branches.
+- Framework: GAP-005 to GAP-011, four of them fixed on local Majorsilence.Forms branches.
 
 ## Phase 3: Layout engine (2026-10-14)
 
