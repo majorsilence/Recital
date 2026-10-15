@@ -32,6 +32,12 @@ namespace Majorsilence.Recital.Layout
         /// <summary>Whether a book's own embedded fonts (<c>@font-face</c>) are used.</summary>
         public bool PublisherFonts { get; init; } = true;
 
+        /// <summary>
+        /// Whether the reader's theme is dark: the book's <c>@media (prefers-color-scheme: dark)</c> rules
+        /// apply (Standard Ebooks inverts its black-on-transparent title pages there, for example).
+        /// </summary>
+        public bool DarkMode { get; init; }
+
         public int Widows { get; init; } = 2;
         public int Orphans { get; init; } = 2;
 
@@ -42,7 +48,7 @@ namespace Majorsilence.Recital.Layout
         public float Scale => FontSize / 16f;
 
         /// <summary>The settings that affect styling and line shaping (everything except page geometry).</summary>
-        internal (float FontSize, float? LineHeight, string? FontFamily, bool? Justify, bool PublisherFonts) TypographyKey
-            => (FontSize, LineHeight, FontFamily, Justify, PublisherFonts);
+        internal (float FontSize, float? LineHeight, string? FontFamily, bool? Justify, bool PublisherFonts, bool DarkMode) TypographyKey
+            => (FontSize, LineHeight, FontFamily, Justify, PublisherFonts, DarkMode);
     }
 }

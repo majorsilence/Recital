@@ -1,9 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Domain model, library service, sync engine, settings. No UI, no platform APIs. -->
+  <!-- Domain model, library service, reading session, sync state, settings. No UI, no platform APIs. -->
 
   <PropertyGroup>
     <TargetFramework>$(_TargetFramework)</TargetFramework>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Majorsilence.Recital.Storage\Majorsilence.Recital.Storage.csproj" />
+    <ProjectReference Include="..\Majorsilence.Recital.Epub\Majorsilence.Recital.Epub.csproj" />
+    <ProjectReference Include="..\Majorsilence.Recital.Layout\Majorsilence.Recital.Layout.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" />
+  </ItemGroup>
 
 </Project>

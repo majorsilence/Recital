@@ -70,6 +70,9 @@ namespace Majorsilence.Recital.Epub
 
         public bool Exists (string path) => Find (path) is not null;
 
+        /// <summary>The uncompressed size of a file, or null when there is none.</summary>
+        public long? Length (string path) => Find (path) is { } actual ? exact[actual].Length : null;
+
         public async Task<byte[]> ReadAsync (string path, CancellationToken ct)
         {
             var actual = Find (path) ?? throw new FileNotFoundException ($"The book has no file '{path}'.", path);

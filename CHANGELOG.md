@@ -1,5 +1,28 @@
 # Changelog
 
+## Phase 4: Reader UI, local only (2026-10-14)
+
+- `Majorsilence.Recital.Storage`: `IStorageProvider` (plan 2.4) with `InMemory` and `LocalFolder`
+  providers (atomic temp-file writes, ETags, a change feed or a polled listing).
+- `Majorsilence.Recital.Core`:
+  - Hybrid logical clocks and the sync-folder files (docs/SYNC_FORMAT.md).
+  - `LibraryService`: content-addressed import (duplicates found by hash), DRM and non-EPUB refusal,
+    cover thumbnails, per-device progress and settings files with HLC merges.
+  - Library search and sort; reader preferences and the four themes.
+  - `ReadingSession`: page turns across chapters, contents navigation, and a CFI-anchored position that
+    survives any resize or typography change (D-016).
+- `Majorsilence.Recital.UI`: library (owner-drawn cover grid or details list, search, sort, import from
+  the file picker or by drag and drop), `BookPageView` (tap zones, drag, swipe, wheel, keys), the reader
+  (contents tree, typography panel, theme menu, status bar), phone and wide layouts, and themes (D-017).
+  Progress is saved locally in the sync-folder format under app data.
+- Layout: dark themes apply the book's `prefers-color-scheme: dark` rules, images honour
+  `filter: invert()`, and CSS properties AngleSharp.Css has no model for are kept for the cascade.
+- Epub: character offsets into a chapter (the locator fallback) and resource sizes.
+- Tests: Core 48, UI 12 (the plan's acceptance flow: open, ten page turns, theme switch and two resizes
+  with the position checked by CFI each time; tap zones; drag and wheel; contents; typography; reopen
+  at the saved place; library search, picker import and double-click open; four pixel baselines).
+- Framework: GAP-005 to GAP-010, three of them fixed on local Majorsilence.Forms branches.
+
 ## Phase 3: Layout engine (2026-10-14)
 
 - `Majorsilence.Recital.Layout`: XHTML + CSS → styled box tree → shaped lines → pages, deterministic on every OS (D-011).

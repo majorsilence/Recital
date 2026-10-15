@@ -8,7 +8,7 @@ person reading.
 Recital is also a deliberate workout for Majorsilence.Forms: every framework rough edge it hits is
 logged in [docs/FRAMEWORK_GAPS.md](docs/FRAMEWORK_GAPS.md).
 
-Status: Phase 3 (layout engine) done; next is Phase 4 (the reader UI). See [docs/PLAN.md](docs/PLAN.md) and [CHANGELOG.md](CHANGELOG.md).
+Status: Phase 4 (reader UI, local only) built and tested on Headless; its manual desktop check on Windows, macOS and Linux is still to do. Next is Phase 5 (sync engine). See [docs/PLAN.md](docs/PLAN.md) and [CHANGELOG.md](CHANGELOG.md).
 
 ## Build
 

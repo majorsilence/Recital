@@ -219,10 +219,13 @@ namespace Majorsilence.Recital.Layout
 
         public IElement Element { get; }
 
+        /// <summary>Drawn with its colours inverted (CSS <c>filter: invert()</c>).</summary>
+        public bool Invert { get; internal set; }
+
         public override DomPosition? StartPosition => new DomPosition (Element, 0);
         public override DomPosition? EndPosition => new DomPosition (Element, 0);
 
-        internal override PageItem Clone () => new ImageItem (Path, Element) { X = X, Y = Y, Width = Width, Height = Height };
+        internal override PageItem Clone () => new ImageItem (Path, Element) { X = X, Y = Y, Width = Width, Height = Height, Invert = Invert };
     }
 
     /// <summary>A horizontal rule: a block's top or bottom border (an <c>&lt;hr/&gt;</c>, a scene break).</summary>

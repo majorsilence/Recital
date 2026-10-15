@@ -9,6 +9,14 @@ namespace Majorsilence.Recital.Layout
     /// </summary>
     public static class PageRenderer
     {
+        // RGB to 1 - RGB, alpha kept: CSS filter: invert(100%).
+        private static readonly SKColorFilter Invert = SKColorFilter.CreateColorMatrix ([
+            -1, 0, 0, 0, 1,
+            0, -1, 0, 0, 1,
+            0, 0, -1, 0, 1,
+            0, 0, 0, 1, 0,
+        ]);
+
         /// <param name="canvas">Target, in CSS px (scale it for device pixels).</param>
         /// <param name="page">The page to draw.</param>
         /// <param name="settings">Supplies the page size and margins.</param>
@@ -17,7 +25,8 @@ namespace Majorsilence.Recital.Layout
         /// <param name="foreground">Replaces the book's text colours when set (reader themes).</param>
         public static void Draw (SKCanvas canvas, LayoutPage page, LayoutSettings settings, Func<string, SKImage?>? images = null, SKColor? background = null, SKColor? foreground = null)
         {
-            canvas.Clear (background ?? SKColors.White);
+            using (var fill = new SKPaint { Color = background ?? SKColors.White })
+                canvas.DrawRect (0, 0, settings.PageWidth, settings.PageHeight, fill);
             canvas.Save ();
             canvas.Translate (settings.MarginLeft, settings.MarginTop);
 
@@ -37,7 +46,8 @@ namespace Majorsilence.Recital.Layout
                     case ImageItem image:
                         var rect = SKRect.Create (image.X, image.Y, image.Width, image.Height);
                         if (images?.Invoke (image.Path) is { } bitmap) {
-                            canvas.DrawImage (bitmap, rect, new SKSamplingOptions (SKFilterMode.Linear, SKMipmapMode.Linear));
+                            using var imagePaint = image.Invert ? new SKPaint { ColorFilter = Invert } : null;
+                            canvas.DrawImage (bitmap, rect, new SKSamplingOptions (SKFilterMode.Linear, SKMipmapMode.Linear), imagePaint);
                         } else {
                             paint.Color = new SKColor (0xFFDDDDDD);
                             canvas.DrawRect (rect, paint);

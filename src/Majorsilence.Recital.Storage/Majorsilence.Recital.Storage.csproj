@@ -1,13 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- IStorageProvider abstraction + InMemory and LocalFolder providers. -->
+  <!-- IStorageProvider abstraction + InMemory and LocalFolder providers. No dependencies: Core builds on
+       this (D-015). -->
 
   <PropertyGroup>
     <TargetFramework>$(_TargetFramework)</TargetFramework>
   </PropertyGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Majorsilence.Recital.Core\Majorsilence.Recital.Core.csproj" />
-  </ItemGroup>
 
 </Project>

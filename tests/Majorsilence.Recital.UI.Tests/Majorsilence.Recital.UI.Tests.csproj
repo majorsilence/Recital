@@ -24,6 +24,8 @@
 
   <ItemGroup>
     <None Include="Baselines\**\*.png" CopyToOutputDirectory="PreserveNewest" LinkBase="Baselines" />
+    <None Include="..\corpus\*.epub" LinkBase="corpus" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

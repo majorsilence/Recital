@@ -123,6 +123,9 @@ namespace Majorsilence.Recital.Epub
 
         public bool Exists (string path) => archive.Exists (path);
 
+        /// <summary>The uncompressed size of a resource in bytes, or null when the book has no such file.</summary>
+        public long? GetResourceSize (string path) => archive.Length (path);
+
         /// <summary>Parses the content document of one spine item.</summary>
         public async Task<ContentDocument> LoadContentDocumentAsync (int spineIndex, CancellationToken ct = default)
         {

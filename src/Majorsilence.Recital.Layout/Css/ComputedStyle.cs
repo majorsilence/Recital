@@ -94,6 +94,9 @@ namespace Majorsilence.Recital.Layout.Css
         public BreakRule BreakAfter { get; set; }
         public BreakRule BreakInside { get; set; }
 
+        /// <summary><c>filter: invert(...)</c> of at least 50%: the image is drawn with its colours inverted.</summary>
+        public bool InvertImage { get; set; }
+
         public bool IsBlockLevel => Display is Display.Block or Display.ListItem or Display.Table or Display.TableRowGroup or Display.TableRow or Display.TableCell;
 
         /// <summary>The used line height in pixels for text set in a face whose normal line height is <paramref name="normalEms"/>.</summary>

@@ -137,5 +137,22 @@ namespace Majorsilence.Recital.Layout.Tests
                 foreach (var line in page.Lines)
                     Assert.Same (page, chapter.PageOf (line.StartPosition!.Value));
         }
+
+        [Fact]
+        public async Task DarkModeAppliesTheBooksColourSchemeRulesToImages ()
+        {
+            const string css = """
+                img { width: 50px }
+                @media all and (prefers-color-scheme: dark) { img.ink { filter: invert(100%) } }
+                """;
+            var epub = TestEpub.Epub3 ().With ("OEBPS/images/ink.png", LayoutKit.Png (50, 40));
+            const string body = "<p><img class=\"ink\" src=\"../images/ink.png\" alt=\"\"/></p>";
+
+            var light = await LayoutKit.Layout (body, css, Settings, epub);
+            var dark = await LayoutKit.Layout (body, css, Settings with { DarkMode = true }, epub);
+
+            Assert.False (light.Pages.SelectMany (p => p.Items.OfType<ImageItem> ()).Single ().Invert);
+            Assert.True (dark.Pages.SelectMany (p => p.Items.OfType<ImageItem> ()).Single ().Invert);
+        }
     }
 }

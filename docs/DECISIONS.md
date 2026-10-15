@@ -161,3 +161,38 @@ and Prejudice* at 768x1024 (275 pages) takes about 1.2 s cold in a fresh process
 0.48 s, shaping and pagination 0.5 s) and about 0.7 s warm. Re-paginating it at a new size takes
 45–90 ms. The timing test lays out Gutenberg's *Pride and Prejudice* (438 pages at the test's tablet
 settings) in about 0.55 s and fails above 2 s.
+
+## D-015: Core builds on Storage, Epub and Layout (2026-10-14)
+
+Plan 1.1 puts the library service in Core and `IStorageProvider` in Storage. Phase 1 had Storage
+referencing Core, which made the library service unable to use a provider. The reference now runs the
+other way: Storage has no dependencies, and Core references Storage, Epub and Layout. Core also holds
+the reading session (paging, CFI anchoring, percentages), which is business logic and so stays out of
+the UI project (plan 0.3); the UI only turns input into calls on it and draws its pages.
+
+## D-016: The reading position is an anchor, not a page number (2026-10-14)
+
+`ReadingSession` keeps a DOM position (the start of the page the reader turned to, or the exact
+saved position) and only moves it when the reader navigates. Re-paginating for a new window size, font
+size or theme lands on the page containing the anchor without moving it, so resizing back and forth
+never drifts forward a page at a time, and the saved CFI is the one the reader last navigated to. The
+saved locator also carries the spine index and the character offset into the chapter body, used when
+the CFI no longer resolves (plan 1.4). Percentages weight each linear spine item by its byte size.
+
+## D-017: Reader UI structure and theming (2026-10-14)
+
+- One `MainForm` on every host, showing either `LibraryView` or `ReaderView`. Asynchronous work from
+  event handlers goes through `UiOperations`, which reports failures in a banner instead of crashing an
+  `async void`, and which tests wait on.
+- Below 640 logical px the reader uses a phone layout: the toolbar and status bar are hidden until the
+  middle of the page is tapped, and then cover the page instead of shrinking it, so showing them never
+  re-paginates. The side panel (contents, typography) overlays the page. Wider windows show the side
+  panel in a `SplitContainer` beside the page.
+- Themes (light, sepia, dark, black) set `BackColor`/`ForeColor` on the form and reach containers and
+  labels ambiently (plan 4). Toolbars, inputs, lists and trees are not ambient, as in WinForms, so
+  `ThemePainter` sets theirs. Dark themes are a layout input (`LayoutSettings.DarkMode`) because books
+  style for `prefers-color-scheme`: Standard Ebooks inverts its black-on-transparent title pages there.
+- The typography panel is an in-window panel rather than a modal dialog, so it behaves the same on the
+  phone hosts. Margins grow with the window, and wide windows hold the text to about 36 em.
+- Progress is saved 1.5 s after the last page turn and when the book closes (including on window close,
+  which is held until the write finishes).

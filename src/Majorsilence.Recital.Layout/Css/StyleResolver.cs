@@ -17,7 +17,13 @@ namespace Majorsilence.Recital.Layout.Css
     {
         private readonly System.Collections.Concurrent.ConcurrentDictionary<string, ICssStyleSheet> sheets = new (StringComparer.Ordinal);
 
-        internal ICssStyleSheet Parse (string text) => sheets.GetOrAdd (text, static t => new CssParser ().ParseStyleSheet (t));
+        internal ICssStyleSheet Parse (string text) => sheets.GetOrAdd (text, static t => NewParser ().ParseStyleSheet (t));
+
+        /// <summary>
+        /// A parser that keeps declarations AngleSharp.Css has no model for (<c>filter</c>, say): the cascade
+        /// reads properties by name, and would otherwise never see them.
+        /// </summary>
+        internal static CssParser NewParser () => new (new CssParserOptions { IsIncludingUnknownDeclarations = true });
     }
 
     /// <summary>An <c>@font-face</c> rule with its font file resolved to an archive path.</summary>
@@ -44,7 +50,7 @@ namespace Majorsilence.Recital.Layout.Css
         private readonly Dictionary<string, List<Rule>> by_class = new (StringComparer.Ordinal);
         private readonly Dictionary<string, List<Rule>> by_tag = new (StringComparer.OrdinalIgnoreCase);
         private readonly List<Rule> universal = [];
-        private readonly CssParser parser = new ();
+        private readonly CssParser parser = StyleSheetCache.NewParser ();
 
         public StyleResolver (IEnumerable<StyleSheetSource> authorSheets, LayoutSettings settings, StyleSheetCache? cache = null)
         {
@@ -256,9 +262,28 @@ namespace Majorsilence.Recital.Layout.Css
             font_faces.Add (new FontFaceSource (family, weight, italic, path));
         }
 
+        /// <summary>The amount of the first <c>invert()</c> in a <c>filter</c> value (0 to 1), or 0 when there is none.</summary>
+        private static float InvertAmount (string filter)
+        {
+            var start = filter.IndexOf ("invert(", StringComparison.OrdinalIgnoreCase);
+            if (start < 0)
+                return 0;
+            var end = filter.IndexOf (')', start);
+            if (end < 0)
+                return 0;
+            var argument = filter[(start + 7)..end].Trim ();
+            if (argument.Length == 0)
+                return 1;
+            var percent = argument.EndsWith ('%');
+            return float.TryParse (percent ? argument[..^1] : argument, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var amount)
+                ? Math.Clamp (percent ? amount / 100 : amount, 0, 1)
+                : 0;
+        }
+
         /// <summary>
         /// Media queries: a query matches if its media type is all/screen (or absent) and every feature it
-        /// tests is one this engine can answer and does: width against the page, a light colour scheme,
+        /// tests is one this engine can answer and does: width against the page, the colour scheme of the
+        /// reader's theme (<see cref="LayoutSettings.DarkMode"/>),
         /// colour, a portrait or landscape page. Anything unknown (amzn-kf8, print, ...) does not match.
         /// </summary>
         private bool MediaMatches (string condition)
@@ -301,7 +326,7 @@ namespace Majorsilence.Recital.Layout.Css
                 "min-height" => Px () is { } minH && settings.PageHeight >= minH,
                 "max-height" => Px () is { } maxH && settings.PageHeight <= maxH,
                 "orientation" => value == (settings.PageHeight >= settings.PageWidth ? "portrait" : "landscape"),
-                "prefers-color-scheme" => value == "light",
+                "prefers-color-scheme" => value is null || value == (settings.DarkMode ? "dark" : "light"),
                 "color" => true,
                 _ => false,
             };
@@ -493,6 +518,9 @@ namespace Majorsilence.Recital.Layout.Css
                 style.Widows = wn;
             if (Get ("orphans") is { } orphans && CssValues.Integer (orphans) is { } on && on > 0)
                 style.Orphans = on;
+            if (Get ("filter") is { } filter)
+                style.InvertImage = InvertAmount (filter) >= 0.5f;
+
             if (Get ("visibility") is { } visibility)
                 style.Hidden = visibility.Equals ("hidden", StringComparison.OrdinalIgnoreCase) || visibility.Equals ("collapse", StringComparison.OrdinalIgnoreCase);
 

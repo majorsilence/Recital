@@ -122,6 +122,6 @@ namespace Majorsilence.Recital.Layout
         /// <summary>Releases the engine's own resources; the book and its fonts stay open.</summary>
         public void Dispose () => book_fonts_gate.Dispose ();
 
-        private readonly record struct StyleKey (int SpineIndex, (float, float?, string?, bool?, bool) Typography, float PageWidth, float PageHeight);
+        private readonly record struct StyleKey (int SpineIndex, (float, float?, string?, bool?, bool, bool) Typography, float PageWidth, float PageHeight);
     }
 }

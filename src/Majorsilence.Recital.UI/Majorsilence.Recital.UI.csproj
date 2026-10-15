@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!-- All Majorsilence.Forms forms and custom controls. Backend-agnostic: no host package here, the
-       hosts under hosts/ pick the backend. -->
+       hosts under hosts/ pick the backend. No business logic: that is in Core. -->
 
   <PropertyGroup>
     <TargetFramework>$(_TargetFramework)</TargetFramework>

@@ -207,7 +207,7 @@ namespace Majorsilence.Recital.Layout
             flow.Add (new FlowItem {
                 Kind = FlowKind.Content,
                 Height = h,
-                Items = [new ImageItem (image.Path, image.Element!) { X = x + left, Width = w, Height = h }],
+                Items = [new ImageItem (image.Path, image.Element!) { X = x + left, Width = w, Height = h, Invert = image.Style.InvertImage }],
             });
 
             pending_margin = Collapse (pending_margin, style.MarginBottom.Resolve (width));

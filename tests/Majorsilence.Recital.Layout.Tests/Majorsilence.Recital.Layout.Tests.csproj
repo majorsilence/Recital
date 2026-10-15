@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <None Include="..\corpus\*.epub" LinkBase="corpus" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Snapshots\**\*.json" CopyToOutputDirectory="PreserveNewest" LinkBase="Snapshots" />
     <!-- The EPUB tests' in-memory book builder. -->
     <Compile Include="..\Majorsilence.Recital.Epub.Tests\TestEpub.cs" Link="TestEpub.cs" />

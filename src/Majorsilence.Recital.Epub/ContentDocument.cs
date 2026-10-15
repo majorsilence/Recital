@@ -119,6 +119,58 @@ namespace Majorsilence.Recital.Epub
             return new DomPosition (current, 0);
         }
 
+        /// <summary>
+        /// The number of text characters in the body before a position: the <c>charOffsetInChapter</c> of
+        /// the fallback locator, used when a CFI no longer resolves. A position on an element counts the
+        /// text before the element.
+        /// </summary>
+        public int GetCharOffset (DomPosition position)
+        {
+            var count = 0;
+            foreach (var node in TextOrder ()) {
+                if (node == position.Node)
+                    return count + (node is IText text ? Math.Clamp (position.Offset, 0, text.Length) : 0);
+                if (node is IText t)
+                    count += t.Length;
+            }
+            return count;
+        }
+
+        /// <summary>The position <paramref name="offset"/> text characters into the body, clamped to its text.</summary>
+        public DomPosition? PositionAtCharOffset (int offset)
+        {
+            IText? last = null;
+            foreach (var node in TextOrder ()) {
+                if (node is not IText text || text.Length == 0)
+                    continue;
+                if (offset < text.Length)
+                    return new DomPosition (text, Math.Max (0, offset));
+                offset -= text.Length;
+                last = text;
+            }
+            return last is null ? null : new DomPosition (last, last.Length);
+        }
+
+        /// <summary>The number of text characters in the body.</summary>
+        public int TextLength => text_length ??= TextOrder ().OfType<IText> ().Sum (t => t.Length);
+
+        private int? text_length;
+
+        // Elements and text nodes of the body (or the whole document without one) in document order.
+        private IEnumerable<INode> TextOrder ()
+        {
+            var start = (INode?)Document.Body ?? Root;
+            var stack = new Stack<INode> ();
+            stack.Push (start);
+            while (stack.Count > 0) {
+                var node = stack.Pop ();
+                yield return node;
+                for (var i = node.ChildNodes.Length - 1; i >= 0; i--)
+                    if (node.ChildNodes[i] is IElement or IText)
+                        stack.Push (node.ChildNodes[i]);
+            }
+        }
+
         /// <summary>The element a <c>#fragment</c> names, if any.</summary>
         public IElement? FindFragment (string fragment) => Document.GetElementById (fragment);
 
