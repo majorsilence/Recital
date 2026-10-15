@@ -26,7 +26,21 @@ namespace Majorsilence.Recital.UI.Tests
             HeadlessRenderer.Use ();
             Theme.UIFont = fonts.Value.Regular;
             Theme.UIFontBold = fonts.Value.Bold;
+
+            // FRAMEWORK-GAP: GAP-003. Controls that draw with Control.Font (the tree view, owner-drawn
+            // list tiles) default to SystemFonts.DefaultFont, which is whatever sans-serif the machine
+            // has, not the Theme.UIFont above. Pin the default to the same embedded Noto Sans.
+            if (!default_font_set) {
+                Application.SetDefaultFont (new Majorsilence.Forms.Drawing.Font ("Noto Sans", SystemFonts.DefaultFont.Size));
+                default_font_set = true;
+            }
+
+            // Formatting follows the culture ("2%" here, "2 %" on a runner set to the invariant culture).
+            System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo ("en-US");
+            System.Globalization.CultureInfo.CurrentUICulture = System.Globalization.CultureInfo.GetCultureInfo ("en-US");
         }
+
+        private static bool default_font_set;
 
         private static (SKTypeface, SKTypeface) LoadFonts ()
         {

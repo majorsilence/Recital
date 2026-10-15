@@ -77,6 +77,10 @@ should cover, not a bug).
 - **Proposed fix:** a `HeadlessRenderer.UseDeterministic ()` (or an option on `Use`) that forces custom
   chrome and the embedded fonts, plus a public accessor for the bundled typefaces.
 
+- **Phase 4 addition:** controls that draw with `Control.Font` (the tree view, owner-drawn list tiles)
+  use `SystemFonts.DefaultFont`, which also resolves to the machine's own sans-serif; `HeadlessTestEnvironment`
+  pins it to the embedded Noto Sans with `Application.SetDefaultFont`, and pins the culture to en-US.
+
 ## GAP-004: `Theme.UIFont` honours only the typeface's family name
 
 - **Found:** Phase 1, reviewing CI renders after the GAP-003 workaround.
