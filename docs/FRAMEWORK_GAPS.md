@@ -10,17 +10,17 @@ should cover, not a bug).
 
 | ID | Area | Backends | Severity | Status |
 |---|---|---|---|---|
-| GAP-001 | Packaging: no `net10.0-ios` asset in `Majorsilence.Forms.Avalonia` | Avalonia iOS | blocker (iOS) | Fixed by [Forms PR #478](https://github.com/majorsilence/Majorsilence.Forms/pull/478) (merged; ships in 26.11.5, not yet on nuget.org) |
-| GAP-002 | No pixel-diff/baseline helper for Headless renders | Headless | scope | Local helper; fix in [Forms PR #489](https://github.com/majorsilence/Majorsilence.Forms/pull/489) |
-| GAP-003 | Headless renders depend on the host OS (chrome policy, system fonts) | Headless | major (for UI tests) | Local workaround; fix in [Forms PR #488](https://github.com/majorsilence/Majorsilence.Forms/pull/488) |
-| GAP-004 | `Theme.UIFont` honours only the typeface's family name, not the typeface | all | major | Local workaround; fix in [Forms PR #487](https://github.com/majorsilence/Majorsilence.Forms/pull/487) |
-| GAP-005 | File dialogs return paths only; mobile and browser pickers give nothing openable | Avalonia Android, iOS, Browser | blocker (mobile/browser import) | Fix in [Forms PR #484](https://github.com/majorsilence/Majorsilence.Forms/pull/484) |
-| GAP-006 | Headless cannot inject touch gestures (swipe, pinch, long press) | Headless | minor | Fix in [Forms PR #485](https://github.com/majorsilence/Majorsilence.Forms/pull/485) |
-| GAP-007 | No UI `SynchronizationContext` on the Headless backend | Headless | minor | Local workaround (tests); fix in [Forms PR #486](https://github.com/majorsilence/Majorsilence.Forms/pull/486) |
-| GAP-008 | `ToolStripDropDownButton` text wraps: measured with 6px less arrow room than drawn | all | minor | Local workaround; fix in [Forms PR #480](https://github.com/majorsilence/Majorsilence.Forms/pull/480) |
-| GAP-009 | Toolbar item text ignores `ToolStripItem.ForeColor` and `ToolStrip.ForeColor` | all | major (dark themes) | Local workaround; fix in [Forms PR #481](https://github.com/majorsilence/Majorsilence.Forms/pull/481) |
-| GAP-010 | `SplitContainer.Panel1Collapsed` leaves the splitter bar showing | all | minor | Local workaround; fix in [Forms PR #482](https://github.com/majorsilence/Majorsilence.Forms/pull/482) |
-| GAP-011 | `Application.SetDefaultFont` does not change the typeface controls draw with | all | minor | Local workaround (tests); fix in [Forms PR #483](https://github.com/majorsilence/Majorsilence.Forms/pull/483) |
+| GAP-001 | Packaging: no `net10.0-ios` asset in `Majorsilence.Forms.Avalonia` | Avalonia iOS | blocker (iOS) | Fixed in 26.11.5 by [Forms PR #478](https://github.com/majorsilence/Majorsilence.Forms/pull/478); Recital pins 26.11.5 |
+| GAP-002 | No pixel-diff/baseline helper for Headless renders | Headless | scope | Local helper; fix merged in [Forms PR #489](https://github.com/majorsilence/Majorsilence.Forms/pull/489), awaiting a release after 26.11.5 |
+| GAP-003 | Headless renders depend on the host OS (chrome policy, system fonts) | Headless | major (for UI tests) | Local workaround; fix merged in [Forms PR #488](https://github.com/majorsilence/Majorsilence.Forms/pull/488), awaiting a release after 26.11.5 |
+| GAP-004 | `Theme.UIFont` honours only the typeface's family name, not the typeface | all | major | Local workaround; fix merged in [Forms PR #487](https://github.com/majorsilence/Majorsilence.Forms/pull/487), awaiting a release after 26.11.5 |
+| GAP-005 | File dialogs return paths only; mobile and browser pickers give nothing openable | Avalonia Android, iOS, Browser | blocker (mobile/browser import) | Fix merged in [Forms PR #484](https://github.com/majorsilence/Majorsilence.Forms/pull/484), awaiting a release after 26.11.5 |
+| GAP-006 | Headless cannot inject touch gestures (swipe, pinch, long press) | Headless | minor | Fix merged in [Forms PR #485](https://github.com/majorsilence/Majorsilence.Forms/pull/485), awaiting a release after 26.11.5 |
+| GAP-007 | No UI `SynchronizationContext` on the Headless backend | Headless | minor | Local workaround (tests); fix merged in [Forms PR #486](https://github.com/majorsilence/Majorsilence.Forms/pull/486), awaiting a release after 26.11.5 |
+| GAP-008 | `ToolStripDropDownButton` text wraps: measured with 6px less arrow room than drawn | all | minor | Local workaround; fix merged in [Forms PR #480](https://github.com/majorsilence/Majorsilence.Forms/pull/480), awaiting a release after 26.11.5 |
+| GAP-009 | Toolbar item text ignores `ToolStripItem.ForeColor` and `ToolStrip.ForeColor` | all | major (dark themes) | Local workaround; fix merged in [Forms PR #481](https://github.com/majorsilence/Majorsilence.Forms/pull/481), awaiting a release after 26.11.5 |
+| GAP-010 | `SplitContainer.Panel1Collapsed` leaves the splitter bar showing | all | minor | Local workaround; fix merged in [Forms PR #482](https://github.com/majorsilence/Majorsilence.Forms/pull/482), awaiting a release after 26.11.5 |
+| GAP-011 | `Application.SetDefaultFont` does not change the typeface controls draw with | all | minor | Local workaround (tests); fix merged in [Forms PR #483](https://github.com/majorsilence/Majorsilence.Forms/pull/483), awaiting a release after 26.11.5 |
 
 ---
 
@@ -38,7 +38,7 @@ should cover, not a bug).
 - **Repro:**
   `curl -s https://api.nuget.org/v3-flatcontainer/majorsilence.forms.avalonia/26.11.4/majorsilence.forms.avalonia.nuspec | grep targetFramework`
 - **Severity:** blocker for the iOS head (plan phases 4, 8 and 10). Phase 1 only needs it to build.
-- **Workaround:** none. The iOS head builds against the fallback asset and is marked in its csproj.
+- **Workaround:** none was possible. The iOS head built against the fallback asset until Recital moved to 26.11.5.
 - **Fix:** [Majorsilence.Forms PR #478](https://github.com/majorsilence/Majorsilence.Forms/pull/478) (branch `fix/avalonia-ios-package`). It packs `Majorsilence.Forms.Avalonia` in the
   macOS job with both mobile workloads, the way `Majorsilence.Forms.Essentials` already is.
 

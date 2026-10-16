@@ -4,11 +4,11 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Majorsilence.Forms: pinned, never floated (PLAN.md 0.2). Bump all of these together. -->
-    <PackageVersion Include="Majorsilence.Forms" Version="26.11.4" />
-    <PackageVersion Include="Majorsilence.Forms.Avalonia" Version="26.11.4" />
-    <PackageVersion Include="Majorsilence.Forms.Headless" Version="26.11.4" />
+    <PackageVersion Include="Majorsilence.Forms" Version="26.11.5" />
+    <PackageVersion Include="Majorsilence.Forms.Avalonia" Version="26.11.5" />
+    <PackageVersion Include="Majorsilence.Forms.Headless" Version="26.11.5" />
 
-    <!-- Avalonia platform heads. Same versions Majorsilence.Forms.Avalonia 26.11.4 was built against. -->
+    <!-- Avalonia platform heads. Same versions Majorsilence.Forms.Avalonia 26.11.5 was built against. -->
     <PackageVersion Include="Avalonia.Desktop" Version="12.1.1" />
     <PackageVersion Include="Avalonia.Browser" Version="12.1.1" />
     <PackageVersion Include="Avalonia.Android" Version="12.1.1" />

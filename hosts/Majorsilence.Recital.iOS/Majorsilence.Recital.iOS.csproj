@@ -3,10 +3,7 @@
   <!-- iOS head, on the Majorsilence.Forms Avalonia backend.
 
        Only builds for real on macOS with the ios workload and -p:EnableIOSHead=true (CI's macOS job);
-       otherwise it is an empty net10.0 library referenced by nothing.
-
-       FRAMEWORK-GAP: GAP-001. Majorsilence.Forms.Avalonia 26.11.4 on nuget.org has no net10.0-ios
-       asset, so NuGet resolves its plain net10.0 (desktop) asset here. -->
+       otherwise it is an empty net10.0 library referenced by nothing. -->
 
   <PropertyGroup>
     <TargetFramework Condition="'$(EnableIOSHead)' == 'true'">net10.0-ios</TargetFramework>

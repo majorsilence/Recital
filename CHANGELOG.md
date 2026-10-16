@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Majorsilence.Forms pinned at 26.11.5, whose `Majorsilence.Forms.Avalonia` package has the `net10.0-ios`
+  asset: the iOS head now builds against the real iOS backend (GAP-001 closed).
+
 ## Phase 4: Reader UI, local only (2026-10-14)
 
 - `Majorsilence.Recital.Storage`: `IStorageProvider` (plan 2.4) with `InMemory` and `LocalFolder`
