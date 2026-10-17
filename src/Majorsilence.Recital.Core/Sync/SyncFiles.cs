@@ -13,10 +13,10 @@ namespace Majorsilence.Recital.Core.Sync
 
     /// <summary>
     /// <c>state/&lt;bookId&gt;/&lt;deviceId&gt;.json</c>: one device's progress and annotations for one book.
-    /// Annotations arrive in Phase 6; until then they are carried through unchanged, so a newer build's
-    /// annotations survive this build rewriting the file.
+    /// <c>Annotations</c> holds this device's latest version of every annotation it created, changed or
+    /// deleted (tombstones included); the library merges them with every other device's.
     /// </summary>
-    public sealed record BookStateFile (int FormatVersion, string BookId, string DeviceId, ReadingProgress? Progress, IReadOnlyList<JsonElement> Annotations);
+    public sealed record BookStateFile (int FormatVersion, string BookId, string DeviceId, ReadingProgress? Progress, IReadOnlyList<Annotations.Annotation>? Annotations);
 
     /// <summary>A position plus when (by HLC) the device was there.</summary>
     public sealed record ReadingProgress (ReadingLocator Locator, Hlc Hlc, DateTimeOffset UpdatedAt);
@@ -34,6 +34,7 @@ namespace Majorsilence.Recital.Core.Sync
     [JsonSerializable (typeof (DeviceFile))]
     [JsonSerializable (typeof (BookMeta))]
     [JsonSerializable (typeof (BookStateFile))]
+    [JsonSerializable (typeof (Annotations.Annotation))]
     [JsonSerializable (typeof (SettingsFile))]
     [JsonSerializable (typeof (LocalDeviceFile))]
     [JsonSerializable (typeof (SyncOutboxFile))]

@@ -1,5 +1,6 @@
 using System.Text;
 using Majorsilence.Recital.Core;
+using Majorsilence.Recital.Core.Annotations;
 using Majorsilence.Recital.Core.Library;
 using Majorsilence.Recital.Core.Reading;
 using Majorsilence.Recital.Core.Sync;
@@ -71,6 +72,39 @@ namespace Majorsilence.Recital.Sync.Tests
             Assert.Equal (Chapter2, book.Progress?.Locator);
             await using var opened = await phone.Library.OpenBookAsync (book.Id, Ct);
             Assert.Equal ("Test Book", opened.Metadata.Title);
+        }
+
+        [Fact]
+        public async Task ADeletedHighlightStaysDeletedWhenAStaleDeviceReconnects ()
+        {
+            var tabletLink = new SwitchableStorage (home);
+            using var laptop = await DeviceAsync (Laptop);
+            using var tablet = await DeviceAsync ("cccccccccccccccccccccccccccccccc", tabletLink);
+            var id = (await laptop.Library.ImportAsync (new MemoryStream (Book ()), "book.epub", Ct)).Book.Id;
+            var highlight = await laptop.Library.SaveAnnotationAsync (id, new Annotation { Id = Guid.NewGuid (), Cfi = "epubcfi(/6/2!/4/2,/1:0,/1:5)", Text = "First", Color = "yellow" }, Ct);
+            await laptop.Engine.SyncOnceAsync (Ct);
+            await tablet.Engine.SyncOnceAsync (Ct);
+            Assert.Single (await tablet.Library.GetAnnotationsAsync (id, Ct));
+
+            // The tablet goes offline and recolours the highlight; meanwhile the laptop deletes it.
+            tabletLink.Offline = true;
+            now += TimeSpan.FromMinutes (30);
+            await tablet.Library.SaveAnnotationAsync (id, highlight! with { Color = "green" }, Ct);
+            now -= TimeSpan.FromMinutes (20);
+            await laptop.Library.DeleteAnnotationAsync (id, highlight!.Id, Ct);
+            await laptop.Engine.SyncOnceAsync (Ct);
+
+            // Days later the tablet reconnects.
+            now += TimeSpan.FromDays (3);
+            tabletLink.Offline = false;
+            await tablet.Engine.SyncOnceAsync (Ct);
+            await laptop.Engine.SyncOnceAsync (Ct);
+
+            Assert.Empty (await tablet.Library.GetAnnotationsAsync (id, Ct));
+            Assert.Empty (await laptop.Library.GetAnnotationsAsync (id, Ct));
+            using var phone = await DeviceAsync (Phone);
+            await phone.Engine.SyncOnceAsync (Ct);
+            Assert.Empty (await phone.Library.GetAnnotationsAsync (id, Ct));
         }
 
         [Fact]

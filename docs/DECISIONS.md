@@ -270,3 +270,29 @@ version (it failed); time-plus-size ETags (168 of 500 runs failed); an outbox th
 restart (146 of 300); pulling a device's own files (1 of 300). The D-020 fix is not reachable from the
 simulation, which always lists the library (and so observes every HLC) before saving, so a unit test
 covers it. 20,000 seeds passed locally.
+
+## D-022: Annotations: CFI ranges, merged by id, deletion is final (2026-10-17)
+
+- Highlights, notes and bookmarks are `Annotation` records in each device's state file for the book
+  (docs/SYNC_FORMAT.md). A note is a highlight with `note` set, not a separate kind.
+- Anchors are a range CFI (a point for bookmarks), plus spine index and character offset as a fallback.
+  Highlights are drawn by resolving the CFI on the page being shown, so they land on the same words at
+  any page size or typography.
+- **Deletion wins over any edit**, not just over older ones. The plan's requirement is that a deleted
+  highlight stays deleted after a stale device reconnects. A device that was offline and recoloured the
+  highlight after the deletion would otherwise bring it back with a higher HLC. Ids are random GUIDs
+  and never reused, so a final deletion costs nothing. `SaveAnnotationAsync` refuses to edit an
+  annotation it can see is deleted.
+- Tombstones keep only id, kind, times and HLC, so a deleted note's text leaves the sync folder the next
+  time the device writes its file. Tombstones are kept forever (compaction is a later phase).
+- Every save observes the HLCs of all the book's state files first (as D-020 does for progress), so an
+  edit outranks every version the device has seen.
+
+## D-023: Selecting text: hold still, then drag (2026-10-17)
+
+A quick drag (or swipe) still turns the page. Selection starts when the pointer has been held still
+for 350 ms and then moves, or with a long press, which selects the word under the finger. Dragging
+then extends the selection, and lifting shows the highlight bar: five colours, Note…, Copy, plus Delete
+for an existing highlight. Tapping a highlight opens the bar for it. This keeps one gesture set for
+mouse and touch, and the page-turn gestures unchanged. The note editor is an in-window panel, like the
+typography panel, so it behaves the same on phones.

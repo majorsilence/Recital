@@ -8,7 +8,7 @@ Severity: **blocker** (cannot ship the feature), **major** (workaround costs rea
 fidelity), **minor** (cosmetic or cheap to work around), **scope** (a question of what the framework
 should cover, not a bug).
 
-Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps.
+Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps. Phase 6 found GAP-012.
 
 | ID | Area | Backends | Severity | Status |
 |---|---|---|---|---|
@@ -23,6 +23,7 @@ Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps.
 | GAP-009 | Toolbar item text ignores `ToolStripItem.ForeColor` and `ToolStrip.ForeColor` | all | major (dark themes) | Fixed in 26.11.6 by [Forms PR #481](https://github.com/majorsilence/Majorsilence.Forms/pull/481); Recital's workaround removed |
 | GAP-010 | `SplitContainer.Panel1Collapsed` leaves the splitter bar showing | all | minor | Fixed in 26.11.6 by [Forms PR #482](https://github.com/majorsilence/Majorsilence.Forms/pull/482); Recital's workaround removed |
 | GAP-011 | `Application.SetDefaultFont` does not change the typeface controls draw with | all | minor | Fixed in 26.11.6 by [Forms PR #483](https://github.com/majorsilence/Majorsilence.Forms/pull/483); Recital's workaround removed |
+| GAP-012 | `SaveFileDialog` returns a path only; mobile and browser save pickers give nothing writable | Avalonia Android, iOS, Browser | major (export on mobile/browser) | Open; Recital offers Copy as Markdown everywhere and file export on the desktop |
 
 ---
 
@@ -193,3 +194,20 @@ Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps.
 - **Fix:** [Forms PR #483](https://github.com/majorsilence/Majorsilence.Forms/pull/483): `DefaultTypeface`
   returns the override's face when there is one, with a test.
 - **Resolved:** Recital pins 26.11.6; `PinFont` is gone; `UseDeterministic` sets the default font.
+
+## GAP-012: `SaveFileDialog` returns a path only
+
+- **Found:** Phase 6, exporting highlights and notes to Markdown, framework 26.11.6.
+- **Expected:** a way to write the file the user chose on every backend, as GAP-005's `PickedFile` now
+  gives for opening. On Android (content URIs), iOS (security-scoped URLs) and the browser (a download
+  or a File System Access handle) a writable stream from the picker is the only thing that works.
+- **Actual:** `IWindowBackend.ShowSaveFileDialog` returns `string?`; `SaveFileDialog.OpenFile ()` is
+  `File.Create (FileName)`. Avalonia's save picker returns an `IStorageFile` with `OpenWriteAsync`, which
+  the backend reduces to a local path.
+- **Severity:** major for exporting on phones and in the browser; none on desktop.
+- **Workaround:** the Notes panel shows Export… (save as a file) only on the desktop, and Copy all
+  (Markdown to the clipboard) everywhere. Marked `FRAMEWORK-GAP: GAP-012` in `ReaderView`.
+- **Proposed fix:** mirror GAP-005: an optional `IPickedSaveFileBackend` returning a `PickedSaveFile`
+  (name, path when there is one, `OpenWriteAsync`), `SaveFileDialog.SelectedFile` and `SaveFileAsync`,
+  and a Headless `SaveFilePickResponse`.
+

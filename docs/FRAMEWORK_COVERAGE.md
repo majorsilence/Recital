@@ -34,6 +34,11 @@ heads, **Headless** = offscreen Skia (UI tests).
 | `FlowLayoutPanel` (TopDown, no wrap), `ComboBox` (DropDownList), `NumericUpDown`, `CheckBox` | — | — | — | — | ✅ | |
 | `OpenFileDialog.ShowDialogAsync` (Multiselect, Filter), `SelectedFiles`, `PickedFile.OpenReadAsync` | — | — | — | — | ✅ | [GAP-005](FRAMEWORK_GAPS.md#gap-005-file-dialogs-return-paths-only) (fixed) |
 | `FolderBrowserDialog.ShowDialogAsync` (`Description`, `ShowNewFolderButton`, `SelectedPath`) | — | | | | ✅ | |
+| `Control.OnMouseMove` (drag selection), `OnLongPress` | — | — | — | — | ✅ | |
+| `SaveFileDialog.ShowDialogAsync` (`Filter`, `DefaultExt`, `FileName`) | — | | | | ✅ (Headless `SaveFileResponse`) | [GAP-012](FRAMEWORK_GAPS.md#gap-012-savefiledialog-returns-a-path-only) |
+| `Clipboard.SetTextAsync` | — | — | — | — | — (called, not checked) | |
+| `TextBox` (`Multiline`, `AcceptsReturn`, `WordWrap`, `PlaceholderText`), `Button` | — | — | — | — | ✅ | |
+| `TreeNode.ToolTipText`, `TreeView.ContextMenuStrip` | — | — | — | — | — (built, not opened in a test) | |
 | Drag-and-drop file import (`AllowDrop`, `DragEnter`, `DragDrop`, `DataFormats.FileDrop`) | — | — | — | — | — | |
 | `Majorsilence.Forms.Timer` (progress-save debounce) | — | — | — | — | ✅ (implicitly: saves happen) | |
 | `Graphics` in owner draw: `FillRectangle`, `DrawImage`, `DrawString` with `StringFormat`, `Bitmap (Stream)` | — | — | — | — | ✅ | |
@@ -46,6 +51,11 @@ Phase 5: the sync menu (a right-aligned `ToolStripDropDownButton`), `FolderBrows
 `OpenFolderResponse` drives it in `SyncTests`) and `Control.BeginInvoke` from the sync loop's thread
 are new. The menu is shown only on the desktop, so the folder dialog has no mobile or browser column.
 No new gaps.
+
+Phase 6: selection gestures (`OnMouseMove` after a hold, `OnLongPress`), the floating highlight bar
+(a `ToolStrip` placed over the page), the note editor (multiline `TextBox`), the Notes panel
+(`TreeView`), `SaveFileDialog` for Markdown export and `Clipboard.SetTextAsync`. One new gap: GAP-012,
+saves on phones and in the browser.
 
 Phases 2 and 3 used no Majorsilence.Forms APIs (EPUB parsing and the layout engine are UI-free by design), so this table is unchanged.
 

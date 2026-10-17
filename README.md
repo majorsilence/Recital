@@ -19,9 +19,9 @@ logged in [docs/FRAMEWORK_GAPS.md](docs/FRAMEWORK_GAPS.md).
 Screenshots are Headless renders of Project Gutenberg books from the test corpus;
 `RECITAL_SCREENSHOTS=1 dotnet test tests/Majorsilence.Recital.UI.Tests --filter ScreenshotTests` redraws them.
 
-Status: Phase 5 done. The library and reading positions sync through any shared folder on the desktop
-(Library > Sync > Choose sync folder…). The reader UI's manual desktop check on Windows, macOS and Linux
-is still to do. Next is Phase 6 (annotations). See [docs/PLAN.md](docs/PLAN.md) and [CHANGELOG.md](CHANGELOG.md).
+Status: Phase 6 done. The library, reading positions, highlights, notes and bookmarks sync through any
+shared folder on the desktop (Library > Sync > Choose sync folder…). The reader UI's manual desktop
+check on Windows, macOS and Linux is still to do. Next is Phase 7 (cloud providers). See [docs/PLAN.md](docs/PLAN.md) and [CHANGELOG.md](CHANGELOG.md).
 
 ## Build
 

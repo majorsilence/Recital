@@ -87,6 +87,50 @@ namespace Majorsilence.Recital.Layout
 
         public IEnumerable<TextLine> Lines => Items.OfType<TextLine> ();
 
+        /// <summary>
+        /// The line nearest a point (content-box coordinates): the one the point is in, else the closest
+        /// above or below it. Null for a page with no text.
+        /// </summary>
+        public TextLine? LineAt (float x, float y)
+        {
+            TextLine? best = null;
+            var bestDistance = float.MaxValue;
+            foreach (var line in Lines) {
+                var dy = y < line.Y ? line.Y - y : y > line.Y + line.Height ? y - (line.Y + line.Height) : 0;
+                var dx = x < line.X ? line.X - x : x > line.X + line.Width ? x - (line.X + line.Width) : 0;
+                // Vertical distance decides; horizontal only breaks ties (side-by-side table cells).
+                var distance = dy * 1000 + dx;
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    best = line;
+                }
+            }
+            return best;
+        }
+
+        /// <summary>The text position nearest a point (content-box coordinates), or null for a page with no text.</summary>
+        public DomPosition? HitTest (float x, float y)
+            => LineAt (x, y) is { } line ? line.HitTest (x - line.X) : null;
+
+        /// <summary>The word under a point (content-box coordinates): its start and end positions.</summary>
+        public (DomPosition Start, DomPosition End)? WordAt (float x, float y)
+            => LineAt (x, y) is { } line ? line.WordAt (x - line.X) : null;
+
+        /// <summary>
+        /// Rectangles (content-box coordinates, one per line) covering the text on this page from
+        /// <paramref name="start"/> up to <paramref name="end"/>: a highlight's or selection's shape.
+        /// </summary>
+        public IReadOnlyList<PageRect> TextRects (DomPosition start, DomPosition end)
+        {
+            var rects = new List<PageRect> ();
+            if (DomOrder.Compare (start, end) >= 0)
+                return rects;
+            foreach (var line in Lines)
+                if (line.Extent (start, end) is var (left, right) && right > left)
+                    rects.Add (new PageRect (line.X + left, line.Y, right - left, line.Height));
+            return rects;
+        }
+
         public override string ToString () => $"Page {Index}: {Items.Count} items";
     }
 
@@ -146,6 +190,98 @@ namespace Majorsilence.Recital.Layout
         /// <summary>The DOM position under <paramref name="x"/> (line coordinates): the nearer edge of the character there.</summary>
         public DomPosition? HitTest (float x)
         {
+            var best = IndexAt (x);
+            return best >= EndIndex ? EndPosition : paragraph.PositionAt (best);
+        }
+
+        /// <summary>The word under <paramref name="x"/> (line coordinates), or the character there when it is not part of a word.</summary>
+        public (DomPosition Start, DomPosition End)? WordAt (float x)
+        {
+            var text = paragraph.Text;
+            if (text.Length == 0)
+                return null;
+            var index = Math.Clamp (IndexAt (x), StartIndex, Math.Max (StartIndex, EndIndex - 1));
+            // The nearer edge may be just past the word: step back onto it.
+            if (index > StartIndex && !IsWordChar (text[index]) && IsWordChar (text[index - 1]))
+                index--;
+
+            var start = index;
+            var end = index + 1;
+            if (IsWordChar (text[index])) {
+                while (start > 0 && IsWordChar (text[start - 1]))
+                    start--;
+                while (end < text.Length && IsWordChar (text[end]))
+                    end++;
+                // An apostrophe ends a word only when no letter follows (the reader's, not reader's').
+                while (end > start + 1 && text[end - 1] is '\'' or '’')
+                    end--;
+            }
+            return paragraph.PositionAt (start) is { } s && paragraph.PositionAfter (end) is { } e ? (s, e) : null;
+        }
+
+        private static bool IsWordChar (char c) => char.IsLetterOrDigit (c) || c is '\'' or '’' or '-' || char.GetUnicodeCategory (c) == System.Globalization.UnicodeCategory.NonSpacingMark;
+
+        /// <summary>
+        /// The horizontal extent (line coordinates) of the characters on this line whose positions lie in
+        /// [<paramref name="start"/>, <paramref name="end"/>), or null when there are none.
+        /// </summary>
+        public (float Left, float Right)? Extent (DomPosition start, DomPosition end)
+        {
+            if (StartPosition is not { } lineStart || EndPosition is not { } lineEnd)
+                return null;
+            if (DomOrder.Compare (lineEnd, start) <= 0 || DomOrder.Compare (lineStart, end) >= 0)
+                return null;
+
+            // Characters of the paragraph text in range; only the lines at the range's ends need the per-character test.
+            var first = StartIndex;
+            var last = EndIndex;
+            if (DomOrder.Compare (lineStart, start) < 0) {
+                while (first < EndIndex && paragraph.PositionAt (first) is { } p && DomOrder.Compare (p, start) < 0)
+                    first++;
+            }
+            if (DomOrder.Compare (lineEnd, end) > 0) {
+                last = first;
+                while (last < EndIndex && paragraph.PositionAt (last) is { } p && DomOrder.Compare (p, end) < 0)
+                    last++;
+            }
+            if (last <= first)
+                return null;
+
+            float? left = null, right = null;
+            foreach (var run in Runs) {
+                for (var i = 0; i < run.Glyphs.Length; i++) {
+                    var cluster = run.Clusters[i];
+                    if (cluster < 0)
+                        continue;
+                    var nextCluster = NextCluster (run, i);
+                    // A glyph covers the characters from its cluster to the next glyph's (a ligature covers several).
+                    if (nextCluster <= first || cluster >= last)
+                        continue;
+                    var glyphLeft = run.X[i];
+                    var glyphRight = i + 1 < run.Glyphs.Length ? run.X[i + 1] : run.EndX;
+                    left = left is null ? glyphLeft : Math.Min (left.Value, glyphLeft);
+                    right = right is null ? glyphRight : Math.Max (right.Value, glyphRight);
+                }
+            }
+            return left is null ? null : (left.Value, right!.Value);
+        }
+
+        private int NextCluster (GlyphRun run, int i)
+        {
+            for (var k = i + 1; k < run.Glyphs.Length; k++)
+                if (run.Clusters[k] > run.Clusters[i])
+                    return run.Clusters[k];
+            // The run's last glyph: up to the next run's first character, or the line's end.
+            var after = EndIndex;
+            foreach (var other in Runs)
+                foreach (var c in other.Clusters)
+                    if (c > run.Clusters[i] && c < after)
+                        after = c;
+            return after;
+        }
+
+        internal int IndexAt (float x)
+        {
             var best = StartIndex;
             var bestDistance = float.MaxValue;
 
@@ -171,13 +307,16 @@ namespace Majorsilence.Recital.Layout
                 }
             }
 
-            return best >= EndIndex ? EndPosition : paragraph.PositionAt (best);
+            return best;
         }
 
         internal override PageItem Clone () => new TextLine (paragraph, StartIndex, EndIndex, Runs, Baseline) {
             X = X, Y = Y, Width = Width, Height = Height, LineIndex = LineIndex, LineCount = LineCount,
         };
     }
+
+    /// <summary>A rectangle in a page's content box, in CSS px.</summary>
+    public readonly record struct PageRect (float X, float Y, float Width, float Height);
 
     /// <summary>Glyphs in one face, size and colour; positions are relative to the line's X.</summary>
     public sealed class GlyphRun

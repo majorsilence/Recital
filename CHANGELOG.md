@@ -1,5 +1,21 @@
 # Changelog
 
+## Phase 6: Annotations (2026-10-17)
+
+- Highlights in five colours, notes on highlights, and bookmarks, anchored by CFI and synced per device
+  with tombstones. A deletion is final, even against a stale device's later edit (D-022).
+- Reader: hold then drag (or long-press) to select; a highlight bar to colour, note, copy or delete;
+  tapping a highlight to change it; a Bookmark toolbar button with a ribbon on bookmarked pages; a
+  Notes panel grouped by chapter. Export to Markdown as a file on the desktop, or Copy all anywhere
+  (GAP-012). Highlights and notes made on another device appear in the open book when they sync.
+- Layout: `LayoutPage.HitTest`, `WordAt`, `TextRects` and `TextLine.Extent`; `PageRenderer` draws marks
+  under the text. Epub: `ContentDocument.GetText` for a range.
+- Tests: highlights keep their words at another page size (10%, 50% and 90% into three books);
+  merge, delete-is-final and Markdown export; the sync simulation now also adds, changes and deletes
+  annotations, including stale edits of deleted ones (a newest-wins merge without delete-wins fails it);
+  a stale device reconnecting after a deletion; UI tests for drag-select, drag-to-turn, long press,
+  notes, delete, bookmarks and export, with a new pixel baseline (`Reader.Annotations`).
+
 ## Phase 5: Sync engine and local sync folder (2026-10-17)
 
 - `SyncEngine` (`Majorsilence.Recital.Core.Sync`): a local copy of the sync home in app data, a

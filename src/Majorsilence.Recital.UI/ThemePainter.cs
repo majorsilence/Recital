@@ -33,7 +33,9 @@ namespace Majorsilence.Recital.UI
                         strip.BackColor = chromeBack;
                         strip.ForeColor = chromeText;
                         foreach (var item in strip.Items.OfType<ToolStripItem> ()) {
-                            item.ForeColor = chromeText;
+                            // The highlight bar's colour swatches keep their own colour.
+                            if (item.Name?.StartsWith ("color-", StringComparison.Ordinal) != true)
+                                item.ForeColor = chromeText;
                             if (item is ToolStripControlHost { Control: { } hosted }) {
                                 hosted.BackColor = inputBack;
                                 hosted.ForeColor = inputText;

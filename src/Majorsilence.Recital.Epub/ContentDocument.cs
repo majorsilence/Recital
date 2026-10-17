@@ -151,6 +151,35 @@ namespace Majorsilence.Recital.Epub
             return last is null ? null : new DomPosition (last, last.Length);
         }
 
+        /// <summary>
+        /// The text between two positions in document order, with runs of whitespace (including block
+        /// boundaries) collapsed to one space: a highlight's excerpt.
+        /// </summary>
+        public string GetText (DomPosition start, DomPosition end)
+        {
+            var text = new System.Text.StringBuilder ();
+            var on = false;
+            foreach (var node in TextOrder ()) {
+                var isStart = !on && node == start.Node;
+                var isEnd = node == end.Node;
+                if (isStart)
+                    on = true;
+                if (!on)
+                    continue;
+
+                if (node is IText t) {
+                    var from = isStart ? Math.Clamp (start.Offset, 0, t.Length) : 0;
+                    var to = isEnd ? Math.Clamp (end.Offset, from, t.Length) : t.Length;
+                    text.Append (t.Data, from, to - from);
+                } else if (node is IElement { LocalName: "br" or "p" or "div" or "li" or "h1" or "h2" or "h3" or "h4" or "h5" or "h6" or "blockquote" or "td" or "tr" }) {
+                    text.Append (' ');
+                }
+                if (isEnd)
+                    break;
+            }
+            return System.Text.RegularExpressions.Regex.Replace (text.ToString (), @"\s+", " ").Trim ();
+        }
+
         /// <summary>The number of text characters in the body.</summary>
         public int TextLength => text_length ??= TextOrder ().OfType<IText> ().Sum (t => t.Length);
 

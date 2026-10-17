@@ -1,4 +1,5 @@
 using System.Text;
+using Majorsilence.Recital.Core.Annotations;
 using Majorsilence.Recital.Core.Library;
 using Majorsilence.Recital.Core.Reading;
 using Majorsilence.Recital.Core.Sync;
@@ -31,6 +32,8 @@ namespace Majorsilence.Recital.Sync.Tests
         private readonly List<Device> devices = [];
         private readonly HashSet<string> imported = new (StringComparer.Ordinal);
         private readonly Dictionary<string, ReadingProgress> newest = new (StringComparer.Ordinal);
+        private readonly Dictionary<Guid, (string Book, Annotation Version)> annotation_versions = [];
+        private readonly HashSet<Guid> deleted = [];
         private readonly StringBuilder log = new ();
         private DateTimeOffset now = new (2026, 10, 17, 12, 0, 0, TimeSpan.Zero);
         private int conflict_counter;
@@ -60,8 +63,10 @@ namespace Majorsilence.Recital.Sync.Tests
                 var roll = random.NextDouble ();
                 if (roll < 0.08)
                     await ImportAsync (device, ct);
-                else if (roll < 0.35)
+                else if (roll < 0.25)
                     await TurnPageAsync (device, ct);
+                else if (roll < 0.35)
+                    await AnnotateAsync (device, ct);
                 else if (roll < 0.47)
                     await ChangePreferenceAsync (device, ct);
                 else if (roll < 0.75)
@@ -124,6 +129,8 @@ namespace Majorsilence.Recital.Sync.Tests
                 var meta = await ReadAsync<BookMeta> (shared, SyncPaths.Meta (id), ct);
                 newest.TryGetValue (id, out var progress);
                 text.AppendLine (Describe (meta!, progress));
+                var live = annotation_versions.Where (v => v.Value.Book == id && !deleted.Contains (v.Key)).Select (v => v.Value.Version);
+                text.Append (Describe (AnnotationMerge.Live (live)));
             }
 
             // Each device's own settings file (in its local copy, the authority) holds its newest value per key.
@@ -141,8 +148,10 @@ namespace Majorsilence.Recital.Sync.Tests
         private static async Task<string> ViewAsync (Device device, CancellationToken ct)
         {
             var text = new StringBuilder ();
-            foreach (var book in (await device.Library.ListAsync (ct)).OrderBy (b => b.Id, StringComparer.Ordinal))
+            foreach (var book in (await device.Library.ListAsync (ct)).OrderBy (b => b.Id, StringComparer.Ordinal)) {
                 text.AppendLine (Describe (book.Meta, book.Progress));
+                text.Append (Describe (await device.Library.GetAnnotationsAsync (book.Id, ct)));
+            }
             text.AppendLine (Describe (await device.Library.LoadPreferencesAsync (ct)));
             return text.ToString ();
         }
@@ -150,6 +159,9 @@ namespace Majorsilence.Recital.Sync.Tests
         private static string Describe (BookMeta meta, ReadingProgress? progress)
             => $"{meta.BookId[..8]} {meta.Title} added {meta.AddedAt:O} by {meta.AddedByDevice?[..6]}: "
                 + (progress is null ? "unread" : $"{progress.Locator.Cfi} {progress.Locator.Percent} at {progress.Hlc}");
+
+        private static string Describe (IEnumerable<Annotation> annotations)
+            => string.Concat (annotations.Select (a => $"  {a.Id.ToString ()[..8]} {a.Kind} {a.Color} \"{a.Note}\" at {a.Hlc}\n"));
 
         private static string Describe (ReaderPreferences preferences)
             => "preferences " + string.Join (" ", preferences.ToValues ().OrderBy (kv => kv.Key, StringComparer.Ordinal).Select (kv => $"{kv.Key}={kv.Value}"));
@@ -175,6 +187,57 @@ namespace Majorsilence.Recital.Sync.Tests
             if (!newest.TryGetValue (book.Id, out var best) || progress.Hlc > best.Hlc)
                 newest[book.Id] = progress;
             Log (device, $"reads {book.Id[..8]} to {locator.Percent} at {progress.Hlc}");
+        }
+
+        /// <summary>Adds a highlight or bookmark, or changes or deletes one this device can see (or, stale, one it saw once).</summary>
+        private async Task AnnotateAsync (Device device, CancellationToken ct)
+        {
+            var books = await device.Library.ListAsync (ct);
+            if (books.Count == 0)
+                return;
+            var book = books[random.Next (books.Count)];
+            var visible = await device.Library.GetAnnotationsAsync (book.Id, ct);
+            var roll = random.NextDouble ();
+
+            if (visible.Count == 0 || roll < 0.4) {
+                var kind = random.Next (4) == 0 ? AnnotationKind.Bookmark : AnnotationKind.Highlight;
+                var offset = random.Next (0, 200);
+                var annotation = new Annotation {
+                    Id = new Guid (BitConverter.GetBytes (random.NextInt64 ()).Concat (BitConverter.GetBytes (random.NextInt64 ())).ToArray ()),
+                    Kind = kind,
+                    Cfi = kind == AnnotationKind.Bookmark ? $"epubcfi(/6/2!/4/2/1:{offset})" : $"epubcfi(/6/2!/4/2,/1:{offset},/1:{offset + 20})",
+                    CharOffset = offset,
+                    Text = "words",
+                    Color = kind == AnnotationKind.Highlight ? HighlightColors.All[random.Next (HighlightColors.All.Count)].Name : null,
+                };
+                Record (book.Id, await device.Library.SaveAnnotationAsync (book.Id, annotation, ct));
+                Log (device, $"adds {kind} {annotation.Id.ToString ()[..8]} to {book.Id[..8]}");
+                return;
+            }
+
+            // Mostly ones it can see; sometimes one it saw earlier and may since have been deleted elsewhere.
+            var known = annotation_versions.Where (v => v.Value.Book == book.Id).Select (v => v.Value.Version).ToList ();
+            var target = roll < 0.85 || known.Count == 0 ? visible[random.Next (visible.Count)] : known[random.Next (known.Count)];
+            if (roll < 0.7) {
+                var changed = random.Next (2) == 0
+                    ? target with { Color = HighlightColors.All[random.Next (HighlightColors.All.Count)].Name }
+                    : target with { Note = "note " + random.Next (1000) };
+                var saved = await device.Library.SaveAnnotationAsync (book.Id, changed, ct);
+                Record (book.Id, saved);
+                Log (device, $"changes {target.Id.ToString ()[..8]}{(saved is null ? " (already deleted)" : "")}");
+            } else {
+                await device.Library.DeleteAnnotationAsync (book.Id, target.Id, ct);
+                deleted.Add (target.Id);
+                Log (device, $"deletes {target.Id.ToString ()[..8]}");
+            }
+        }
+
+        private void Record (string book, Annotation? saved)
+        {
+            if (saved is null)
+                return;
+            if (!annotation_versions.TryGetValue (saved.Id, out var best) || saved.Hlc > best.Version.Hlc)
+                annotation_versions[saved.Id] = (book, saved);
         }
 
         private async Task ChangePreferenceAsync (Device device, CancellationToken ct)

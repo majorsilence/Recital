@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
+using Majorsilence.Recital.Core.Annotations;
 using Majorsilence.Recital.Core.Reading;
 using Majorsilence.Recital.Core.Sync;
 using Majorsilence.Recital.Epub;
@@ -155,17 +156,105 @@ namespace Majorsilence.Recital.Core.Library
         public async Task<ReadingProgress?> GetProgressAsync (string bookId, CancellationToken ct = default)
         {
             ReadingProgress? best = null;
+            foreach (var state in await ReadStatesAsync (bookId, ct).ConfigureAwait (false))
+                if (state.Progress is { } progress && (best is null || progress.Hlc > best.Hlc))
+                    best = progress;
+            return best;
+        }
+
+        /// <summary>
+        /// The book's highlights, notes and bookmarks merged across every device (and conflicted copies), in
+        /// reading order. Deleted ones are left out.
+        /// </summary>
+        public async Task<IReadOnlyList<Annotation>> GetAnnotationsAsync (string bookId, CancellationToken ct = default)
+            => AnnotationMerge.Live ((await MergedAnnotationsAsync (bookId, ct).ConfigureAwait (false)).Values);
+
+        /// <summary>
+        /// Adds or changes an annotation, stamped to outrank every version this device has seen. An
+        /// annotation deleted on any device stays deleted: saving it again changes nothing and returns null.
+        /// </summary>
+        public async Task<Annotation?> SaveAnnotationAsync (string bookId, Annotation annotation, CancellationToken ct = default)
+        {
+            await write_gate.WaitAsync (ct).ConfigureAwait (false);
+            try {
+                var merged = await MergedAnnotationsAsync (bookId, ct).ConfigureAwait (false);
+                merged.TryGetValue (annotation.Id, out var existing);
+                if (existing?.Deleted == true)
+                    return null;
+
+                var now = time.GetUtcNow ();
+                var stamped = annotation with {
+                    Deleted = false,
+                    CreatedAt = existing?.CreatedAt ?? (annotation.CreatedAt == default ? now : annotation.CreatedAt),
+                    UpdatedAt = now,
+                    Hlc = clock.Now (),
+                };
+                await WriteOwnAnnotationAsync (bookId, stamped, ct).ConfigureAwait (false);
+                return stamped;
+            } finally {
+                write_gate.Release ();
+            }
+        }
+
+        /// <summary>
+        /// Deletes an annotation everywhere: writes a tombstone that keeps only its id and kind (a deleted
+        /// note's text does not linger in the sync folder).
+        /// </summary>
+        public async Task DeleteAnnotationAsync (string bookId, Guid id, CancellationToken ct = default)
+        {
+            await write_gate.WaitAsync (ct).ConfigureAwait (false);
+            try {
+                var merged = await MergedAnnotationsAsync (bookId, ct).ConfigureAwait (false);
+                if (merged.TryGetValue (id, out var existing) && existing.Deleted)
+                    return;
+                var now = time.GetUtcNow ();
+                var tombstone = new Annotation {
+                    Id = id,
+                    Kind = existing?.Kind ?? AnnotationKind.Highlight,
+                    Deleted = true,
+                    CreatedAt = existing?.CreatedAt ?? now,
+                    UpdatedAt = now,
+                    Hlc = clock.Now (),
+                };
+                await WriteOwnAnnotationAsync (bookId, tombstone, ct).ConfigureAwait (false);
+            } finally {
+                write_gate.Release ();
+            }
+        }
+
+        private async Task<Dictionary<Guid, Annotation>> MergedAnnotationsAsync (string bookId, CancellationToken ct)
+        {
+            var versions = (await ReadStatesAsync (bookId, ct).ConfigureAwait (false)).SelectMany (s => s.Annotations ?? []);
+            return new Dictionary<Guid, Annotation> (AnnotationMerge.Merge (versions));
+        }
+
+        // Callers hold write_gate.
+        private async Task WriteOwnAnnotationAsync (string bookId, Annotation annotation, CancellationToken ct)
+        {
+            var path = SyncPaths.State (bookId, Device.DeviceId);
+            var current = await StatAndReadAsync (path, SyncJson.Default.BookStateFile, ct).ConfigureAwait (false);
+            var annotations = (current?.Annotations ?? []).Where (a => a.Id != annotation.Id).Append (annotation).ToList ();
+            var state = new BookStateFile (SyncPaths.FormatVersion, bookId, Device.DeviceId, current?.Progress, annotations);
+            await WriteJsonAsync (path, state, SyncJson.Default.BookStateFile, ct).ConfigureAwait (false);
+        }
+
+        /// <summary>Every state file for the book (this device's, others', conflicted copies), with their HLCs observed.</summary>
+        private async Task<List<BookStateFile>> ReadStatesAsync (string bookId, CancellationToken ct)
+        {
+            var states = new List<BookStateFile> ();
             foreach (var entry in await storage.ListAsync (SyncPaths.StateFolder (bookId), ct).ConfigureAwait (false)) {
                 if (entry.IsFolder || !entry.Name.EndsWith (".json", StringComparison.Ordinal))
                     continue;
                 var state = await ReadJsonAsync (entry, SyncJson.Default.BookStateFile, ct).ConfigureAwait (false);
-                if (state?.BookId != bookId || state.Progress is not { } progress)
+                if (state?.BookId != bookId)
                     continue;
-                clock.Observe (progress.Hlc);
-                if (best is null || progress.Hlc > best.Hlc)
-                    best = progress;
+                if (state.Progress is { } progress)
+                    clock.Observe (progress.Hlc);
+                foreach (var annotation in state.Annotations ?? [])
+                    clock.Observe (annotation.Hlc);
+                states.Add (state);
             }
-            return best;
+            return states;
         }
 
         /// <summary>

@@ -3,6 +3,9 @@ using SkiaSharp;
 
 namespace Majorsilence.Recital.Layout
 {
+    /// <summary>A filled rectangle under a page's text (content-box coordinates), with an optional solid underline (a highlight with a note).</summary>
+    public readonly record struct PageMark (PageRect Rect, uint Argb, bool Underline = false);
+
     /// <summary>
     /// Draws a laid-out page with Skia. Used by the reader view and by tests that need to see a page.
     /// Layout never depends on drawing; this only reads the positions layout computed.
@@ -23,7 +26,8 @@ namespace Majorsilence.Recital.Layout
         /// <param name="images">Decoded images by archive path; a missing one draws as a grey box.</param>
         /// <param name="background">Page colour.</param>
         /// <param name="foreground">Replaces the book's text colours when set (reader themes).</param>
-        public static void Draw (SKCanvas canvas, LayoutPage page, LayoutSettings settings, Func<string, SKImage?>? images = null, SKColor? background = null, SKColor? foreground = null)
+        /// <param name="marks">Filled rectangles drawn under the text: highlights and the selection.</param>
+        public static void Draw (SKCanvas canvas, LayoutPage page, LayoutSettings settings, Func<string, SKImage?>? images = null, SKColor? background = null, SKColor? foreground = null, IEnumerable<PageMark>? marks = null)
         {
             using (var fill = new SKPaint { Color = background ?? SKColors.White })
                 canvas.DrawRect (0, 0, settings.PageWidth, settings.PageHeight, fill);
@@ -31,6 +35,15 @@ namespace Majorsilence.Recital.Layout
             canvas.Translate (settings.MarginLeft, settings.MarginTop);
 
             using var paint = new SKPaint { IsAntialias = true };
+
+            foreach (var mark in marks ?? []) {
+                paint.Color = new SKColor (mark.Argb);
+                canvas.DrawRoundRect (SKRect.Create (mark.Rect.X - 1, mark.Rect.Y, mark.Rect.Width + 2, mark.Rect.Height), 2, 2, paint);
+                if (mark.Underline) {
+                    paint.Color = new SKColor (mark.Argb | 0xFF000000);
+                    canvas.DrawRect (mark.Rect.X, mark.Rect.Y + mark.Rect.Height - 2, mark.Rect.Width, 2, paint);
+                }
+            }
 
             foreach (var item in page.Items) {
                 switch (item) {

@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Globalization;
 using Majorsilence.Forms;
+using Majorsilence.Recital.Core.Annotations;
 using Majorsilence.Recital.Core.Library;
 using Majorsilence.Recital.Core.Reading;
 using Majorsilence.Recital.Epub;
@@ -9,8 +10,8 @@ using SkiaSharp;
 namespace Majorsilence.Recital.UI
 {
     /// <summary>
-    /// The reading screen: a toolbar, the page, a status bar, and a side panel for the contents or the
-    /// typography settings. Wide windows show the side panel in a <see cref="SplitContainer"/> beside the
+    /// The reading screen: a toolbar, the page, a status bar, and a side panel for the contents, the
+    /// highlights and notes, or the typography settings. Selecting text shows a <see cref="HighlightBar"/>. Wide windows show the side panel in a <see cref="SplitContainer"/> beside the
     /// page; narrow ones (phones) overlay it, and hide the toolbar and status bar until the middle of the
     /// page is tapped. The bars then cover the page rather than shrink it, so showing them never
     /// re-paginates.
@@ -32,6 +33,8 @@ namespace Majorsilence.Recital.UI
         private readonly ToolStripStatusLabel percent_label = new ();
         private readonly ToolStripButton contents_button = new ("Contents") { CheckOnClick = false };
         private readonly ToolStripButton typography_button = new ("Aa");
+        private readonly ToolStripButton notes_button = new ("Notes") { ToolTipText = "Highlights, notes and bookmarks" };
+        private readonly ToolStripButton bookmark_button = new ("Bookmark") { ToolTipText = "Bookmark this page" };
         private readonly ToolStripLabel title_label = new ();
         private readonly Panel body = new () { Dock = DockStyle.None };
         private readonly SplitContainer split = new () {
@@ -42,6 +45,14 @@ namespace Majorsilence.Recital.UI
         private readonly Panel overlay = new () { Dock = DockStyle.None, Visible = false };
         private readonly TreeView contents = new () { Dock = DockStyle.Fill, ShowLines = false, FullRowSelect = true, HideSelection = false };
         private readonly TypographyPanel typography = new () { Dock = DockStyle.Fill };
+        private readonly AnnotationsPanel notes = new () { Dock = DockStyle.Fill };
+        private readonly HighlightBar highlight_bar = new ();
+        private readonly NoteEditor note_editor = new ();
+        private IReadOnlyList<Annotation> annotations = [];
+        private SelectedPassage? selection;
+        // The highlight the note editor is writing for: an existing one, or a selection not saved yet.
+        private Annotation? note_target;
+        private SelectedPassage? note_selection;
         private readonly Dictionary<string, SKImage?> images = new (StringComparer.Ordinal);
         private readonly Majorsilence.Forms.Timer save_timer = new () { Interval = (int)SaveDelay.TotalMilliseconds };
         private ReadingSession? session;
@@ -66,6 +77,8 @@ namespace Majorsilence.Recital.UI
             back.Click += (_, _) => CloseRequested?.Invoke (this, EventArgs.Empty);
             contents_button.Click += (_, _) => ToggleSide (contents);
             typography_button.Click += (_, _) => ToggleSide (typography);
+            notes_button.Click += (_, _) => ToggleSide (notes);
+            bookmark_button.Click += (_, _) => operations.Run (ToggleBookmarkAsync);
             title_label.Text = book.Title;
 
             var themes = new ToolStripDropDownButton ("Theme");
@@ -75,13 +88,15 @@ namespace Majorsilence.Recital.UI
                 themes.DropDownItems.Add (item);
             }
 
-            tool_strip.Items.AddRange ([back, new ToolStripSeparator (), contents_button, typography_button, themes, new ToolStripSeparator (), title_label]);
+            tool_strip.Items.AddRange ([back, new ToolStripSeparator (), contents_button, notes_button, typography_button, themes, bookmark_button, new ToolStripSeparator (), title_label]);
             status_strip.Items.AddRange ([chapter_label, page_label, percent_label]);
 
             split.Panel2.Controls.Add (PageView);
             body.Controls.Add (split);
             Controls.Add (body);
             Controls.Add (overlay);
+            Controls.Add (highlight_bar);
+            Controls.Add (note_editor);
             Controls.Add (tool_strip);
             Controls.Add (status_strip);
 
@@ -89,6 +104,30 @@ namespace Majorsilence.Recital.UI
             PageView.CenterTapped += (_, _) => ToggleChrome ();
             PageView.SizeChanged += (_, _) => RequestRelayout ();
             PageView.ImageSource = Image;
+            PageView.SelectionMade += (_, e) => OnSelectionMade (e);
+            PageView.SelectionCleared += (_, _) => {
+                selection = null;
+                if (highlight_bar.Target is null)
+                    highlight_bar.HideBar ();
+            };
+            PageView.HighlightTapped += (_, e) => {
+                if (e.Highlight.Tag is Annotation annotation) {
+                    selection = null;
+                    highlight_bar.ShowFor (annotation);
+                    PlaceBar (e.Bounds);
+                }
+            };
+            highlight_bar.ActionChosen += (_, e) => operations.Run (() => OnHighlightActionAsync (e));
+            note_editor.Saved += (_, text) => operations.Run (() => SaveNoteAsync (text));
+            note_editor.Cancelled += (_, _) => CloseNoteEditor ();
+
+            notes.OpenRequested += (_, a) => operations.Run (() => GoToAsync (a));
+            notes.EditNoteRequested += (_, a) => EditNote (a, null);
+            notes.DeleteRequested += (_, a) => operations.Run (() => DeleteAnnotationAsync (a));
+            notes.ExportRequested += (_, _) => operations.Run (ExportToFileAsync);
+            notes.CopyRequested += (_, _) => operations.Run (() => Clipboard.SetTextAsync (ExportMarkdown ()));
+            // FRAMEWORK-GAP: GAP-012: SaveFileDialog gives a path only, which phones and the browser cannot write to.
+            notes.CanExportToFile = OperatingSystem.IsWindows () || OperatingSystem.IsMacOS () || (OperatingSystem.IsLinux () && !OperatingSystem.IsAndroid ());
 
             contents.NodeMouseClick += (_, e) => {
                 if (e.Node?.Tag is TocEntry entry)
@@ -116,6 +155,15 @@ namespace Majorsilence.Recital.UI
         public BookPageView PageView { get; }
         public TreeView Contents => contents;
         public TypographyPanel Typography => typography;
+        public AnnotationsPanel Notes => notes;
+        public HighlightBar HighlightBar => highlight_bar;
+        public NoteEditor NoteEditor => note_editor;
+
+        /// <summary>The book's live highlights, notes and bookmarks, in reading order.</summary>
+        public IReadOnlyList<Annotation> Annotations => annotations;
+
+        /// <summary>The passage selected on the page, waiting for a colour or a note.</summary>
+        public SelectedPassage? Selection => selection;
         public ReadingSession? Session => session;
         public ReaderPreferences Preferences => preferences;
         public bool IsNarrow => Width < NarrowWidth;
@@ -151,6 +199,8 @@ namespace Majorsilence.Recital.UI
             }
 
             FillContents ();
+            annotations = await library.GetAnnotationsAsync (book.Id, ct);
+            await FillNotesAsync ();
             ShowCurrent ();
             // The view may have been resized while the book opened.
             RequestRelayout ();
@@ -236,6 +286,7 @@ namespace Majorsilence.Recital.UI
             }
             contents_button.Checked = side_content == contents;
             typography_button.Checked = side_content == typography;
+            notes_button.Checked = side_content == notes;
             ArrangeChildren ();
             if (side_content == contents)
                 SelectCurrentContentsEntry ();
@@ -289,6 +340,12 @@ namespace Majorsilence.Recital.UI
 
             tool_strip.BringToFront ();
             status_strip.BringToFront ();
+            if (note_editor.Visible) {
+                note_editor.PlaceIn (body.Bounds);
+                note_editor.BringToFront ();
+            }
+            if (highlight_bar.Visible)
+                highlight_bar.BringToFront ();
         }
 
         private void ApplyTheme ()
@@ -355,12 +412,221 @@ namespace Majorsilence.Recital.UI
             // Start decoding the page's images now rather than when it is first painted.
             foreach (var item in session.Page.Items.OfType<Layout.ImageItem> ())
                 Image (item.Path);
+            if (PageView.Page != session.Page)
+                highlight_bar.HideBar ();
             PageView.ShowPage (session.Page, session.Settings);
+            RefreshMarks ();
             chapter_label.Text = session.CurrentTocEntry ()?.Title ?? book.Title;
             page_label.Text = string.Format (CultureInfo.CurrentCulture, "Page {0} of {1}", session.PageIndex + 1, session.Chapter.Pages.Count);
             percent_label.Text = session.Locator.Percent.ToString ("P0", CultureInfo.CurrentCulture);
             if (side_content == contents)
                 SelectCurrentContentsEntry ();
+        }
+
+        // ── Highlights, notes and bookmarks ──────────────────────────────────────
+
+        /// <summary>Highlights the selected passage in <paramref name="color"/>, optionally with a note.</summary>
+        public async Task<Annotation?> HighlightSelectionAsync (string color = HighlightColors.Default, string? note = null)
+        {
+            if (selection is not { } current || session is null)
+                return null;
+            var saved = await library.SaveAnnotationAsync (book.Id, ReadingSession.NewHighlight (current, color, note));
+            selection = null;
+            PageView.ClearSelection ();
+            highlight_bar.HideBar ();
+            await ReloadAnnotationsAsync ();
+            return saved;
+        }
+
+        /// <summary>Changes a highlight's colour and/or note (null leaves it as it is).</summary>
+        public async Task ChangeAnnotationAsync (Annotation annotation, string? color = null, string? note = null)
+        {
+            var changed = annotation with { Color = color ?? annotation.Color, Note = note ?? annotation.Note };
+            if (changed != annotation)
+                await library.SaveAnnotationAsync (book.Id, changed);
+            highlight_bar.HideBar ();
+            await ReloadAnnotationsAsync ();
+        }
+
+        public async Task DeleteAnnotationAsync (Annotation annotation)
+        {
+            await library.DeleteAnnotationAsync (book.Id, annotation.Id);
+            highlight_bar.HideBar ();
+            await ReloadAnnotationsAsync ();
+        }
+
+        /// <summary>Bookmarks the page, or removes its bookmark.</summary>
+        public async Task ToggleBookmarkAsync ()
+        {
+            if (session is null || closed)
+                return;
+            if (session.BookmarkOnPage (annotations) is { } existing)
+                await library.DeleteAnnotationAsync (book.Id, existing.Id);
+            else
+                await library.SaveAnnotationAsync (book.Id, session.NewBookmark ());
+            await ReloadAnnotationsAsync ();
+        }
+
+        public async Task GoToAsync (Annotation annotation)
+        {
+            if (session is null || closed || !await session.GoToAsync (annotation))
+                return;
+            PositionChanged ();
+            if (IsNarrow)
+                ToggleSide (null);
+            PageView.Focus ();
+        }
+
+        /// <summary>Re-reads the annotations (after a change here, or another device's arriving by sync).</summary>
+        public async Task ReloadAnnotationsAsync ()
+        {
+            if (closed)
+                return;
+            annotations = await library.GetAnnotationsAsync (book.Id);
+            await FillNotesAsync ();
+            RefreshMarks ();
+        }
+
+        /// <summary>Everything in the Notes panel as Markdown.</summary>
+        public string ExportMarkdown ()
+            => AnnotationExport.ToMarkdown (book.Title, book.Authors, annotations, a => chapter_titles.GetValueOrDefault (a.Id));
+
+        private IReadOnlyDictionary<Guid, string?> chapter_titles = new Dictionary<Guid, string?> ();
+
+        private async Task ExportToFileAsync ()
+        {
+            using var dialog = new SaveFileDialog {
+                Title = "Export highlights and notes",
+                Filter = "Markdown (*.md)|*.md|All files (*.*)|*.*",
+                DefaultExt = "md",
+                FileName = SafeFileName (book.Title) + " - notes.md",
+            };
+            if (await dialog.ShowDialogAsync () != DialogResult.OK || string.IsNullOrEmpty (dialog.FileName))
+                return;
+            await File.WriteAllTextAsync (dialog.FileName, ExportMarkdown ());
+        }
+
+        private static string SafeFileName (string name)
+        {
+            var invalid = Path.GetInvalidFileNameChars ().Concat (['/', '\\', ':', '*', '?', '"', '<', '>', '|']).ToHashSet ();
+            var safe = new string (name.Select (c => invalid.Contains (c) ? ' ' : c).ToArray ()).Trim ();
+            return safe.Length == 0 ? "Book" : safe.Length > 80 ? safe[..80].TrimEnd () : safe;
+        }
+
+        private async Task FillNotesAsync ()
+        {
+            if (session is null)
+                return;
+            chapter_titles = await session.ChapterTitlesAsync (annotations);
+            notes.Show (annotations, a => chapter_titles.GetValueOrDefault (a.Id));
+        }
+
+        private void RefreshMarks ()
+        {
+            if (session is null)
+                return;
+            PageView.Highlights = session.HighlightsOnPage (annotations)
+                .Select (h => new PageHighlight (h.Annotation, h.Rects, HighlightColors.ArgbOf (h.Annotation.Color), h.Annotation.HasNote))
+                .ToList ();
+            var bookmarked = session.BookmarkOnPage (annotations) is not null;
+            PageView.Bookmarked = bookmarked;
+            bookmark_button.Checked = bookmarked;
+            bookmark_button.ToolTipText = bookmarked ? "Remove this page's bookmark" : "Bookmark this page";
+        }
+
+        private void OnSelectionMade (PageSelectionEventArgs e)
+        {
+            selection = session?.Select (e.Start, e.End);
+            if (selection is null) {
+                PageView.ClearSelection ();
+                return;
+            }
+            highlight_bar.ShowFor (null);
+            PlaceBar (e.Bounds);
+        }
+
+        /// <summary>Puts the highlight bar just above the passage (in page view coordinates), or below it when there is no room.</summary>
+        private void PlaceBar (Rectangle passage)
+        {
+            var size = highlight_bar.ContentSize;
+            var origin = PointToClient (PageView.PointToScreen (Point.Empty));
+            var x = Math.Clamp (origin.X + passage.X + passage.Width / 2 - size.Width / 2, 4, Math.Max (4, ClientSize.Width - size.Width - 4));
+            var y = origin.Y + passage.Y - size.Height - 8;
+            if (y < origin.Y + 4)
+                y = origin.Y + passage.Bottom + 8;
+            highlight_bar.SetBounds (x, Math.Min (y, Math.Max (0, ClientSize.Height - size.Height)), size.Width, size.Height);
+            highlight_bar.BringToFront ();
+        }
+
+        private async Task OnHighlightActionAsync (HighlightActionEventArgs e)
+        {
+            var target = highlight_bar.Target;
+            var text = target?.Text ?? selection?.Text;
+            switch (e.Action) {
+            case HighlightAction.Color when target is not null:
+                await ChangeAnnotationAsync (target, color: e.Color);
+                break;
+            case HighlightAction.Color:
+                await HighlightSelectionAsync (e.Color ?? HighlightColors.Default);
+                break;
+            case HighlightAction.Note:
+                EditNote (target, target is null ? selection : null);
+                break;
+            case HighlightAction.Copy:
+                if (text is not null)
+                    await Clipboard.SetTextAsync (text);
+                DismissSelection ();
+                break;
+            case HighlightAction.Delete when target is not null:
+                await DeleteAnnotationAsync (target);
+                break;
+            default:
+                DismissSelection ();
+                break;
+            }
+        }
+
+        private void DismissSelection ()
+        {
+            selection = null;
+            highlight_bar.HideBar ();
+            PageView.ClearSelection ();
+        }
+
+        /// <summary>Opens the note editor for an existing highlight, or for a selection (saved as a highlight with the note).</summary>
+        public void EditNote (Annotation? target, SelectedPassage? pending)
+        {
+            if (target is null && pending is null)
+                return;
+            note_target = target;
+            note_selection = pending;
+            highlight_bar.HideBar ();
+            note_editor.PlaceIn (body.Bounds);
+            note_editor.Edit (target?.Text ?? pending!.Text, target?.Note);
+        }
+
+        private async Task SaveNoteAsync (string text)
+        {
+            var note = string.IsNullOrWhiteSpace (text) ? null : text.Trim ();
+            var target = note_target;
+            var pending = note_selection;
+            CloseNoteEditor ();
+            if (target is not null) {
+                await library.SaveAnnotationAsync (book.Id, target with { Note = note });
+                await ReloadAnnotationsAsync ();
+            } else if (pending is not null) {
+                selection = pending;
+                await HighlightSelectionAsync (HighlightColors.Default, note);
+            }
+        }
+
+        private void CloseNoteEditor ()
+        {
+            note_target = null;
+            note_selection = null;
+            note_editor.Visible = false;
+            PageView.ClearSelection ();
+            PageView.Focus ();
         }
 
         private void FillContents ()

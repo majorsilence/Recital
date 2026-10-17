@@ -134,6 +134,9 @@ namespace Majorsilence.Recital.UI
                 // time it is opened, it opens at the newest position from any device.
                 if (e.Round.Pulled.Count > 0 && Reader is null && Library is { } library)
                     Operations.Run (() => library.RefreshAsync ());
+                // Highlights and notes made on another device show up in the open book.
+                if (Reader is { } reader && e.Round.Pulled.Any (p => p.StartsWith (SyncPaths.StateFolder (reader.Book.Id) + "/", StringComparison.Ordinal)))
+                    Operations.Run (reader.ReloadAnnotationsAsync);
             });
         }
 
@@ -233,6 +236,7 @@ namespace Majorsilence.Recital.UI
                 ThemePainter.Apply (Reader, theme);
                 ThemePainter.Apply (Reader.Contents, theme);
                 ThemePainter.Apply (Reader.Typography, theme);
+                ThemePainter.Apply (Reader.Notes, theme);
             }
         }
 

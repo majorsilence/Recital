@@ -77,7 +77,7 @@ namespace Majorsilence.Recital.UI.Tests
             Assert.Equal (locator, saved?.Locator);
         }
 
-        private static ToolStrip Toolbar (MainForm form) => form.Reader!.Controls.OfType<ToolStrip> ().First (s => s is not StatusStrip);
+        private static ToolStrip Toolbar (MainForm form) => form.Reader!.Controls.OfType<ToolStrip> ().First (s => s is not StatusStrip and not HighlightBar);
 
         private static ToolStripItem ToolbarItem (MainForm form, string text)
             => Toolbar (form).Items.Cast<ToolStripItem> ().First (i => i.Text?.Trim () == text);

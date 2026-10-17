@@ -58,8 +58,24 @@ Ids are lowercase hex (book ids are SHA-256, device ids random 128-bit).
     "hlc": "0001760443200000-0000-c9b6...", "updatedAt": "..." },
   "annotations": [] }
 ```
-`annotations` is carried through unchanged until Phase 6 defines it. Merge: highest `progress.hlc`
-wins across all files in the folder, conflicted copies included.
+Merge: highest `progress.hlc` wins across all files in the folder, conflicted copies included.
+
+`annotations` holds this device's latest version of every annotation it created, changed or deleted:
+```json
+{ "id": "4f0c...-...", "kind": "highlight", "cfi": "epubcfi(/6/14!/4/2,/1:0,/3:12)", "spineIndex": 6,
+  "charOffset": 4210, "percent": 0.071, "text": "Call me Ishmael.", "color": "yellow", "note": "...",
+  "createdAt": "...", "updatedAt": "...", "hlc": "0001760443200000-0000-c9b6..." }
+```
+- `kind`: `highlight` (a range CFI; `color` one of yellow/green/blue/pink/purple; `note` optional) or
+  `bookmark` (a point CFI; `text` is the start of the page).
+- `spineIndex` and `charOffset` locate it when the CFI no longer resolves; `text` and `percent` are
+  for lists and exports.
+- A deletion is a tombstone: `{ "id", "kind", "deleted": true, "createdAt", "updatedAt", "hlc" }`, with
+  the text and note dropped.
+- Merge, across every device's file for the book: union by `id`. If any version is a tombstone, the
+  annotation is deleted, whatever the clocks say: deletion is final, so a device that was offline
+  with an older copy cannot bring it back. Otherwise the highest `hlc` wins.
+- Readers keep properties they do not know when they rewrite an annotation.
 
 `settings/<deviceId>.json`:
 ```json

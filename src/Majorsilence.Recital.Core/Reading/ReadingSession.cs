@@ -1,3 +1,4 @@
+using Majorsilence.Recital.Core.Annotations;
 using Majorsilence.Recital.Epub;
 using Majorsilence.Recital.Layout;
 
@@ -145,6 +146,151 @@ namespace Majorsilence.Recital.Core.Reading
             return found;
         }
 
+        /// <summary>
+        /// The passage between two positions on the current chapter (in either order), anchored for saving
+        /// as a highlight; null when it holds no text.
+        /// </summary>
+        public SelectedPassage? Select (DomPosition a, DomPosition b)
+        {
+            var (start, end) = DomOrder.Compare (a, b) <= 0 ? (a, b) : (b, a);
+            if (DomOrder.Compare (start, end) == 0)
+                return null;
+            var document = chapter.Document;
+            var text = document.GetText (start, end);
+            if (text.Length == 0)
+                return null;
+            string? cfi;
+            try {
+                cfi = document.GetRangeCfi (start, end).ToString ();
+            } catch (ArgumentException) {
+                cfi = null;
+            }
+            var offset = document.GetCharOffset (start);
+            return new SelectedPassage (start, end, chapter.SpineIndex, cfi, offset, PercentOf (chapter.SpineIndex, offset), text);
+        }
+
+        /// <summary>A new highlight for <paramref name="selection"/>; save it with the library.</summary>
+        public static Annotation NewHighlight (SelectedPassage selection, string color = HighlightColors.Default, string? note = null) => new () {
+            Id = Guid.NewGuid (),
+            Kind = AnnotationKind.Highlight,
+            Cfi = selection.Cfi,
+            SpineIndex = selection.SpineIndex,
+            CharOffset = selection.CharOffset,
+            Percent = selection.Percent,
+            Text = selection.Text,
+            Color = color,
+            Note = note,
+        };
+
+        /// <summary>A new bookmark for the current page; save it with the library.</summary>
+        public Annotation NewBookmark ()
+        {
+            var excerpt = string.Join (" ", Page.Lines.Select (l => l.Text.Trim ())).Trim ();
+            if (excerpt.Length > 160)
+                excerpt = excerpt[..160].TrimEnd () + "…";
+            return new Annotation {
+                Id = Guid.NewGuid (),
+                Kind = AnnotationKind.Bookmark,
+                Cfi = locator.Cfi,
+                SpineIndex = locator.SpineIndex,
+                CharOffset = locator.CharOffset,
+                Percent = locator.Percent,
+                Text = excerpt,
+            };
+        }
+
+        /// <summary>
+        /// Where an annotation is in the current chapter: its start and end (equal for a bookmark), or null
+        /// when it is in another chapter or cannot be found. A CFI that no longer resolves falls back to the
+        /// saved character offset.
+        /// </summary>
+        public (DomPosition Start, DomPosition End)? Locate (Annotation annotation)
+        {
+            var document = chapter.Document;
+            EpubCfi? cfi = annotation.Cfi is { } text && EpubCfi.TryParse (text, out var parsed) ? parsed : null;
+            var spine = cfi is null ? annotation.SpineIndex : Book.ResolveSpineIndex (cfi) ?? annotation.SpineIndex;
+            if (spine != chapter.SpineIndex)
+                return null;
+
+            if (cfi is not null && document.Resolve (cfi) is { } start) {
+                var end = annotation.Kind == AnnotationKind.Bookmark ? start : document.Resolve (cfi, end: true) ?? start;
+                return (start, end);
+            }
+
+            if (annotation.SpineIndex != chapter.SpineIndex || document.PositionAtCharOffset (annotation.CharOffset) is not { } fallback)
+                return null;
+            var length = annotation.Kind == AnnotationKind.Bookmark ? 0 : annotation.Text?.Length ?? 0;
+            return (fallback, document.PositionAtCharOffset (annotation.CharOffset + length) ?? fallback);
+        }
+
+        /// <summary>Highlights on the current page with the rectangles (content-box coordinates) they cover.</summary>
+        public IReadOnlyList<(Annotation Annotation, IReadOnlyList<PageRect> Rects)> HighlightsOnPage (IEnumerable<Annotation> annotations)
+        {
+            var found = new List<(Annotation, IReadOnlyList<PageRect>)> ();
+            if (Page.StartPosition is not { } pageStart || Page.EndPosition is not { } pageEnd)
+                return found;
+            foreach (var annotation in annotations) {
+                if (annotation.Deleted || annotation.Kind != AnnotationKind.Highlight || Locate (annotation) is not var (start, end))
+                    continue;
+                if (DomOrder.Compare (end, pageStart) <= 0 || DomOrder.Compare (start, pageEnd) >= 0)
+                    continue;
+                var rects = Page.TextRects (start, end);
+                if (rects.Count > 0)
+                    found.Add ((annotation, rects));
+            }
+            return found;
+        }
+
+        /// <summary>The bookmark on the current page, if there is one.</summary>
+        public Annotation? BookmarkOnPage (IEnumerable<Annotation> annotations)
+        {
+            foreach (var annotation in annotations)
+                if (!annotation.Deleted && annotation.Kind == AnnotationKind.Bookmark && Locate (annotation) is var (start, _) && chapter.PageOf (start).Index == PageIndex)
+                    return annotation;
+            return null;
+        }
+
+        /// <summary>Goes to an annotation. Returns false when it cannot be found in this book.</summary>
+        public Task<bool> GoToAsync (Annotation annotation, CancellationToken ct = default)
+        {
+            string? start = annotation.Cfi;
+            // A range CFI: go to its start.
+            if (start is not null && EpubCfi.TryParse (start, out var cfi) && cfi.End is not null)
+                start = EpubCfi.Point (cfi.Start).ToString ();
+            return GoToAsync (new ReadingLocator (start, annotation.SpineIndex, annotation.CharOffset, annotation.Percent), ct);
+        }
+
+        /// <summary>
+        /// The chapter heading each annotation falls under: the deepest table-of-contents entry at or before
+        /// it (Gutenberg books put many chapters in one file, so entries in the same file are placed by their
+        /// fragment's position). Null where no entry comes before it.
+        /// </summary>
+        public async Task<IReadOnlyDictionary<Guid, string?>> ChapterTitlesAsync (IEnumerable<Annotation> annotations, CancellationToken ct = default)
+        {
+            var entries = Flatten (Book.TableOfContents).Where (e => e.SpineIndex is not null).ToList ();
+            var offsets = new Dictionary<TocEntry, int> ();
+            var result = new Dictionary<Guid, string?> ();
+
+            foreach (var group in annotations.GroupBy (a => a.SpineIndex)) {
+                var spine = group.Key;
+                var inSpine = entries.Where (e => e.SpineIndex == spine).ToList ();
+                if (inSpine.Any (e => e.Fragment is { Length: > 0 }) && spine >= 0 && spine < Book.Spine.Count) {
+                    var document = await Engine.GetDocumentAsync (spine, ct).ConfigureAwait (false);
+                    foreach (var entry in inSpine)
+                        offsets[entry] = entry.Fragment is { Length: > 0 } fragment && document.FindFragment (fragment) is { } element
+                            ? document.GetCharOffset (new DomPosition (element, 0))
+                            : 0;
+                }
+                var before = entries.LastOrDefault (e => e.SpineIndex < spine);
+                foreach (var annotation in group) {
+                    var here = inSpine.Where (e => offsets.GetValueOrDefault (e) <= annotation.CharOffset)
+                        .OrderBy (e => offsets.GetValueOrDefault (e)).LastOrDefault ();
+                    result[annotation.Id] = (here ?? before)?.Title;
+                }
+            }
+            return result;
+        }
+
         public static IEnumerable<TocEntry> Flatten (IEnumerable<TocEntry> entries)
         {
             foreach (var entry in entries) {
@@ -231,10 +377,15 @@ namespace Majorsilence.Recital.Core.Reading
                 cfi = null;
             }
 
-            var length = Math.Max (1, document.TextLength);
-            var spine = chapter.SpineIndex;
+            locator = new ReadingLocator (cfi, chapter.SpineIndex, charOffset, PercentOf (chapter.SpineIndex, charOffset));
+        }
+
+        /// <summary>How far through the book a character offset in the current chapter is, 0 to 1.</summary>
+        private double PercentOf (int spine, int charOffset)
+        {
+            var length = Math.Max (1, chapter.Document.TextLength);
             var percent = (spine_offsets[spine] + (spine_offsets[spine + 1] - spine_offsets[spine]) * Math.Min (1.0, charOffset / (double)length)) / total_size;
-            locator = new ReadingLocator (cfi, spine, charOffset, Math.Clamp (percent, 0, 1));
+            return Math.Clamp (percent, 0, 1);
         }
 
         private DomPosition PageStart (LayoutPage page)
@@ -301,4 +452,10 @@ namespace Majorsilence.Recital.Core.Reading
             gate.Dispose ();
         }
     }
+
+    /// <summary>A passage the reader selected: its positions, and how to save it.</summary>
+    /// <param name="Cfi">A range CFI, or null when none could be made.</param>
+    /// <param name="CharOffset">Characters in the chapter before its start (the fallback anchor).</param>
+    /// <param name="Text">The selected words, whitespace collapsed.</param>
+    public sealed record SelectedPassage (DomPosition Start, DomPosition End, int SpineIndex, string? Cfi, int CharOffset, double Percent, string Text);
 }
