@@ -10,36 +10,42 @@ heads, **Headless** = offscreen Skia (UI tests).
 
 | API | Desktop | Android | iOS | Browser | Headless | Gaps |
 |---|---|---|---|---|---|---|
-| `Form` (Text, ClientSize, Show, Load, FormClosing with Cancel) | ✅ Linux (starts; not checked by eye) | — | — | — | ✅ | |
+| `Form` (Text, ClientSize, Show, Load, FormClosing with Cancel, FormClosed) | ✅ Linux (starts; not checked by eye) | — | — | — | ✅ | |
 | `Application.Run` | ✅ Linux (starts and initialises the library) | | | | | |
 | `Application.RunAndroid` | | — | | | | |
-| `Application.RunIOS` | | | — | | | [GAP-001](FRAMEWORK_GAPS.md#gap-001-majorsilenceformsavalonia-on-nugetorg-has-no-net100-ios-asset) |
+| `Application.RunIOS` | | | — | | | [GAP-001](FRAMEWORK_GAPS.md#gap-001-majorsilenceformsavalonia-on-nugetorg-has-no-net100-ios-asset) (fixed) |
 | `Application.RunBrowserAsync` | | | | — | | |
 | `AvaloniaPlatformBackend.RaiseBackRequested` / `RegisterAndroidActivity` / `ReportAndroidIntent` | | — | | | | |
-| `HeadlessRenderer.Use` / `CapturePng` / `Click` / `MouseDown/Move/Up` / `MouseWheel` / `KeyDown` / `OpenFileResponse` | | | | | ⚠️ | [GAP-002](FRAMEWORK_GAPS.md#gap-002-no-pixel-diffbaseline-helper-for-headless-renders), [GAP-003](FRAMEWORK_GAPS.md#gap-003-headless-renders-depend-on-the-host-os), [GAP-006](FRAMEWORK_GAPS.md#gap-006-headless-cannot-inject-touch-gestures) |
-| `Theme.UIFont` / `UIFontBold` | | | | | ⚠️ | [GAP-004](FRAMEWORK_GAPS.md#gap-004-themeuifont-honours-only-the-typefaces-family-name) |
-| `PrivateFontCollection.AddMemoryFont (byte[])` | | | | | ✅ | |
-| `Application.SetDefaultFont`, `WindowBase.Style.Font` | | | | | ⚠️ | [GAP-011](FRAMEWORK_GAPS.md#gap-011-applicationsetdefaultfont-does-not-reach-drawing) |
-| `MF_FORCE_CUSTOM_CHROME` | | | | | ✅ | [GAP-003](FRAMEWORK_GAPS.md#gap-003-headless-renders-depend-on-the-host-os) |
-| Custom `Control` (`BookPageView`): `OnPaint` canvas in logical units, `IsInputKey`, `OnKeyDown`, `OnMouseDown/Up`, `OnMouseWheel`, `Focus`, `AccessibleRole/Description` | — | — | — | — | ✅ | |
-| `Control.OnSwipe` | — | — | — | — | — (cannot inject) | [GAP-006](FRAMEWORK_GAPS.md#gap-006-headless-cannot-inject-touch-gestures) |
+| `HeadlessRenderer.Use` / `UseDeterministic` / `UseSynchronizationContext` / `CapturePng` / `Click` / `MouseDown/Move/Up` / `MouseWheel` / `KeyDown` / `Swipe` | | | | | ✅ | [GAP-003](FRAMEWORK_GAPS.md#gap-003-headless-renders-depend-on-the-host-os), [GAP-006](FRAMEWORK_GAPS.md#gap-006-headless-cannot-inject-touch-gestures), [GAP-007](FRAMEWORK_GAPS.md#gap-007-no-ui-synchronizationcontext-on-the-headless-backend) (all fixed) |
+| `HeadlessRenderer.OpenFileResponse` / `OpenFilePickResponse` / `OpenFolderResponse` | | | | | ✅ | |
+| `PixelComparison.Compare` / `IsWithin` / `CreateDiffPng` | | | | | ✅ | [GAP-002](FRAMEWORK_GAPS.md#gap-002-no-pixel-diffbaseline-helper-for-headless-renders) (fixed) |
+| Custom `Control` (`BookPageView`): `OnPaint` canvas in logical units, `IsInputKey`, `OnKeyDown`, `OnMouseDown/Up`, `OnMouseWheel`, `OnSwipe`, `Focus`, `AccessibleRole/Description` | — | — | — | — | ✅ | |
+| `Control.BeginInvoke` from a worker thread (sync rounds) | — | — | — | — | ✅ | |
 | `UserControl`, `Panel`, `Label`, `Dock`, `SetBounds`, `BringToFront`, re-parenting via `Controls.Add` | — | — | — | — | ✅ | |
 | Ambient `BackColor` / `ForeColor` from the form | — | — | — | — | ✅ (inputs and toolbars are not ambient, as in WinForms) | |
-| `ToolStrip`, `ToolStripButton` (`Checked`), `ToolStripLabel`, `ToolStripSeparator`, `ToolStripTextBox` | — | — | — | — | ⚠️ | [GAP-009](FRAMEWORK_GAPS.md#gap-009-toolbar-item-text-ignores-forecolor) |
-| `ToolStripDropDownButton` + `ToolStripMenuItem` | — | — | — | — | ⚠️ | [GAP-008](FRAMEWORK_GAPS.md#gap-008-toolstripdropdownbutton-text-wraps-onto-two-lines), [GAP-009](FRAMEWORK_GAPS.md#gap-009-toolbar-item-text-ignores-forecolor) |
-| `ToolStripProfessionalRenderer.OnRenderItemText` (custom renderer) | — | — | — | — | ✅ | |
+| `ToolStrip`, `ToolStripButton` (`Checked`), `ToolStripLabel`, `ToolStripSeparator`, `ToolStripTextBox`, item `ForeColor`, `Alignment = Right` | — | — | — | — | ✅ | [GAP-009](FRAMEWORK_GAPS.md#gap-009-toolbar-item-text-ignores-forecolor) (fixed) |
+| `ToolStripDropDownButton` + `ToolStripMenuItem` (`Checked`, `Enabled`) | — | — | — | — | ✅ | [GAP-008](FRAMEWORK_GAPS.md#gap-008-toolstripdropdownbutton-text-wraps-onto-two-lines) (fixed) |
 | `ToolBar.DefaultItemHoverStyle` (themed hover/checked background) | — | — | — | — | ✅ | |
-| `StatusStrip`, `ToolStripStatusLabel` (`Spring`) | — | — | — | — | ✅ | |
+| `StatusStrip`, `ToolStripStatusLabel` (`Spring`, `TextAlign`) | — | — | — | — | ✅ | |
 | `ListView`: `LargeIcon` with `OwnerDraw`/`DrawItem` (device pixels), `TileSize`, `Details` columns, `ItemActivate` on double-click, `ContextMenuStrip`, `GetItemRect` | — | — | — | — | ✅ | |
 | `ContextMenuStrip` | — | — | — | — | — (built, not opened in a test) | |
 | `TreeView`: `Nodes`, `TreeNode.Tag`, `ExpandAll`, `NodeMouseClick`, `SelectedNode`, `EnsureVisible`, `TreeNode.Bounds` | — | — | — | — | ✅ | |
-| `SplitContainer` (`FixedPanel`, `SplitterDistance`, `Panel1Collapsed`, `SplitterColor`) | — | — | — | — | ⚠️ | [GAP-010](FRAMEWORK_GAPS.md#gap-010-splitcontainerpanel1collapsed-leaves-the-splitter-showing) |
+| `SplitContainer` (`FixedPanel`, `SplitterDistance`, `Panel1Collapsed`, `SplitterColor`) | — | — | — | — | ✅ | [GAP-010](FRAMEWORK_GAPS.md#gap-010-splitcontainerpanel1collapsed-leaves-the-splitter-showing) (fixed) |
 | `FlowLayoutPanel` (TopDown, no wrap), `ComboBox` (DropDownList), `NumericUpDown`, `CheckBox` | — | — | — | — | ✅ | |
-| `OpenFileDialog.ShowDialogAsync` (Multiselect, Filter) | — | — | — | — | ✅ | [GAP-005](FRAMEWORK_GAPS.md#gap-005-file-dialogs-return-paths-only) |
+| `OpenFileDialog.ShowDialogAsync` (Multiselect, Filter), `SelectedFiles`, `PickedFile.OpenReadAsync` | — | — | — | — | ✅ | [GAP-005](FRAMEWORK_GAPS.md#gap-005-file-dialogs-return-paths-only) (fixed) |
+| `FolderBrowserDialog.ShowDialogAsync` (`Description`, `ShowNewFolderButton`, `SelectedPath`) | — | | | | ✅ | |
 | Drag-and-drop file import (`AllowDrop`, `DragEnter`, `DragDrop`, `DataFormats.FileDrop`) | — | — | — | — | — | |
 | `Majorsilence.Forms.Timer` (progress-save debounce) | — | — | — | — | ✅ (implicitly: saves happen) | |
 | `Graphics` in owner draw: `FillRectangle`, `DrawImage`, `DrawString` with `StringFormat`, `Bitmap (Stream)` | — | — | — | — | ✅ | |
-| `WindowsFormsSynchronizationContext` | ✅ (Avalonia has its own context) | | | | ⚠️ | [GAP-007](FRAMEWORK_GAPS.md#gap-007-no-ui-synchronizationcontext-on-the-headless-backend) |
+
+Since 26.11.6 Recital no longer uses `Theme.UIFont`, `PrivateFontCollection`, `Application.SetDefaultFont`,
+`MF_FORCE_CUSTOM_CHROME` or a custom `ToolStripProfessionalRenderer`: `HeadlessRenderer.UseDeterministic`
+and the framework's own fixes replaced them (GAP-003, GAP-004, GAP-008, GAP-009, GAP-011).
+
+Phase 5: the sync menu (a right-aligned `ToolStripDropDownButton`), `FolderBrowserDialog` (Headless
+`OpenFolderResponse` drives it in `SyncTests`) and `Control.BeginInvoke` from the sync loop's thread
+are new. The menu is shown only on the desktop, so the folder dialog has no mobile or browser column.
+No new gaps.
 
 Phases 2 and 3 used no Majorsilence.Forms APIs (EPUB parsing and the layout engine are UI-free by design), so this table is unchanged.
 

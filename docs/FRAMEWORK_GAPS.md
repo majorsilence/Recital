@@ -8,6 +8,8 @@ Severity: **blocker** (cannot ship the feature), **major** (workaround costs rea
 fidelity), **minor** (cosmetic or cheap to work around), **scope** (a question of what the framework
 should cover, not a bug).
 
+Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps.
+
 | ID | Area | Backends | Severity | Status |
 |---|---|---|---|---|
 | GAP-001 | Packaging: no `net10.0-ios` asset in `Majorsilence.Forms.Avalonia` | Avalonia iOS | blocker (iOS) | Fixed in 26.11.5 by [Forms PR #478](https://github.com/majorsilence/Majorsilence.Forms/pull/478); Recital pins 26.11.6 |

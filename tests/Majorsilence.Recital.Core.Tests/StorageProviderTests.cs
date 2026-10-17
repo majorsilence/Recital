@@ -127,6 +127,47 @@ namespace Majorsilence.Recital.Core.Tests
             Assert.Equal (["y.json"], Directory.GetFiles (Path.Combine (root, "x")).Select (Path.GetFileName));
         }
 
+        [Fact]
+        public async Task SameSizedWritesInOneClockTickGetDifferentETags ()
+        {
+            var ct = TestContext.Current.CancellationToken;
+            var first = await Provider.WriteAsync ("s.json", new MemoryStream ("{\"p\":1}"u8.ToArray ()), null, ct);
+            var tick = File.GetLastWriteTimeUtc (Path.Combine (root, "s.json"));
+
+            // Another process (a sync client) replaces it with the same size, and the file system's coarse
+            // clock gives it the same time.
+            await File.WriteAllBytesAsync (Path.Combine (root, "s.json"), "{\"p\":2}"u8.ToArray (), ct);
+            File.SetLastWriteTimeUtc (Path.Combine (root, "s.json"), tick);
+
+            var second = await Provider.StatAsync ("s.json", ct);
+            Assert.NotEqual (first.ETag, second?.ETag);
+            Assert.Equal (second?.ETag, (await Provider.StatAsync ("s.json", ct))?.ETag);
+        }
+
+        [Fact]
+        public async Task FilesWithNamesNoLogicalPathCanHoldAreNotListed ()
+        {
+            if (OperatingSystem.IsWindows ())
+                return; // Windows forbids the name anyway.
+            var ct = TestContext.Current.CancellationToken;
+            Directory.CreateDirectory (root);
+            await File.WriteAllTextAsync (Path.Combine (root, "a:b.json"), "x", ct);
+            await Provider.WriteAsync ("ok.json", new MemoryStream ([1]), null, ct);
+
+            Assert.Equal (["ok.json"], (await Provider.ListAsync ("", ct)).Select (e => e.Name));
+            Assert.Equal (["ok.json"], (await Provider.GetChangesAsync (null, ct)).Changed.Select (e => e.Name));
+        }
+
+        [Fact]
+        public async Task AMissingRequiredRootIsUnreachableNotCreated ()
+        {
+            var ct = TestContext.Current.CancellationToken;
+            var missing = new LocalFolderStorageProvider (Path.Combine (root, "unplugged"), requireRoot: true);
+            await Assert.ThrowsAsync<DirectoryNotFoundException> (() => missing.WriteAsync ("Recital/format.json", new MemoryStream ([1]), null, ct));
+            await Assert.ThrowsAsync<DirectoryNotFoundException> (() => missing.ListAsync ("Recital", ct));
+            Assert.False (Directory.Exists (Path.Combine (root, "unplugged")));
+        }
+
         public override void Dispose ()
         {
             if (Directory.Exists (root))

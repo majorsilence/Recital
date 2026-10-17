@@ -1,6 +1,26 @@
 # Changelog
 
-## Unreleased
+## Phase 5: Sync engine and local sync folder (2026-10-17)
+
+- `SyncEngine` (`Majorsilence.Recital.Core.Sync`): a local copy of the sync home in app data, a
+  persistent outbox, push then pull rounds, change detection by change feed or by listing and ETag, and
+  conflicted-copy tolerance. Rounds run every 30 s, soon after each write, and with exponential backoff
+  while offline. A sync home from a newer format is left alone (D-018, docs/SYNC_FORMAT.md).
+- The library on the desktop can sync through any folder (Dropbox, Drive, OneDrive, iCloud Drive or a
+  network share): Sync > Choose sync folder… in the library, with the sync state in the status bar and
+  the library refreshing when another device's changes arrive. An existing local library is uploaded
+  the first time; Stop syncing keeps the local copy.
+- `LocalFolderStorageProvider`: content-hash ETags for files up to 256 KB (D-019), names no logical
+  path can hold are skipped rather than failing a listing, and `requireRoot` treats a missing folder as
+  offline instead of creating it.
+- Fixed: after a restart, a device with a slow clock could save a position that lost to one it had
+  already read past (D-020).
+- Tests: `Majorsilence.Recital.Sync.Tests`, the plan's acceptance simulation (three devices, random
+  interleavings, offline periods, flaky networks, restarts, ±10 min clock skew, conflicted and stale
+  copies, a 2 s file-system clock; 1,000 seeds in CI, D-021) and 34 engine tests; Core 52 (LocalFolder
+  ETags), UI 15 (choosing a sync folder picks up another device's book).
+
+## Before Phase 5
 
 - Majorsilence.Forms 26.11.6, with the fixes for GAP-002 to GAP-011. Every Recital workaround is gone:
   - Library import reads picked files as streams (`OpenFileDialog.SelectedFiles`), so Android, iOS and the

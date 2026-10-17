@@ -196,3 +196,77 @@ the CFI no longer resolves (plan 1.4). Percentages weight each linear spine item
   phone hosts. Margins grow with the window, and wide windows hold the text to about 36 em.
 - Progress is saved 1.5 s after the last page turn and when the book closes (including on window close,
   which is held until the write finishes).
+
+## D-018: Sync engine: a local copy, an outbox, and copy-then-merge (2026-10-17)
+
+Each device keeps a full copy of the sync home in app data, and the app reads and writes only that copy
+(offline-first, plan 2.4). `SyncEngine` copies files both ways and never merges. Merging stays in
+`LibraryService`, which already reads every device's files and takes the highest HLC, so convergence
+reduces to every device holding the same files.
+
+- **Outbox:** writes to the device's own files and to write-once files are recorded (persisted, by path
+  and a sequence number) *before* the local write. A push removes a path only if no newer write arrived
+  while it was copying.
+- **Write-once collisions:** two devices importing the same book write different `meta/` files
+  (different `addedAt`/`addedByDevice`). The sync home's copy wins: the second device skips its push and
+  pulls the winner over its own. Books are content-addressed, so a local copy is never re-downloaded.
+- **Change detection:** providers with a change feed use it; others (LocalFolder) are listed in full
+  and diffed by ETag against an index of what was last copied. File write times are not compared with
+  a cursor, because Dropbox and similar clients keep the original machine's time, which can be ten
+  minutes "in the past" on a skewed device.
+- **Not deleted, not compacted:** nothing is ever deleted on either side; removing a book from the
+  library will need tombstones (later phase). All books are pulled eagerly; fetching books on first
+  open is a possible later saving on phones.
+- **The sync home's identity** (`local:<folder>`) keys the outbox and index, so a new sync home
+  re-uploads the local library ("attach"), and the old one's state is left alone.
+- **A missing folder is offline.** `LocalFolderStorageProvider(requireRoot: true)` throws
+  `DirectoryNotFoundException` rather than create the folder, so an unmounted drive never gets a fresh
+  empty library written into its mount point.
+- **Format guard:** a `format.json` with a higher version stops the device from writing to that sync home.
+
+The local sync folder is offered only on the desktop (Windows, macOS, Linux), where Dropbox, Drive,
+OneDrive and iCloud have clients that sync such a folder. Phones and the browser get the cloud providers
+in Phase 7.
+
+## D-019: LocalFolder ETags hash small files (2026-10-17)
+
+Write time plus size is not a safe ETag for a folder that is polled. File systems stamp writes with a
+coarse clock (milliseconds on ext4 before multigrain timestamps, 2 s on FAT/exFAT and some network
+shares), and two progress saves of the same size within one tick shared an ETag, so a poller missed the
+second save until the next one. Files up to 256 KB (every state, settings and meta file, and covers)
+now get a SHA-256 content ETag. Writes hash while copying, and listings cache hashes, trusting a cached
+hash only if the file's write time is at least 2 s before the hash was taken (git's "racy entry" rule).
+Larger files (books, which are write-once and content-addressed) keep time plus size.
+
+## D-020: A save outranks everything the device has seen for that book (2026-10-17)
+
+`SaveProgressAsync` reads the book's state files (observing their HLCs) before it stamps a new
+position. Without this, a device whose clock runs behind could restart (its HLC clock forgetting what
+it had observed), save, and lose to its own earlier save or to a position it had already read past.
+Settings already worked this way, because saving them merges first.
+
+## D-021: The Phase 5 simulation (2026-10-17)
+
+`Majorsilence.Recital.Sync.Tests` runs three devices over a shared sync home in a real temporary folder
+(`LocalFolderStorageProvider`), each with an in-memory local copy and a clock skewed by up to ±10
+minutes. A seeded run is 80 random steps: imports from a pool of four books, page turns, preference
+changes, sync rounds, going offline, flaky networks (calls fail at random, including writes that land
+but report failure), restarts (the local copy and outbox survive), and a simulated sync client that
+leaves conflicted copies of files (current or stale) and sometimes puts a stale version back under the
+real name. The shared folder's write times are rounded to 2 s, as on FAT. Then all devices come online
+and sync three times. The run passes if:
+
+- the third round moves nothing;
+- every outbox is empty;
+- no device wrote a file other than its own or an absent write-once one;
+- every device shows the same library, positions and preferences, and those are the newest of
+  everything any device saved (the highest HLC returned by any save, and per setting the highest HLC
+  in any device's own settings file).
+
+CI runs 1,000 seeds (about 8 s on a desktop). `RECITAL_SYNC_RUNS` and `RECITAL_SYNC_SEED` change the
+count and first seed, and a failure names its seed and prints the last 60 steps. Before relying on it,
+each of these deliberate bugs was checked to fail it: a write-once meta file that keeps the local
+version (it failed); time-plus-size ETags (168 of 500 runs failed); an outbox that does not survive a
+restart (146 of 300); pulling a device's own files (1 of 300). The D-020 fix is not reachable from the
+simulation, which always lists the library (and so observes every HLC) before saving, so a unit test
+covers it. 20,000 seeds passed locally.

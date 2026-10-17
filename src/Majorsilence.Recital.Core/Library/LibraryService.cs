@@ -168,11 +168,16 @@ namespace Majorsilence.Recital.Core.Library
             return best;
         }
 
-        /// <summary>Records this device's position in a book.</summary>
+        /// <summary>
+        /// Records this device's position in a book. It outranks (by HLC) every position for the book this
+        /// device has seen, whatever the clocks say: the clock observes them all first, this device's own
+        /// earlier saves included, which matters after a restart on a device whose clock is behind.
+        /// </summary>
         public async Task<ReadingProgress> SaveProgressAsync (string bookId, ReadingLocator locator, CancellationToken ct = default)
         {
             await write_gate.WaitAsync (ct).ConfigureAwait (false);
             try {
+                await GetProgressAsync (bookId, ct).ConfigureAwait (false);
                 var path = SyncPaths.State (bookId, Device.DeviceId);
                 var current = await StatAndReadAsync (path, SyncJson.Default.BookStateFile, ct).ConfigureAwait (false);
                 var progress = new ReadingProgress (locator, clock.Now (), time.GetUtcNow ());

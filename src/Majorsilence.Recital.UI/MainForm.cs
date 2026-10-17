@@ -3,6 +3,7 @@ using Majorsilence.Forms;
 using Majorsilence.Recital.Core;
 using Majorsilence.Recital.Core.Library;
 using Majorsilence.Recital.Core.Reading;
+using Majorsilence.Recital.Core.Sync;
 
 namespace Majorsilence.Recital.UI
 {
@@ -68,15 +69,78 @@ namespace Majorsilence.Recital.UI
 
         private async Task InitializeCoreAsync ()
         {
-            Services = await services_factory (CancellationToken.None);
-            Preferences = await Services.Library.LoadPreferencesAsync ();
+            var services = await services_factory (CancellationToken.None);
+            Services = services;
+            Preferences = await services.Library.LoadPreferencesAsync ();
             ApplyTheme ();
 
-            Library = new LibraryView (Services.Library, Operations) { Dock = DockStyle.Fill };
-            Library.OpenRequested += (_, book) => Operations.Run (() => OpenBookAsync (book));
+            var library = new LibraryView (services.Library, Operations) { Dock = DockStyle.Fill };
+            library.OpenRequested += (_, book) => Operations.Run (() => OpenBookAsync (book));
+            library.SyncFolderChosen += (_, folder) => Operations.Run (() => ChangeSyncFolderAsync (folder));
+            library.SyncNowRequested += (_, _) => Operations.Run (SyncNowAsync);
+            var previous = Library;
+            Library = library;
+            if (services.Sync is { } sync)
+                sync.RoundCompleted += OnSyncRoundCompleted;
+            ShowSyncStatus ();
             ApplyTheme ();
-            Show (Library);
-            await Library.RefreshAsync ();
+            Show (library);
+            previous?.Dispose ();
+            await library.RefreshAsync ();
+        }
+
+        /// <summary>
+        /// Makes <paramref name="folder"/> this device's sync home (null: stop syncing) and reopens the library
+        /// on it. Only where the services have local app data to record the choice in.
+        /// </summary>
+        public async Task ChangeSyncFolderAsync (string? folder)
+        {
+            if (Services?.DataDirectory is not { } dataDirectory)
+                throw new InvalidOperationException ("This device has no local app data to keep a sync folder setting in.");
+            if (folder == Services.SyncFolder)
+                return;
+
+            await AppServices.SetSyncFolderAsync (dataDirectory, folder);
+            await CloseBookAsync ();
+            var old = Services;
+            if (old.Sync is { } sync)
+                sync.RoundCompleted -= OnSyncRoundCompleted;
+            Services = null;
+            await old.DisposeAsync ();
+
+            initialize = null;
+            await InitializeAsync ();
+            if (Services?.Sync is { } started)
+                await started.SyncOnceAsync ();
+        }
+
+        /// <summary>Runs a sync round now; the library refreshes when it brings changes.</summary>
+        public async Task SyncNowAsync ()
+        {
+            if (Services?.Sync is { } sync)
+                await sync.SyncOnceAsync ();
+        }
+
+        // Raised on a worker thread by the sync loop.
+        private void OnSyncRoundCompleted (object? sender, SyncRoundEventArgs e)
+        {
+            if (IsDisposed)
+                return;
+            BeginInvoke (() => {
+                if (IsDisposed || !ReferenceEquals (sender, Services?.Sync))
+                    return;
+                ShowSyncStatus ();
+                // Another device's changes: show them in the library. An open book keeps its place; the next
+                // time it is opened, it opens at the newest position from any device.
+                if (e.Round.Pulled.Count > 0 && Reader is null && Library is { } library)
+                    Operations.Run (() => library.RefreshAsync ());
+            });
+        }
+
+        private void ShowSyncStatus ()
+        {
+            if (Services is { } services)
+                Library?.ShowSync (services.CanUseSyncFolder, services.SyncFolder, services.Sync?.Status);
         }
 
         /// <summary>Switches to the reader and opens <paramref name="book"/> at its saved position.</summary>
@@ -131,6 +195,13 @@ namespace Majorsilence.Recital.UI
                     }
                 });
             }
+        }
+
+        protected override void OnFormClosed (FormClosedEventArgs e)
+        {
+            base.OnFormClosed (e);
+            // Stops the sync loop; a round in flight finishes on its own (each write is atomic).
+            Services?.Dispose ();
         }
 
         private void Show (Control view)

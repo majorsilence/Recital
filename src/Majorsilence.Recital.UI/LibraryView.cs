@@ -4,6 +4,7 @@ using Majorsilence.Forms;
 using Majorsilence.Forms.Backends;
 using Majorsilence.Forms.Drawing;
 using Majorsilence.Recital.Core.Library;
+using Majorsilence.Recital.Core.Sync;
 
 using Font = Majorsilence.Forms.Drawing.Font;
 
@@ -33,6 +34,10 @@ namespace Majorsilence.Recital.UI
         private readonly ToolStripButton view_button = new ("List");
         private readonly StatusStrip status_strip = new () { Dock = DockStyle.Bottom, SizingGrip = false };
         private readonly ToolStripStatusLabel status = new () { Spring = true, TextAlign = ContentAlignment.MiddleLeft };
+        private readonly ToolStripStatusLabel sync_status = new () { TextAlign = ContentAlignment.MiddleRight };
+        private readonly ToolStripDropDownButton sync_button = new ("Sync") { Visible = false, Alignment = ToolStripItemAlignment.Right };
+        private readonly ToolStripMenuItem sync_now = new ("Sync now");
+        private readonly ToolStripMenuItem stop_syncing = new ("Stop syncing");
         private readonly Label empty = new () {
             Text = "Your library is empty.\nImport an EPUB, or drop one here, to start reading.",
             TextAlign = ContentAlignment.MiddleCenter,
@@ -61,8 +66,15 @@ namespace Majorsilence.Recital.UI
             }
             view_button.Click += (_, _) => ToggleView ();
 
-            tool_strip.Items.AddRange ([import, new ToolStripSeparator (), new ToolStripLabel ("Search"), search, sort_button, view_button]);
+            var choose_folder = new ToolStripMenuItem ("Choose sync folder…");
+            choose_folder.Click += (_, _) => operations.Run (ChooseSyncFolderAsync);
+            sync_now.Click += (_, _) => SyncNowRequested?.Invoke (this, EventArgs.Empty);
+            stop_syncing.Click += (_, _) => SyncFolderChosen?.Invoke (this, null);
+            sync_button.DropDownItems.AddRange ([choose_folder, sync_now, stop_syncing]);
+
+            tool_strip.Items.AddRange ([import, new ToolStripSeparator (), new ToolStripLabel ("Search"), search, sort_button, view_button, sync_button]);
             status_strip.Items.Add (status);
+            status_strip.Items.Add (sync_status);
 
             list.Columns.Add ("Title", 320);
             list.Columns.Add ("Author", 200);
@@ -103,6 +115,7 @@ namespace Majorsilence.Recital.UI
         public ListView List => list;
         public IReadOnlyList<LibraryBook> Books => books;
         public string StatusText => status.Text ?? string.Empty;
+        public string SyncStatusText => sync_status.Text ?? string.Empty;
 
         /// <summary>The books shown, in display order, after search and sort.</summary>
         public IReadOnlyList<LibraryBook> Shown => list.Items.Cast<ListViewItem> ().Select (i => (LibraryBook)i.Tag!).ToList ();
@@ -130,6 +143,40 @@ namespace Majorsilence.Recital.UI
         } = Colors.FromArgb (Core.Reading.ReaderTheme.Light.Accent);
 
         public event EventHandler<LibraryBook>? OpenRequested;
+
+        /// <summary>The user picked a folder to sync with (null: stop syncing).</summary>
+        public event EventHandler<string?>? SyncFolderChosen;
+
+        public event EventHandler? SyncNowRequested;
+
+        /// <summary>
+        /// Shows the sync menu where a local sync folder is possible, and the sync state in the status bar.
+        /// </summary>
+        /// <param name="available">A sync folder can be chosen here (the desktop).</param>
+        /// <param name="folder">The folder synced with, or null.</param>
+        /// <param name="sync">The engine's latest status, or null when not syncing.</param>
+        public void ShowSync (bool available, string? folder, SyncStatus? sync)
+        {
+            sync_button.Visible = available;
+            sync_now.Enabled = stop_syncing.Enabled = folder is not null;
+            sync_button.ToolTipText = folder is null ? "Keep this library in step with other devices through a shared folder" : "Syncing with " + folder;
+            sync_status.Text = SyncText (folder, sync);
+        }
+
+        /// <summary>A few words on the sync state, for the status bar.</summary>
+        public static string SyncText (string? folder, SyncStatus? sync)
+        {
+            if (folder is null || sync is null)
+                return string.Empty;
+            var waiting = sync.Pending > 0 ? $" ({sync.Pending} waiting)" : "";
+            return sync.State switch {
+                SyncState.Syncing => "Syncing…",
+                SyncState.Offline => "Sync folder unavailable, retrying" + waiting,
+                SyncState.NewerFormat => "Sync folder needs a newer Recital",
+                _ when sync.LastSuccess is { } last => "Synced " + last.ToLocalTime ().ToString ("t", CultureInfo.CurrentCulture) + waiting,
+                _ => "Not synced yet" + waiting,
+            };
+        }
 
         /// <summary>Re-reads the library from the sync home.</summary>
         public async Task RefreshAsync (CancellationToken ct = default)
@@ -182,6 +229,19 @@ namespace Majorsilence.Recital.UI
             if (await dialog.ShowDialogAsync () != DialogResult.OK)
                 return;
             await ImportFilesAsync (dialog.SelectedFiles);
+        }
+
+        /// <summary>Asks for a folder to sync with (the OS folder picker), then raises <see cref="SyncFolderChosen"/>.</summary>
+        public async Task ChooseSyncFolderAsync ()
+        {
+            using var dialog = new FolderBrowserDialog {
+                Description = "Choose a folder your other devices can see too: a Dropbox, Google Drive, OneDrive or iCloud Drive folder, or a network share. Recital keeps your library in a Recital folder inside it.",
+                UseDescriptionForTitle = false,
+                ShowNewFolderButton = true,
+            };
+            if (await dialog.ShowDialogAsync () != DialogResult.OK || string.IsNullOrEmpty (dialog.SelectedPath))
+                return;
+            SyncFolderChosen?.Invoke (this, dialog.SelectedPath);
         }
 
         private async Task<Bitmap?> LoadCoverAsync (string id, CancellationToken ct)

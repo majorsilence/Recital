@@ -1,7 +1,7 @@
 # Sync folder format
 
-**Format version:** 1 (draft: written since Phase 4, to a local folder only, so it can still change
-before Phase 5 syncs it)
+**Format version:** 1 (synced since Phase 5). A reader that finds a higher `formatVersion` in
+`format.json` stops syncing with that folder rather than write to it.
 
 All synced state lives under one folder in the user's chosen sync home (plan section 2). Recital never
 writes anywhere else in the user's storage.
@@ -23,8 +23,11 @@ writes anywhere else in the user's storage.
   `settings/<deviceId>.json`. `books/`, `meta/` and `covers/` are content-addressed and write-once.
 - Readers merge all device files: progress by highest HLC, annotations by GUID union (highest HLC
   per GUID, tombstones kept), settings per key by highest HLC.
-- `*conflicted copy*` / `(1)` duplicates are read as extra merge inputs and are otherwise ignored.
-  Recital never deletes user files.
+- File names are canonical: `<id>.json` (or `.epub`, `.jpg`) where the id is lowercase hex. Any other
+  `.json` name in `state/<bookId>/`, `devices/` or `settings/` is a sync client's conflicted copy
+  (`<id> (1).json`, `<id> (Laptop's conflicted copy 2026-10-17).json`): read as an extra merge input,
+  never written. Other names in `books/`, `meta/` and `covers/`, and anything else in the folder, are
+  ignored. Recital never deletes or renames files in the sync home.
 - No secrets (OAuth tokens, API keys) are ever written here.
 
 ## Files
@@ -69,3 +72,39 @@ Keys: `theme` (light/sepia/dark/black), `fontSize`, `fontFamily` (""/serif/sans-
 
 The device id itself lives outside the sync home, in local app data (`device.json`), so copying a sync
 folder never makes two devices share an id.
+
+## How a device syncs
+
+Each device keeps a full local copy of the sync home in its app data (`library/Recital/...`, the same
+layout) and the app only ever reads and writes that copy, so it works the same offline. The sync engine
+(`Majorsilence.Recital.Core.Sync.SyncEngine`) keeps the two in step:
+
+1. **Outbox.** Every write the app makes to one of its own files or a write-once file is recorded in a
+   persistent outbox before it happens.
+2. **Push.** Each round, the outbox's files are copied to the sync home: own files overwrite the copy
+   there; write-once files are written only if the sync home has none.
+3. **Pull.** The sync home is listed (or its change feed read), and every file whose ETag differs from the
+   one last copied is copied into the local copy: other devices' files, conflicted copies, and write-once
+   files (the sync home's version wins over a local one, so two devices that import the same book keep
+   the same `meta/` file). A device's own files are pulled only to restore one its local copy lost.
+4. **Merge.** Nothing is merged while copying. The library reads every device's files and merges them by
+   HLC as described above, so devices holding the same files show the same state.
+
+Rounds run every 30 s, about 2 s after a local write, and with exponential backoff (2 s doubling to
+5 min, with jitter) while the sync home cannot be reached. Without a change feed (a local folder),
+change detection is a full listing compared by ETag. Write times are not trusted, because sync clients
+keep the original machine's time.
+
+## Local files (never synced)
+
+In the device's app data directory:
+
+- `device.json`: `{ "deviceId": "...", "name": "..." }`, this device's id.
+- `sync-home.json`: `{ "formatVersion": 1, "folder": "/home/me/Dropbox" }`, the chosen sync folder
+  (`null` for none). Recital writes `Recital/` inside it.
+- `library/Recital/...`: the local copy of the sync home.
+- `library/sync/<key>/outbox.json`: `{ "formatVersion": 1, "sequence": 12, "paths": { "<path>": <seq> } }`,
+  writes waiting to be pushed. `<key>` is the first 16 hex digits of SHA-256 of the sync home's name
+  (`local:<folder>`), so choosing another sync home starts afresh and re-uploads the local library.
+- `library/sync/<key>/index.json`: `{ "formatVersion": 1, "remote": "local:...", "attached": true,
+  "cursor": null, "pulled": { "<path>": "<etag>" } }`, the sync home's ETag of each file last copied.

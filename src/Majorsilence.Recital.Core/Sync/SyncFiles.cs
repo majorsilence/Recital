@@ -36,6 +36,9 @@ namespace Majorsilence.Recital.Core.Sync
     [JsonSerializable (typeof (BookStateFile))]
     [JsonSerializable (typeof (SettingsFile))]
     [JsonSerializable (typeof (LocalDeviceFile))]
+    [JsonSerializable (typeof (SyncOutboxFile))]
+    [JsonSerializable (typeof (SyncIndexFile))]
+    [JsonSerializable (typeof (SyncHomeSettings))]
     internal sealed partial class SyncJson : JsonSerializerContext
     {
     }
