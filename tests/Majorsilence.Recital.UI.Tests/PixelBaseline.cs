@@ -1,4 +1,4 @@
-using SkiaSharp;
+using Majorsilence.Forms.Headless;
 using Xunit;
 
 namespace Majorsilence.Recital.UI.Tests
@@ -9,7 +9,8 @@ namespace Majorsilence.Recital.UI.Tests
     /// text differently (about 200 pixels on the title bar alone).
     ///
     /// A missing or mismatched baseline fails the test and writes the actual render next to the test
-    /// output as &lt;name&gt;.&lt;os&gt;.actual.png, which CI uploads. Set RECITAL_UPDATE_BASELINES=1 to (re)write
+    /// output as &lt;name&gt;.&lt;os&gt;.actual.png, with the differing pixels marked in &lt;name&gt;.&lt;os&gt;.diff.png; CI
+    /// uploads both. Set RECITAL_UPDATE_BASELINES=1 to (re)write
     /// this OS's baseline in the source tree.
     /// </summary>
     internal static class PixelBaseline
@@ -35,14 +36,14 @@ namespace Majorsilence.Recital.UI.Tests
             if (!File.Exists (baselinePath))
                 Assert.Fail ($"No baseline {fileName}. Review {WriteActual (fileName, actualPng)} and commit it as {sourcePath}.");
 
-            using var expected = SKBitmap.Decode (baselinePath);
-            using var actual = SKBitmap.Decode (actualPng);
+            var comparison = PixelComparison.Compare (File.ReadAllBytes (baselinePath), actualPng, ChannelTolerance);
 
-            var differing = CountDifferingPixels (expected, actual);
-            var allowed = (int)(expected.Width * expected.Height * MaxDifferingFraction);
-
-            if (differing > allowed)
-                Assert.Fail ($"{fileName}: {differing} pixels differ (allowed {allowed}). Actual render: {WriteActual (fileName, actualPng)}");
+            if (!comparison.IsWithin (MaxDifferingFraction)) {
+                var actualPath = WriteActual (fileName, actualPng);
+                if (comparison.CreateDiffPng () is { } diff)
+                    File.WriteAllBytes (Path.Combine (AppContext.BaseDirectory, Path.ChangeExtension (fileName, ".diff.png")), diff);
+                Assert.Fail ($"{fileName}: {comparison}. Actual render: {actualPath}");
+            }
         }
 
         private static string WriteActual (string fileName, byte[] png)
@@ -54,26 +55,6 @@ namespace Majorsilence.Recital.UI.Tests
 
         private static string OsName ()
             => OperatingSystem.IsWindows () ? "windows" : OperatingSystem.IsMacOS () ? "macos" : "linux";
-
-        private static int CountDifferingPixels (SKBitmap expected, SKBitmap actual)
-        {
-            Assert.Equal ((expected.Width, expected.Height), (actual.Width, actual.Height));
-
-            var differing = 0;
-
-            for (var y = 0; y < expected.Height; y++)
-                for (var x = 0; x < expected.Width; x++)
-                    if (!Close (expected.GetPixel (x, y), actual.GetPixel (x, y)))
-                        differing++;
-
-            return differing;
-        }
-
-        private static bool Close (SKColor a, SKColor b)
-            => Math.Abs (a.Red - b.Red) <= ChannelTolerance
-            && Math.Abs (a.Green - b.Green) <= ChannelTolerance
-            && Math.Abs (a.Blue - b.Blue) <= ChannelTolerance
-            && Math.Abs (a.Alpha - b.Alpha) <= ChannelTolerance;
 
         internal static string SourceDirectory ([System.Runtime.CompilerServices.CallerFilePath] string path = "")
             => Path.GetDirectoryName (path)!;

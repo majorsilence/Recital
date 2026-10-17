@@ -40,13 +40,15 @@ jobs:
       - name: Test
         run: dotnet test Majorsilence.Recital.slnx --configuration Release --no-build -p:EnableAndroidHead=false
 
-      # Mismatched renders are written next to the test assembly as *.actual.png.
+      # Mismatched renders are written next to the test assembly as *.actual.png, their differences as *.diff.png.
       - name: Upload mismatched UI renders
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: ui-actual-${{ matrix.os }}
-          path: tests/**/bin/**/*.actual.png
+          path: |
+            tests/**/bin/**/*.actual.png
+            tests/**/bin/**/*.diff.png
           if-no-files-found: ignore
 
   android:

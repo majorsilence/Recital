@@ -14,15 +14,14 @@ namespace Majorsilence.Recital.UI.Tests
     /// </summary>
     internal sealed class UiTest : IDisposable
     {
-        private readonly SynchronizationContext? previous = SynchronizationContext.Current;
+        private readonly IDisposable environment;
+        private readonly IDisposable context;
 
         public UiTest ()
         {
-            HeadlessTestEnvironment.Use ();
-            // FRAMEWORK-GAP: GAP-007. Nothing installs a UI SynchronizationContext on the Headless backend,
-            // so continuations after an await in an event handler ran on the thread pool. Install the
-            // framework's own context; Pump drains what it posts.
-            SynchronizationContext.SetSynchronizationContext (new WindowsFormsSynchronizationContext ());
+            environment = HeadlessTestEnvironment.Use ();
+            // So an await in an event handler resumes on this thread; Pump drains what the context posts.
+            context = HeadlessRenderer.UseSynchronizationContext ();
         }
 
         public static string Corpus (string file) => Path.Combine (AppContext.BaseDirectory, "corpus", file);
@@ -51,7 +50,6 @@ namespace Majorsilence.Recital.UI.Tests
         public MainForm OpenMainForm (InMemoryStorageProvider storage, DeviceIdentity device, int width = 1000, int height = 700)
         {
             var form = new MainForm (ct => AppServices.InMemoryAsync (storage, device, new FixedTime (), ct));
-            HeadlessTestEnvironment.PinFont (form);
             Resize (form, width, height);
             // Shown, as the hosts do: a form never shown has no focusable controls. Showing raises Load,
             // which opens the library.
@@ -133,7 +131,8 @@ namespace Majorsilence.Recital.UI.Tests
         {
             foreach (var form in Application.OpenForms.Cast<Form> ().ToList ())
                 form.Dispose ();
-            SynchronizationContext.SetSynchronizationContext (previous);
+            context.Dispose ();
+            environment.Dispose ();
         }
 
         /// <summary>A fixed clock, so "added" dates and orderings in renders never change.</summary>

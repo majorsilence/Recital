@@ -15,7 +15,6 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Majorsilence.Forms.Headless" />
-    <PackageReference Include="SkiaSharp" />
   </ItemGroup>
 
   <ItemGroup>

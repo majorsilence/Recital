@@ -136,6 +136,26 @@ namespace Majorsilence.Recital.UI.Tests
         }
 
         [Fact]
+        public async Task SwipingTurnsPagesOnAPhone ()
+        {
+            var library = await UiTest.LibraryWithAsync (UiTest.Sherlock);
+            using var ui = new UiTest ();
+            var form = OpenBook (ui, library, "Sherlock", 400, 760);
+            var view = form.Reader!.PageView;
+            var start = Session (form).Locator;
+            var middle = UiTest.PointIn (form, view, view.Width / 2, view.Height / 2);
+
+            HeadlessRenderer.Swipe (form, middle.X, middle.Y, SwipeDirection.Left, velocityX: -1200);
+            UiTest.WaitIdle (form);
+            Assert.NotEqual (start, Session (form).Locator);
+
+            HeadlessRenderer.Swipe (form, middle.X, middle.Y, SwipeDirection.Right, velocityX: 1200);
+            UiTest.WaitIdle (form);
+            Assert.Equal (start, Session (form).Locator);
+            Assert.False (form.Reader.ChromeVisible, "A swipe turns the page; it is not a tap on the middle.");
+        }
+
+        [Fact]
         public async Task AContentsEntryGoesToItsChapter ()
         {
             var library = await UiTest.LibraryWithAsync (UiTest.SePride);

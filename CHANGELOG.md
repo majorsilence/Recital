@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Majorsilence.Forms 26.11.6, with the fixes for GAP-002 to GAP-011. Every Recital workaround is gone:
+  - Library import reads picked files as streams (`OpenFileDialog.SelectedFiles`), so Android, iOS and the
+    browser can import books the platform gives no path.
+  - The reader collapses the split's side panel instead of moving the page out of it; toolbars draw
+    item colours and drop-down arrows without a custom renderer.
+  - UI tests use `HeadlessRenderer.UseDeterministic`, `UseSynchronizationContext` and `PixelComparison`
+    (a mismatched baseline also writes a `*.diff.png`, which CI uploads), and a swipe test covers
+    `BookPageView`'s gestures.
 - README screenshots, rendered by an opt-in test (`ScreenshotTests`) from Project Gutenberg books.
 - Test corpus: Project Gutenberg's Frankenstein (#84), The Adventures of Sherlock Holmes (#1661) and Moby-Dick (#2701),
   in the corpus-wide parse, CFI and layout tests. Gutenberg is now the preferred source for test books.

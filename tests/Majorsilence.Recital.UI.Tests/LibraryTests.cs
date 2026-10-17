@@ -1,5 +1,6 @@
 using System.Text;
 using Majorsilence.Forms;
+using Majorsilence.Forms.Backends;
 using Majorsilence.Forms.Headless;
 using Majorsilence.Recital.Core.Library;
 using Xunit;
@@ -52,6 +53,30 @@ namespace Majorsilence.Recital.UI.Tests
             } finally {
                 HeadlessRenderer.OpenFileResponse = null;
                 File.Delete (junk);
+            }
+        }
+
+        // Android, iOS and the browser pick files with no path (content URIs, sandboxed handles): the library
+        // reads what the picker opens, not a path.
+        [Fact]
+        public async Task ImportsAFileThePickerGivesNoPath ()
+        {
+            var (storage, device) = await UiTest.LibraryWithAsync ();
+            var bytes = await File.ReadAllBytesAsync (UiTest.Corpus (UiTest.Sherlock), TestContext.Current.CancellationToken);
+            using var ui = new UiTest ();
+            try {
+                var form = ui.OpenMainForm (storage, device);
+                HeadlessRenderer.OpenFilePickResponse = _ => [
+                    new PickedFile ("sherlock.epub", null, _ => Task.FromResult<Stream> (new MemoryStream (bytes))),
+                ];
+                var strip = form.Library!.Controls.OfType<ToolStrip> ().First (s => s is not StatusStrip);
+                UiTest.ClickItem (form, strip, strip.Items.Cast<ToolStripItem> ().First (i => i.Text == "Import…"));
+                UiTest.WaitIdle (form);
+
+                Assert.Equal ("The Adventures of Sherlock Holmes", Assert.Single (form.Library.Books).Title);
+                Assert.Contains ("Added 1 book.", form.Library.StatusText, StringComparison.Ordinal);
+            } finally {
+                HeadlessRenderer.OpenFilePickResponse = null;
             }
         }
 

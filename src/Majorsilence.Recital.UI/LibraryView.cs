@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Globalization;
 using Majorsilence.Forms;
+using Majorsilence.Forms.Backends;
 using Majorsilence.Forms.Drawing;
 using Majorsilence.Recital.Core.Library;
 
@@ -141,22 +142,27 @@ namespace Majorsilence.Recital.UI
         }
 
         /// <summary>Imports files by path, reporting each outcome in the status bar.</summary>
-        public async Task ImportFilesAsync (IEnumerable<string> paths, CancellationToken ct = default)
+        public Task ImportFilesAsync (IEnumerable<string> paths, CancellationToken ct = default)
+            => ImportFilesAsync (paths.Select (PickedFile.FromPath), ct);
+
+        /// <summary>
+        /// Imports picked files, reporting each outcome in the status bar. They are read as streams, so files
+        /// the platform gives no path (Android content URIs, iOS and browser handles) import too.
+        /// </summary>
+        public async Task ImportFilesAsync (IEnumerable<PickedFile> files, CancellationToken ct = default)
         {
             var added = 0;
             var messages = new List<string> ();
-            foreach (var path in paths) {
+            foreach (var file in files) {
                 try {
-                    // FRAMEWORK-GAP: GAP-005. The picker hands back paths only, so on Android, iOS and the
-                    // browser (content URIs, sandboxed handles) there is nothing here that can be opened.
-                    await using var stream = new FileStream (path, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, useAsync: true);
-                    var result = await library.ImportAsync (stream, Path.GetFileName (path), ct);
+                    await using var stream = await file.OpenReadAsync (ct);
+                    var result = await library.ImportAsync (stream, file.Name, ct);
                     if (result.AlreadyInLibrary)
                         messages.Add ($"{result.Book.Title} is already in your library.");
                     else
                         added++;
                 } catch (Exception ex) when (ex is BookImportException or IOException or UnauthorizedAccessException) {
-                    messages.Add (ex is BookImportException ? ex.Message : $"Could not read {Path.GetFileName (path)}: {ex.Message}");
+                    messages.Add (ex is BookImportException ? ex.Message : $"Could not read {file.Name}: {ex.Message}");
                 }
             }
 
@@ -175,7 +181,7 @@ namespace Majorsilence.Recital.UI
             };
             if (await dialog.ShowDialogAsync () != DialogResult.OK)
                 return;
-            await ImportFilesAsync (dialog.FileNames);
+            await ImportFilesAsync (dialog.SelectedFiles);
         }
 
         private async Task<Bitmap?> LoadCoverAsync (string id, CancellationToken ct)

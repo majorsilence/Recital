@@ -287,14 +287,6 @@ namespace Majorsilence.Recital.UI
                     split.SplitterDistance = Math.Min (300, Math.Max (180, width / 4));
             }
 
-            // FRAMEWORK-GAP: GAP-010. Collapsing Panel1 leaves the splitter bar showing at the edge, so
-            // without a side panel the page goes straight into the body and the split is hidden.
-            var split_needed = !narrow && side_content is not null;
-            var page_host = split_needed ? (Control)split.Panel2 : body;
-            if (PageView.Parent != page_host)
-                page_host.Controls.Add (PageView);
-            split.Visible = split_needed;
-
             tool_strip.BringToFront ();
             status_strip.BringToFront ();
         }
