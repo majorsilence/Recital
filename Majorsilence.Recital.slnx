@@ -9,6 +9,7 @@
     <Project Path="src/Majorsilence.Recital.Storage.OneDrive/Majorsilence.Recital.Storage.OneDrive.csproj" />
     <Project Path="src/Majorsilence.Recital.Storage.WebDav/Majorsilence.Recital.Storage.WebDav.csproj" />
     <Project Path="src/Majorsilence.Recital.Storage/Majorsilence.Recital.Storage.csproj" />
+    <Project Path="src/Majorsilence.Recital.Tts.Platform/Majorsilence.Recital.Tts.Platform.csproj" />
     <Project Path="src/Majorsilence.Recital.Tts/Majorsilence.Recital.Tts.csproj" />
     <Project Path="src/Majorsilence.Recital.UI/Majorsilence.Recital.UI.csproj" />
   </Folder>
@@ -24,6 +25,7 @@
     <Project Path="tests/Majorsilence.Recital.Layout.Tests/Majorsilence.Recital.Layout.Tests.csproj" />
     <Project Path="tests/Majorsilence.Recital.Storage.Tests/Majorsilence.Recital.Storage.Tests.csproj" />
     <Project Path="tests/Majorsilence.Recital.Sync.Tests/Majorsilence.Recital.Sync.Tests.csproj" />
+    <Project Path="tests/Majorsilence.Recital.Tts.Tests/Majorsilence.Recital.Tts.Tests.csproj" />
     <Project Path="tests/Majorsilence.Recital.UI.Tests/Majorsilence.Recital.UI.Tests.csproj" />
   </Folder>
 </Solution>

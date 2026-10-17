@@ -29,6 +29,7 @@
 
   <ItemGroup>
     <Compile Include="..\Majorsilence.Recital.Storage.Tests\FakeWebDavServer.cs" Link="Fakes\FakeWebDavServer.cs" />
+    <Compile Include="..\Majorsilence.Recital.Tts.Tests\Fakes.cs" Link="Fakes\TtsFakes.cs" />
   </ItemGroup>
 
 </Project>

@@ -1,5 +1,28 @@
 # Changelog
 
+## Phase 8: Reading aloud, v1 (2026-10-17)
+
+- `Majorsilence.Recital.Tts`:
+  - The utterance planner (paragraph chunks with DOM positions) and the rule-based prosody annotator
+    (emphasis, dialogue, heading and scene-break pauses).
+  - Sentence splitting, and SSML with word marks.
+  - Speech channels that keep chunks queued back to back, and the audio pipeline (synthesis ahead of
+    playback, a local cache, word progress from the play position).
+  - `TtsPlayer`: across chapters, skip by sentence, speed and voice, and a sleep timer (D-028).
+- `Majorsilence.Recital.Tts.Platform` (D-029):
+  - Linux: speech-dispatcher over SSIP.
+  - Windows: SAPI voices with word timings and waveOut output.
+  - macOS: `say` and afplay.
+  - A PipeWire/PulseAudio pipe output for the engines to come.
+- Reader: Listen reads aloud from the page, turning pages itself and highlighting the sentence and word.
+  It has back, play/pause, next, stop, speed, voice and a sleep timer, and speed and voice are synced
+  preferences.
+- GAP-013: no streaming audio output on the desktop backends; Recital has one per OS.
+- Tests: `Majorsilence.Recital.Tts.Tests` covers the planner, SSML for every chunk of three books, the
+  gap and lag acceptance against a timed fake, the cache, the player across chapters, skipping and the
+  sleep timer. Opt-in (`RECITAL_TEST_SPEECH=1`) runs against the real speech-dispatcher and pipe
+  output. UI tests cover listening, auto page turns and speed.
+
 ## Phase 7: Cloud providers (2026-10-17)
 
 - Providers: WebDAV, Dropbox, OneDrive (Microsoft Graph) and Google Drive, each a small `HttpClient`

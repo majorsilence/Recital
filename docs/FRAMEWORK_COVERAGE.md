@@ -42,9 +42,22 @@ heads, **Headless** = offscreen Skia (UI tests).
 | `TextBox.UseSystemPasswordChar`, `Label.MaximumSize` (wrapping) | — | | | | ✅ | |
 | `ListView` `Details` with `MultiSelect`, `SelectedIndexChanged` (import browser) | — | — | — | — | ✅ | |
 | `ToolStripMenuItem` `Enabled`/`Checked`/`ToolTipText` per state (Sync menu) | — | — | — | — | ✅ | |
+| `Control.BeginInvoke` from engine threads (speech progress) | — | — | — | — | ✅ | |
+| `Majorsilence.Forms.Media.AudioPlayer` / `SoundPlayer` | not used | | | | | [GAP-013](FRAMEWORK_GAPS.md#gap-013-no-streaming-audio-output-on-the-desktop-backends) |
 | Drag-and-drop file import (`AllowDrop`, `DragEnter`, `DragDrop`, `DataFormats.FileDrop`) | — | — | — | — | — | |
 | `Majorsilence.Forms.Timer` (progress-save debounce) | — | — | — | — | ✅ (implicitly: saves happen) | |
 | `Graphics` in owner draw: `FillRectangle`, `DrawImage`, `DrawString` with `StringFormat`, `Bitmap (Stream)` | — | — | — | — | ✅ | |
+
+Phase 1 status: every host entry point compiles in CI (Desktop on all three OSes, Android, iOS
+simulator, Browser publish: 47 MB wwwroot). Only the Linux desktop host has been run. On-device
+checks happen in Phase 4, when there is a UI worth running.
+
+Phases 2 and 3 used no Majorsilence.Forms APIs (EPUB parsing and the layout engine are UI-free by design), so this table is unchanged.
+
+Phase 4: every Headless row above is covered by `Majorsilence.Recital.UI.Tests` (12 tests, four pixel
+baselines). On the desktop host the app has been started on Linux (Wayland) and runs, initialising the
+library; nobody has yet clicked through it by eye on any OS, so the Desktop column says "—" for the
+controls. The Android, iOS and browser heads build but have not been run with the reader UI.
 
 Since 26.11.6 Recital no longer uses `Theme.UIFont`, `PrivateFontCollection`, `Application.SetDefaultFont`,
 `MF_FORCE_CUSTOM_CHROME` or a custom `ToolStripProfessionalRenderer`: `HeadlessRenderer.UseDeterministic`
@@ -64,14 +77,6 @@ Phase 7: the Sync menu grew one item per kind of sync home. The WebDAV form (pas
 the import browser (`ListView` with multi-select) are in-window panels; Headless tests drive both. No
 new gaps.
 
-Phases 2 and 3 used no Majorsilence.Forms APIs (EPUB parsing and the layout engine are UI-free by design), so this table is unchanged.
-
-Phase 1 status: every host entry point compiles in CI (Desktop on all three OSes, Android, iOS
-simulator, Browser publish: 47 MB wwwroot). Only the Linux desktop host has been run. On-device
-checks happen in Phase 4, when there is a UI worth running.
-
-Phase 4: every Headless row above is covered by `Majorsilence.Recital.UI.Tests` (12 tests, four pixel
-baselines). On the desktop host the app has been started on Linux (Wayland) and runs, initialising the
-library; nobody has yet clicked through it by eye on any OS, so the Desktop column says "—" for the
-controls. The Android, iOS and browser heads build but have not been run with the reader UI.
-
+Phase 8: the reading-aloud bar (a bottom `ToolStrip` with drop-downs for speed, voice and sleep) and
+speech highlighting (marks under the text, from `BeginInvoke` on engine threads). The framework's audio
+classes were evaluated and not used: GAP-013.

@@ -372,3 +372,61 @@ from Phase 5 with only `folder` still read. The engine's outbox and index are ke
 on the same service, uploads the local library to it afresh. Stopping, or moving to another kind,
 forgets the old password or refresh token. Enums in sync files are now camelCase strings
 (`"kind": "highlight"`); the numbers early Phase 6 builds wrote still read.
+
+## D-028: Reading aloud: paragraph chunks, a queue kept ahead, two kinds of engine (2026-10-17)
+
+`Majorsilence.Recital.Tts` follows plan 3.1:
+- **Planning.** `UtterancePlanner` walks a chapter's DOM into chunks, one per paragraph or heading. A
+  paragraph is split at sentence ends only when it is longer than the engine accepts, because neural
+  voices plan intonation across a chunk (plan 3.2). Every character keeps its DOM position, for
+  highlighting and for saving the place. Footnotes, note references, ruby annotations and hidden
+  elements are not read.
+- **Prosody (rule-based).** `em`/`i`/`cite` and `strong`/`b` become emphasis, and quoted speech becomes
+  a dialogue span (with an optional second voice). Headings get 700 ms of pause on each side, and scene
+  breaks (`hr`, `* * *`) 1.2 s before what follows. Sentences are split by rule, and abbreviations
+  (Mr., St., e.g.) and initials do not end one.
+- **SSML.** `Ssml.Build` makes SSML with breaks, `emphasis`, a `voice` for dialogue, and, for engines
+  that report marks, a `mark` named after each word's character index.
+- **Two kinds of engine behind one `ISpeechChannel`** (a queue that speaks chunks back to back and
+  reports chunk start, word progress and chunk end):
+  - Engines that produce audio (`ISpeechSynthesizer`: SAPI, say, later Piper and the cloud engines) go
+    through `AudioSpeechChannel`. It synthesizes each enqueued chunk at once, or takes it from
+    `AudioCache` (keyed by engine, voice, speed, language and the chunk). It queues the audio on an
+    `IAudioOutput` and maps the output's play position to the word. With word timings that position
+    is exact; without them it is interpolated by character count.
+  - Engines that speak by themselves (speech-dispatcher, later Web Speech and the mobile engines)
+    queue chunks with the OS service and turn its mark, begin and end events into the same progress.
+- **The player.** `TtsPlayer` keeps three chunks queued beyond the one playing, so synthesis is always
+  ahead and there are no gaps. It follows on into the next chapter, starts at the sentence holding the
+  page's first position, and skips by sentence. Changing voice or speed restarts the current sentence.
+  It has a sleep timer (minutes, or the end of the chapter).
+- **The reader.** Speech moves the page itself (`ReadingSession.ShowPositionAsync`), so the place saved
+  is the word being read. The sentence and the word are drawn under the text. A page turned by hand
+  restarts reading from the new page.
+
+The acceptance numbers are tested against a fake engine with real latency and a real-time output:
+- No gap between chunks over 300 ms, while every chunk takes 150 ms to synthesize.
+- The highlighted word is never early, and never later than one sentence, with and without word
+  timings.
+
+Each word passed since the last 40 ms tick is reported, so a short sentence is never skipped.
+
+## D-029: The OS voices and outputs, without native dependencies (2026-10-17)
+
+- **Linux:** speech-dispatcher, which desktops already run (it drives espeak-ng, RHVoice, Piper and
+  others), reached in its SSIP protocol over the session socket. It is a protocol, so nothing is
+  linked, which keeps the copyleft libspeechd out. Chunks go as SSML with word marks. The marks come
+  back as progress, in order, which was checked against the real service on the development machine.
+  Sends are serialised, because two racing sends spoke paragraphs out of order.
+- **Windows:** SAPI through `System.Speech` (MIT). It renders SSML to 16-bit PCM and records the word
+  marks' audio positions (`BookmarkReached`) as word timings. Output is winmm `waveOut`, with an exact
+  device position.
+- **macOS:** `say` writes a WAVE file, using its own embedded commands for pauses and emphasis. It gives
+  no timings, so progress is interpolated. Output is `afplay` per segment.
+- **Linux audio for engines that produce audio** (Piper and the cloud engines in Phase 9): one
+  `pw-cat --raw` (or `pacat`, `aplay`) fed through a pipe for the whole session. Its position is the
+  clock less a 150 ms buffer, and pause stops the player process.
+- **Not yet:** media keys and lock-screen controls (an `IMediaSession` per host: SMTC, MPRIS,
+  MPNowPlayingInfoCenter), the Android foreground service, iOS background audio, and engines for
+  Android, iOS and the browser. They need the mobile heads running on devices (Phase 10). Linux
+  without speech-dispatcher has no voice until Piper (Phase 9).

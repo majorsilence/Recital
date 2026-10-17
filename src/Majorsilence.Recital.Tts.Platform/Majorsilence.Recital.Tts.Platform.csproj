@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The OS voices and audio outputs (plan 3.3): speech-dispatcher (Linux, over its SSIP socket), SAPI
+       (Windows, System.Speech), say (macOS); a pipe to PipeWire/PulseAudio, waveOut, afplay. -->
+
+  <PropertyGroup>
+    <TargetFramework>$(_TargetFramework)</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Majorsilence.Recital.Tts\Majorsilence.Recital.Tts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Speech" />
+  </ItemGroup>
+
+</Project>

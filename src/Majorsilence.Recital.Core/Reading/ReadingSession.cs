@@ -95,6 +95,25 @@ namespace Majorsilence.Recital.Core.Reading
         public Task<bool> GoToAsync (ReadingLocator target, CancellationToken ct = default)
             => Serialised (() => TryGoToCoreAsync (target, ct), ct);
 
+        /// <summary>
+        /// Shows the page holding <paramref name="position"/> in chapter <paramref name="spine"/> (following speech
+        /// as it is read aloud) and makes that exact position the one saved. Returns whether the page changed.
+        /// </summary>
+        public Task<bool> ShowPositionAsync (int spine, DomPosition position, CancellationToken ct = default) => Serialised (async () => {
+            var layout = spine == chapter.SpineIndex ? chapter : await LayoutAsync (spine, ct).ConfigureAwait (false);
+            if (layout.Pages.Count == 0)
+                return false;
+            var page = layout.PageOf (position).Index;
+            var changed = layout != chapter || page != PageIndex;
+            if (changed)
+                Show (layout, page);
+            SetAnchor (position);
+            return changed;
+        }, ct);
+
+        /// <summary>The next chapter after <paramref name="spine"/> with something to read, or null at the end of the book.</summary>
+        public int? NextReadableChapter (int spine) => NextReadable (spine, +1);
+
         /// <summary>Goes to a table-of-contents entry. Returns false when it points outside the spine.</summary>
         public Task<bool> GoToAsync (TocEntry entry, CancellationToken ct = default) => Serialised (async () => {
             if (entry.SpineIndex is not { } spine)

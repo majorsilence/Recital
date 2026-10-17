@@ -109,6 +109,15 @@ namespace Majorsilence.Recital.UI
             }
         }
 
+        /// <summary>The sentence and word being read aloud, drawn under the text.</summary>
+        public IReadOnlyList<PageMark> Spoken {
+            get;
+            set {
+                field = value;
+                Invalidate ();
+            }
+        } = [];
+
         /// <summary>Draws a bookmark ribbon in the top corner.</summary>
         public bool Bookmarked {
             get => bookmarked;
@@ -214,6 +223,7 @@ namespace Majorsilence.Recital.UI
             foreach (var highlight in highlights)
                 foreach (var rect in highlight.Rects)
                     marks.Add (new PageMark (rect, highlight.Argb, highlight.HasNote));
+            marks.AddRange (Spoken);
             if (Selection is var (start, end))
                 foreach (var rect in page.TextRects (start, end))
                     marks.Add (new PageMark (rect, SelectionArgb));

@@ -14,6 +14,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Majorsilence.Recital.Core\Majorsilence.Recital.Core.csproj" />
     <ProjectReference Include="..\Majorsilence.Recital.Platform\Majorsilence.Recital.Platform.csproj" />
+    <ProjectReference Include="..\Majorsilence.Recital.Tts.Platform\Majorsilence.Recital.Tts.Platform.csproj" />
   </ItemGroup>
 
   <!-- Cloud registrations (public app identifiers, not secrets), from -p:RecitalDropboxAppKey=... and friends.

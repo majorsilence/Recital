@@ -64,6 +64,9 @@ namespace Majorsilence.Recital.UI
         public MainForm (Func<CancellationToken, Task<AppServices>> servicesFactory)
         {
             services_factory = servicesFactory;
+            IReadOnlyList<Tts.ITtsEngine>? engines = null;
+            TtsEngines = () => engines ??= Tts.Platform.TtsEngines.ForCurrentPlatform (
+                Services?.DataDirectory is { } data ? Path.Combine (data, "tts-cache") : null);
             Text = "Recital";
             ClientSize = new Size (1000, 700);
 
@@ -79,6 +82,12 @@ namespace Majorsilence.Recital.UI
         public UiOperations Operations { get; } = new ();
 
         public AppServices? Services { get; private set; }
+
+        /// <summary>
+        /// Makes the reading-aloud engines (default: this OS's voices, caching audio in app data). Tests set
+        /// their own.
+        /// </summary>
+        public Func<IReadOnlyList<Tts.ITtsEngine>> TtsEngines { get; set; }
         public LibraryView? Library { get; private set; }
         public ReaderView? Reader { get; private set; }
         public ReaderPreferences Preferences { get; private set; } = new ();
@@ -216,7 +225,7 @@ namespace Majorsilence.Recital.UI
             if (Reader is not null)
                 await CloseBookAsync ();
 
-            var reader = new ReaderView (Services.Library, book, Preferences, Operations) { Dock = DockStyle.Fill };
+            var reader = new ReaderView (Services.Library, book, Preferences, Operations) { Dock = DockStyle.Fill, TtsEngines = TtsEngines };
             reader.CloseRequested += (_, _) => Operations.Run (CloseBookAsync);
             reader.PreferencesChanged += (_, preferences) => {
                 Preferences = preferences;

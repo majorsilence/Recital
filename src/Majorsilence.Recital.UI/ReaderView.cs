@@ -5,6 +5,7 @@ using Majorsilence.Recital.Core.Annotations;
 using Majorsilence.Recital.Core.Library;
 using Majorsilence.Recital.Core.Reading;
 using Majorsilence.Recital.Epub;
+using Majorsilence.Recital.Tts;
 using SkiaSharp;
 
 namespace Majorsilence.Recital.UI
@@ -35,6 +36,11 @@ namespace Majorsilence.Recital.UI
         private readonly ToolStripButton typography_button = new ("Aa");
         private readonly ToolStripButton notes_button = new ("Notes") { ToolTipText = "Highlights, notes and bookmarks" };
         private readonly ToolStripButton bookmark_button = new ("Bookmark") { ToolTipText = "Bookmark this page" };
+        private readonly ToolStripButton listen_button = new ("Listen") { ToolTipText = "Read aloud from this page" };
+        private readonly TtsBar tts_bar = new ();
+        private ITtsEngine? tts_engine;
+        private TtsPlayer? player;
+        private int sleep_minutes;
         private readonly ToolStripLabel title_label = new ();
         private readonly Panel body = new () { Dock = DockStyle.None };
         private readonly SplitContainer split = new () {
@@ -79,6 +85,11 @@ namespace Majorsilence.Recital.UI
             typography_button.Click += (_, _) => ToggleSide (typography);
             notes_button.Click += (_, _) => ToggleSide (notes);
             bookmark_button.Click += (_, _) => operations.Run (ToggleBookmarkAsync);
+            listen_button.Click += (_, _) => operations.Run (ToggleListeningAsync);
+            tts_bar.Command += (_, command) => operations.Run (() => TtsCommandAsync (command));
+            tts_bar.SpeedChanged += (_, rate) => ChangePreferences (this.preferences with { TtsRate = (float)rate });
+            tts_bar.VoiceChosen += (_, voice) => ChangePreferences (this.preferences with { TtsVoice = voice is null || tts_engine is null ? null : tts_engine.Id + ":" + voice });
+            tts_bar.SleepChosen += (_, minutes) => SetSleep (minutes);
             title_label.Text = book.Title;
 
             var themes = new ToolStripDropDownButton ("Theme");
@@ -88,7 +99,7 @@ namespace Majorsilence.Recital.UI
                 themes.DropDownItems.Add (item);
             }
 
-            tool_strip.Items.AddRange ([back, new ToolStripSeparator (), contents_button, notes_button, typography_button, themes, bookmark_button, new ToolStripSeparator (), title_label]);
+            tool_strip.Items.AddRange ([back, new ToolStripSeparator (), contents_button, notes_button, typography_button, themes, bookmark_button, listen_button, new ToolStripSeparator (), title_label]);
             status_strip.Items.AddRange ([chapter_label, page_label, percent_label]);
 
             split.Panel2.Controls.Add (PageView);
@@ -97,6 +108,7 @@ namespace Majorsilence.Recital.UI
             Controls.Add (overlay);
             Controls.Add (highlight_bar);
             Controls.Add (note_editor);
+            Controls.Add (tts_bar);
             Controls.Add (tool_strip);
             Controls.Add (status_strip);
 
@@ -157,6 +169,11 @@ namespace Majorsilence.Recital.UI
         public TypographyPanel Typography => typography;
         public AnnotationsPanel Notes => notes;
         public HighlightBar HighlightBar => highlight_bar;
+        public TtsBar TtsBar => tts_bar;
+        public TtsPlayer? Player => player;
+
+        /// <summary>Makes the reading-aloud engines on first use (the OS voices, unless a host or test says otherwise).</summary>
+        public Func<IReadOnlyList<ITtsEngine>>? TtsEngines { get; set; }
         public NoteEditor NoteEditor => note_editor;
 
         /// <summary>The book's live highlights, notes and bookmarks, in reading order.</summary>
@@ -214,6 +231,10 @@ namespace Majorsilence.Recital.UI
                 return;
             closed = true;
             save_timer.Stop ();
+            if (player is not null) {
+                await player.DisposeAsync ();
+                player = null;
+            }
             if (session is null)
                 return;
             await SaveProgressAsync (CancellationToken.None);
@@ -233,8 +254,12 @@ namespace Majorsilence.Recital.UI
                 PageTurn.Back => await session!.PreviousPageAsync (),
                 _ => await EdgeAsync (turn == PageTurn.ChapterEnd),
             };
-            if (moved)
+            if (moved) {
                 PositionChanged ();
+                // Turning the page by hand while listening: read on from the new page.
+                if (player?.IsPlaying == true)
+                    await StartListeningAsync ();
+            }
         }
 
         private async Task<bool> EdgeAsync (bool end)
@@ -259,7 +284,14 @@ namespace Majorsilence.Recital.UI
             if (next == preferences)
                 return;
             var relayout = next.AffectsLayout (preferences);
+            var ttsChanged = next.TtsRate != preferences.TtsRate || next.TtsVoice != preferences.TtsVoice;
             preferences = next;
+            if (ttsChanged) {
+                tts_bar.Rate = next.TtsRate;
+                if (player?.IsPlaying == true)
+                    operations.Run (() => player.ChangeSettingsAsync (TtsSettingsFor (next)));
+                operations.Run (ShowVoicesAsync);
+            }
             if (typography.Preferences != next)
                 typography.Preferences = next;
             ApplyTheme ();
@@ -346,6 +378,13 @@ namespace Majorsilence.Recital.UI
             }
             if (highlight_bar.Visible)
                 highlight_bar.BringToFront ();
+            if (tts_bar.Visible) {
+                var size = tts_bar.PreferredSize;
+                // Above the status bar; on a phone at the bottom even when the other bars are hidden.
+                var y = height - (bars ? bottom : 0) - size.Height;
+                tts_bar.SetBounds (0, Math.Max (0, y), width, size.Height);
+                tts_bar.BringToFront ();
+            }
         }
 
         private void ApplyTheme ()
@@ -421,6 +460,166 @@ namespace Majorsilence.Recital.UI
             percent_label.Text = session.Locator.Percent.ToString ("P0", CultureInfo.CurrentCulture);
             if (side_content == contents)
                 SelectCurrentContentsEntry ();
+        }
+
+        // ── Reading aloud ────────────────────────────────────────────────────────
+
+        /// <summary>Opens the reading-aloud bar and starts reading from this page, or stops and closes it.</summary>
+        public async Task ToggleListeningAsync ()
+        {
+            if (tts_bar.Visible) {
+                await StopListeningAsync ();
+                tts_bar.Visible = false;
+                listen_button.Checked = false;
+                ArrangeChildren ();
+                return;
+            }
+            if (Engine () is null) {
+                tts_bar.Visible = true;
+                tts_bar.StatusText = "No voices available on this device";
+                ArrangeChildren ();
+                return;
+            }
+            tts_bar.Visible = true;
+            tts_bar.Rate = preferences.TtsRate;
+            listen_button.Checked = true;
+            ArrangeChildren ();
+            await ShowVoicesAsync ();
+            await StartListeningAsync ();
+        }
+
+        /// <summary>Starts (or restarts) reading at the top of the page showing.</summary>
+        public async Task StartListeningAsync ()
+        {
+            if (session is null || closed || Engine () is not { } engine)
+                return;
+            if (player is null) {
+                var current = session;
+                player = new TtsPlayer (engine, (spine, ct) => current.Engine.GetDocumentAsync (spine, ct), current.NextReadableChapter, current.Book.Metadata.Language);
+                player.Speaking += (_, range) => BeginInvoke (() => operations.Run (() => OnSpokenAsync (range)));
+                player.Stopped += (_, e) => BeginInvoke (() => OnTtsStopped (e));
+                ApplySleep ();
+            }
+            var start = session.Page.StartPosition ?? session.Page.Items.Select (i => i.StartPosition).FirstOrDefault (p => p is not null);
+            if (start is null)
+                return;
+            tts_bar.StatusText = "";
+            await player.StartAsync (session.SpineIndex, start.Value, TtsSettingsFor (preferences));
+            tts_bar.ShowState (true, false);
+        }
+
+        public async Task StopListeningAsync ()
+        {
+            if (player is not null)
+                await player.StopAsync ();
+            PageView.Spoken = [];
+            tts_bar.ShowState (false, false);
+        }
+
+        private async Task TtsCommandAsync (TtsCommand command)
+        {
+            switch (command) {
+            case TtsCommand.PlayPause when player?.IsPlaying == true:
+                if (player.IsPaused)
+                    player.Unpause ();
+                else
+                    player.Pause ();
+                tts_bar.ShowState (true, player.IsPaused);
+                break;
+            case TtsCommand.PlayPause:
+                await StartListeningAsync ();
+                break;
+            case TtsCommand.Back when player is not null:
+                await player.SkipAsync (-1);
+                break;
+            case TtsCommand.Forward when player is not null:
+                await player.SkipAsync (1);
+                break;
+            case TtsCommand.Stop:
+                await StopListeningAsync ();
+                break;
+            case TtsCommand.Close:
+                await ToggleListeningAsync ();
+                break;
+            }
+        }
+
+        private ITtsEngine? Engine ()
+        {
+            if (tts_engine is not null)
+                return tts_engine;
+            var engines = TtsEngines?.Invoke () ?? [];
+            tts_engine = engines.FirstOrDefault ();
+            return tts_engine;
+        }
+
+        private TtsSettings TtsSettingsFor (ReaderPreferences prefs)
+        {
+            string? voice = null;
+            if (prefs.TtsVoice is { } stored && tts_engine is not null && stored.StartsWith (tts_engine.Id + ":", StringComparison.Ordinal))
+                voice = stored[(tts_engine.Id.Length + 1)..];
+            return new TtsSettings (voice, null, prefs.TtsRate);
+        }
+
+        private async Task ShowVoicesAsync ()
+        {
+            if (Engine () is not { } engine || !tts_bar.Visible)
+                return;
+            try {
+                tts_bar.ShowVoices (await engine.GetVoicesAsync (), TtsSettingsFor (preferences).VoiceId);
+            } catch (IOException ex) {
+                tts_bar.StatusText = ex.Message;
+            }
+        }
+
+        private void SetSleep (int minutes)
+        {
+            sleep_minutes = minutes;
+            tts_bar.ShowSleep (minutes);
+            ApplySleep ();
+        }
+
+        private void ApplySleep ()
+        {
+            if (player is null)
+                return;
+            player.SleepAtChapterEnd = sleep_minutes == -1;
+            player.SleepAfter (sleep_minutes > 0 ? TimeSpan.FromMinutes (sleep_minutes) : null);
+        }
+
+        /// <summary>Follows the voice: turns to the page it is on, and highlights the sentence and the word.</summary>
+        private async Task OnSpokenAsync (SpokenRange range)
+        {
+            if (session is null || closed || player?.IsPlaying != true)
+                return;
+            if (await session.ShowPositionAsync (range.SpineIndex, range.WordStart))
+                ShowCurrent ();
+            save_pending = true;
+            save_timer.Stop ();
+            save_timer.Start ();
+            var accent = ReaderTheme.For (preferences.Theme).Accent;
+            var marks = new List<Layout.PageMark> ();
+            foreach (var rect in session.Page.TextRects (range.SentenceStart, range.SentenceEnd))
+                marks.Add (new Layout.PageMark (rect, (accent & 0x00FFFFFF) | 0x28000000));
+            foreach (var rect in session.Page.TextRects (range.WordStart, range.WordEnd))
+                marks.Add (new Layout.PageMark (rect, (accent & 0x00FFFFFF) | 0x60000000));
+            PageView.Spoken = marks;
+        }
+
+        private void OnTtsStopped (TtsStoppedEventArgs e)
+        {
+            PageView.Spoken = [];
+            tts_bar.ShowState (false, false);
+            tts_bar.StatusText = e.Reason switch {
+                TtsStopReason.EndOfBook => "The end",
+                TtsStopReason.SleepTimer => "Sleep timer stopped reading",
+                TtsStopReason.Error => e.Message ?? "Reading aloud failed",
+                _ => "",
+            };
+            if (e.Reason == TtsStopReason.SleepTimer) {
+                sleep_minutes = 0;
+                tts_bar.ShowSleep (0);
+            }
         }
 
         // ── Highlights, notes and bookmarks ──────────────────────────────────────

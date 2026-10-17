@@ -8,7 +8,7 @@ Severity: **blocker** (cannot ship the feature), **major** (workaround costs rea
 fidelity), **minor** (cosmetic or cheap to work around), **scope** (a question of what the framework
 should cover, not a bug).
 
-Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps. Phase 6 found GAP-012. Phase 7 (cloud sync UI) found none.
+Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps. Phase 6 found GAP-012. Phase 7 (cloud sync UI) found none. Phase 8 found GAP-013.
 
 | ID | Area | Backends | Severity | Status |
 |---|---|---|---|---|
@@ -24,6 +24,7 @@ Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps. Phase 
 | GAP-010 | `SplitContainer.Panel1Collapsed` leaves the splitter bar showing | all | minor | Fixed in 26.11.6 by [Forms PR #482](https://github.com/majorsilence/Majorsilence.Forms/pull/482); Recital's workaround removed |
 | GAP-011 | `Application.SetDefaultFont` does not change the typeface controls draw with | all | minor | Fixed in 26.11.6 by [Forms PR #483](https://github.com/majorsilence/Majorsilence.Forms/pull/483); Recital's workaround removed |
 | GAP-012 | `SaveFileDialog` returns a path only; mobile and browser save pickers give nothing writable | Avalonia Android, iOS, Browser | major (export on mobile/browser) | Open; Recital offers Copy as Markdown everywhere and file export on the desktop |
+| GAP-013 | No streaming audio output on the desktop backends (gapless PCM with a play position) | Avalonia desktop | scope (major for reading aloud) | Open; Recital has an `IAudioOutput` per OS |
 
 ---
 
@@ -210,4 +211,27 @@ Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps. Phase 
 - **Proposed fix:** mirror GAP-005: an optional `IPickedSaveFileBackend` returning a `PickedSaveFile`
   (name, path when there is one, `OpenWriteAsync`), `SaveFileDialog.SelectedFile` and `SaveFileAsync`,
   and a Headless `SaveFilePickResponse`.
+
+## GAP-013: No streaming audio output on the desktop backends
+
+- **Found:** Phase 8, reading aloud.
+- **Expected:** a way to play a stream of PCM buffers back to back, with a play position and pause, on
+  every backend. Reading aloud queues chunk after chunk, must not leave gaps between them (plan: under
+  300 ms), and highlights the word being heard from the position.
+- **Actual:** `AudioPlayer` (volume, usage, a completion event) is real only on Android and iOS
+  (`IsSupported` is false on the desktop). `SoundPlayer` on the desktop starts the OS's playback utility
+  for each sound (`NativeAudio`: afplay, paplay/aplay, PowerShell), which costs 50–200 ms of start-up per
+  play, gives no position, and does not stream.
+- **Severity:** scope. It is a question of whether the framework should own media streaming. It is
+  major for Recital: reading aloud needs it on every platform.
+- **Workaround:** Recital's `Majorsilence.Recital.Tts.Platform` has an `IAudioOutput` per OS: PCM piped
+  into one long-running `pw-cat`/`pacat`/`aplay` on Linux (pause by SIGSTOP), winmm `waveOut` on
+  Windows (exact device position), and `afplay` per segment on macOS (a segment is at least a chunk, so
+  its start-up stays well under the 300 ms allowed between chunks). Android, iOS and the browser have none yet
+  (Phase 10). The OS speech services that speak by themselves (speech-dispatcher, and later Web Speech
+  and the mobile engines) do not need one.
+- **Proposed fix:** a `Majorsilence.Forms.Media.AudioStream` (format, `Write`, `Position`, `Pause`,
+  `Stop`, an underrun event) implemented per backend: Android `AudioTrack`, iOS `AVAudioEngine`, the
+  browser's Web Audio, and on the desktop either the OS APIs above or an opt-in native dependency. Plus
+  a Headless fake that advances with a test clock.
 

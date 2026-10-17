@@ -42,6 +42,12 @@ namespace Majorsilence.Recital.Core.Reading
         public MarginSize Margins { get; init; } = MarginSize.Normal;
         public bool PublisherFonts { get; init; } = true;
 
+        /// <summary>Reading-aloud speed, 1 = normal.</summary>
+        public float TtsRate { get; init; } = 1;
+
+        /// <summary>Reading-aloud voice as <c>engine:voice</c> (a voice belongs to one engine), or null for the default.</summary>
+        public string? TtsVoice { get; init; }
+
         /// <summary>
         /// Page geometry and typography for a viewport. Margins grow with the viewport, and on wide ones the
         /// text column is held to a readable measure (about 36 em) rather than running the full width.
@@ -79,7 +85,7 @@ namespace Majorsilence.Recital.Core.Reading
         /// change, or a theme change between light and dark (books style for the colour scheme).
         /// </summary>
         public bool AffectsLayout (ReaderPreferences other)
-            => this with { Theme = other.Theme } != other || IsDark != other.IsDark;
+            => this with { Theme = other.Theme, TtsRate = other.TtsRate, TtsVoice = other.TtsVoice } != other || IsDark != other.IsDark;
 
         public IReadOnlyDictionary<string, string> ToValues () => new Dictionary<string, string> {
             ["theme"] = Theme.ToString ().ToLowerInvariant (),
@@ -89,6 +95,8 @@ namespace Majorsilence.Recital.Core.Reading
             ["justify"] = Justify switch { true => "justify", false => "left", null => "" },
             ["margins"] = Margins.ToString ().ToLowerInvariant (),
             ["publisherFonts"] = PublisherFonts ? "true" : "false",
+            ["ttsRate"] = TtsRate.ToString (CultureInfo.InvariantCulture),
+            ["ttsVoice"] = TtsVoice ?? "",
         };
 
         /// <summary>Reads stored values; a missing or unreadable one keeps its default.</summary>
@@ -111,6 +119,10 @@ namespace Majorsilence.Recital.Core.Reading
                 result = result with { Margins = margins };
             if (Get ("publisherFonts") is { } publisher)
                 result = result with { PublisherFonts = publisher != "false" };
+            if (float.TryParse (Get ("ttsRate"), NumberStyles.Float, CultureInfo.InvariantCulture, out var rate))
+                result = result with { TtsRate = Math.Clamp (rate, 0.5f, 3f) };
+            if (Get ("ttsVoice") is { Length: > 0 } voice)
+                result = result with { TtsVoice = voice };
 
             return result;
         }
