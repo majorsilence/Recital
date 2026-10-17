@@ -10,17 +10,19 @@ namespace Majorsilence.Recital.UI.Tests
 {
     public class AnnotationUiTests
     {
-        private static async Task<(UiTest Ui, MainForm Form)> OpenMobyDickAsync (int width = 1000, int height = 700)
+        /// <summary>
+        /// Opens Moby-Dick at chapter 1. The UiTest is made by the test itself: the culture it sets would not
+        /// flow back out of an async helper, and CI's invariant culture formats "3%" as "3 %".
+        /// </summary>
+        private static MainForm OpenMobyDick (UiTest ui, (Storage.InMemoryStorageProvider Storage, Core.Library.DeviceIdentity Device) library, int width = 1000, int height = 700)
         {
-            var (storage, device) = await UiTest.LibraryWithAsync (UiTest.MobyDick);
-            var ui = new UiTest ();
-            var form = ui.OpenMainForm (storage, device, width, height);
+            var form = ui.OpenMainForm (library.Storage, library.Device, width, height);
             form.Operations.Run (() => form.OpenBookAsync (form.Library!.Books[0]));
             UiTest.WaitIdle (form);
             var entry = ReadingSession.Flatten (form.Reader!.Session!.Book.TableOfContents).First (e => e.Title == "CHAPTER 1. Loomings.");
             form.Operations.Run (() => form.Reader.GoToAsync (entry));
             UiTest.WaitIdle (form);
-            return (ui, form);
+            return form;
         }
 
         private static List<TextLine> TextLines (ReaderView reader)
@@ -55,8 +57,9 @@ namespace Majorsilence.Recital.UI.Tests
         [Fact]
         public async Task HoldingThenDraggingHighlightsAPassageThatOutlivesAResize ()
         {
-            var (ui, form) = await OpenMobyDickAsync ();
-            using (ui) {
+            var library = await UiTest.LibraryWithAsync (UiTest.MobyDick);
+            using (var ui = new UiTest ()) {
+                var form = OpenMobyDick (ui, library);
                 var reader = form.Reader!;
                 reader.PageView.SelectHoldTime = TimeSpan.Zero;
                 var lines = TextLines (reader);
@@ -86,8 +89,9 @@ namespace Majorsilence.Recital.UI.Tests
         [Fact]
         public async Task ADragWithoutHoldingStillTurnsThePage ()
         {
-            var (ui, form) = await OpenMobyDickAsync ();
-            using (ui) {
+            var library = await UiTest.LibraryWithAsync (UiTest.MobyDick);
+            using (var ui = new UiTest ()) {
+                var form = OpenMobyDick (ui, library);
                 var reader = form.Reader!;
                 reader.PageView.SelectHoldTime = TimeSpan.FromHours (1);
                 var before = reader.Session!.Locator;
@@ -101,8 +105,9 @@ namespace Majorsilence.Recital.UI.Tests
         [Fact]
         public async Task TappingAHighlightLetsYouAddANoteAndDeleteIt ()
         {
-            var (ui, form) = await OpenMobyDickAsync ();
-            using (ui) {
+            var library = await UiTest.LibraryWithAsync (UiTest.MobyDick);
+            using (var ui = new UiTest ()) {
+                var form = OpenMobyDick (ui, library);
                 var reader = form.Reader!;
                 var line = TextLines (reader)[1];
                 var word = reader.Session!.Page.WordAt (line.X + line.Width / 2, line.Y + 1)!.Value;
@@ -137,8 +142,9 @@ namespace Majorsilence.Recital.UI.Tests
         [Fact]
         public async Task ALongPressSelectsTheWord ()
         {
-            var (ui, form) = await OpenMobyDickAsync (400, 760);
-            using (ui) {
+            var library = await UiTest.LibraryWithAsync (UiTest.MobyDick);
+            using (var ui = new UiTest ()) {
+                var form = OpenMobyDick (ui, library, 400, 760);
                 var reader = form.Reader!;
                 var line = TextLines (reader)[2];
                 var p = UiTest.PointIn (form, reader.PageView, On (reader, line, 0.5f).X, On (reader, line, 0.5f).Y);
@@ -156,9 +162,10 @@ namespace Majorsilence.Recital.UI.Tests
         [Fact]
         public async Task BookmarksAndHighlightsAreListedAndExported ()
         {
-            var (ui, form) = await OpenMobyDickAsync ();
+            var library = await UiTest.LibraryWithAsync (UiTest.MobyDick);
             var path = Path.Combine (Path.GetTempPath (), "recital-export-" + Guid.NewGuid ().ToString ("N") + ".md");
-            using (ui) {
+            using (var ui = new UiTest ()) {
+                var form = OpenMobyDick (ui, library);
                 var reader = form.Reader!;
                 var toolbar = reader.Controls.OfType<ToolStrip> ().First (s => s is not StatusStrip and not HighlightBar);
                 UiTest.ClickItem (form, toolbar, toolbar.Items.Cast<ToolStripItem> ().First (i => i.Text == "Bookmark"));
