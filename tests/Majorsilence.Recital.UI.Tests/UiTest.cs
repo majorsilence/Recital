@@ -30,6 +30,9 @@ namespace Majorsilence.Recital.UI.Tests
         public const string Alice = "pg-11-alice-epub3.epub";
         public const string SePride = "se-austen-pride-and-prejudice.epub";
         public const string Frankenstein = "se-shelley-frankenstein.epub";
+        public const string PgFrankenstein = "pg-84-frankenstein-epub3.epub";
+        public const string Sherlock = "pg-1661-sherlock-holmes-epub3.epub";
+        public const string MobyDick = "pg-2701-moby-dick-epub3.epub";
 
         /// <summary>An in-memory library holding <paramref name="books"/>, imported in order.</summary>
         public static async Task<(InMemoryStorageProvider Storage, DeviceIdentity Device)> LibraryWithAsync (params string[] books)

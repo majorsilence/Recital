@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- README screenshots, rendered by an opt-in test (`ScreenshotTests`) from Project Gutenberg books.
+- Test corpus: Project Gutenberg's Frankenstein (#84), The Adventures of Sherlock Holmes (#1661) and Moby-Dick (#2701),
+  in the corpus-wide parse, CFI and layout tests. Gutenberg is now the preferred source for test books.
+- Fixed: a contents entry whose heading starts a page with a forced break (Gutenberg breaks before every `h2`)
+  opened on the last page before it. `ChapterLayout.PageOf` puts a position between two pages on the next one.
 - Majorsilence.Forms pinned at 26.11.5, whose `Majorsilence.Forms.Avalonia` package has the `net10.0-ios`
   asset: the iOS head now builds against the real iOS backend (GAP-001 closed).
 

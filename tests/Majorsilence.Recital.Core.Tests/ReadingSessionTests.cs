@@ -37,6 +37,23 @@ namespace Majorsilence.Recital.Core.Tests
             Assert.InRange (session.Locator.Percent, 0, 0.01);
         }
 
+        // Gutenberg puts many chapters in one document and breaks the page before each h2: a contents entry
+        // opens on the page its heading starts, not the last page of the chapter before.
+        [Fact]
+        public async Task AContentsEntryOpensOnThePageWithItsHeading ()
+        {
+            await using var session = await OpenAsync (Corpus.MobyDick, Desktop);
+            var chapters = ReadingSession.Flatten (session.Book.TableOfContents)
+                .Where (e => e.Title.StartsWith ("CHAPTER ", StringComparison.Ordinal)).Take (12).ToList ();
+            Assert.Equal (12, chapters.Count);
+
+            foreach (var entry in chapters) {
+                Assert.True (await session.GoToAsync (entry, Ct));
+                Assert.Equal (entry.Title, session.Page.Lines.First ().Text.Trim ());
+                AssertAnchorOnCurrentPage (session);
+            }
+        }
+
         [Fact]
         public async Task PagesForwardAcrossChaptersAndBackAgain ()
         {

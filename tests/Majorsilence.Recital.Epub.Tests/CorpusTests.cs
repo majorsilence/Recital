@@ -14,6 +14,9 @@ namespace Majorsilence.Recital.Epub.Tests
             { "se-shelley-frankenstein.epub", "Frankenstein", "Mary Shelley", "en-GB", 38, EpubTocSource.Nav },
             { "pg-11-alice-epub3.epub", "Alice's Adventures in Wonderland", "Lewis Carroll", "en", 15, EpubTocSource.Nav },
             { "pg-1342-pride-and-prejudice-epub2.epub", "Pride and Prejudice", "Jane Austen", "en", 17, EpubTocSource.Ncx },
+            { "pg-84-frankenstein-epub3.epub", "Frankenstein; or, the modern prometheus", "Mary Wollstonecraft Shelley", "en", 32, EpubTocSource.Nav },
+            { "pg-1661-sherlock-holmes-epub3.epub", "The Adventures of Sherlock Holmes", "Arthur Conan Doyle", "en", 15, EpubTocSource.Nav },
+            { "pg-2701-moby-dick-epub3.epub", "Moby Dick; Or, The Whale", "Herman Melville", "en", 13, EpubTocSource.Nav },
         };
 
         public static TheoryData<string> Files => new (Books.Select (row => row.Data.Item1));

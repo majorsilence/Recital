@@ -1,3 +1,4 @@
+using Majorsilence.Recital.Epub;
 using Majorsilence.Recital.Epub.Tests;
 using Xunit;
 
@@ -136,6 +137,19 @@ namespace Majorsilence.Recital.Layout.Tests
             foreach (var page in chapter.Pages)
                 foreach (var line in page.Lines)
                     Assert.Same (page, chapter.PageOf (line.StartPosition!.Value));
+        }
+
+        // A contents link names the heading element, and Gutenberg's CSS breaks the page before every h2: the
+        // position at the heading's start comes before its first character, past the end of the previous page.
+        // It landed on that previous page, so "Chapter 1" opened on the last page of the front matter.
+        [Fact]
+        public async Task PageOfAnElementAfterAForcedBreakIsThePageItStarts ()
+        {
+            var chapter = await LayoutKit.Layout ("<p>front</p><h2 id=\"c1\">\n  Chapter 1\n</h2><p>text</p>", Css + "h2 { page-break-before: always }", Settings);
+            var heading = chapter.Document.FindFragment ("c1")!;
+
+            Assert.Equal (1, chapter.PageOf (new DomPosition (heading, 0)).Index);
+            Assert.Equal (0, chapter.PageOf (chapter.Pages[0].EndPosition!.Value).Index);
         }
 
         [Fact]

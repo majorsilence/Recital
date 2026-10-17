@@ -8,6 +8,17 @@ person reading.
 Recital is also a deliberate workout for Majorsilence.Forms: every framework rough edge it hits is
 logged in [docs/FRAMEWORK_GAPS.md](docs/FRAMEWORK_GAPS.md).
 
+<p>
+  <img src="docs/screenshots/reader-sepia.png" alt="Moby-Dick open at chapter 1 in the sepia theme, with the contents beside it" width="66%">
+  <img src="docs/screenshots/reader-dark-phone.png" alt="The Adventures of Sherlock Holmes in the dark theme at phone size" width="24%">
+</p>
+<p>
+  <img src="docs/screenshots/library.png" alt="The library: four Project Gutenberg books with their covers" width="66%">
+</p>
+
+Screenshots are Headless renders of Project Gutenberg books from the test corpus;
+`RECITAL_SCREENSHOTS=1 dotnet test tests/Majorsilence.Recital.UI.Tests --filter ScreenshotTests` redraws them.
+
 Status: Phase 4 (reader UI, local only) built and tested on Headless; its manual desktop check on Windows, macOS and Linux is still to do. Next is Phase 5 (sync engine). See [docs/PLAN.md](docs/PLAN.md) and [CHANGELOG.md](CHANGELOG.md).
 
 ## Build

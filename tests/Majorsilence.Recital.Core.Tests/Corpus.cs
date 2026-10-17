@@ -9,8 +9,11 @@ namespace Majorsilence.Recital.Core.Tests
         public const string SePride = "se-austen-pride-and-prejudice.epub";
         public const string PgPride = "pg-1342-pride-and-prejudice-epub2.epub";
         public const string Frankenstein = "se-shelley-frankenstein.epub";
+        public const string PgFrankenstein = "pg-84-frankenstein-epub3.epub";
+        public const string Sherlock = "pg-1661-sherlock-holmes-epub3.epub";
+        public const string MobyDick = "pg-2701-moby-dick-epub3.epub";
 
-        public static string[] All => [Alice, SePride, PgPride, Frankenstein];
+        public static string[] All => [Alice, SePride, PgPride, Frankenstein, PgFrankenstein, Sherlock, MobyDick];
 
         public static string PathOf (string file) => Path.Combine (AppContext.BaseDirectory, "corpus", file);
 

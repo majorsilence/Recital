@@ -22,8 +22,10 @@ namespace Majorsilence.Recital.Layout
         public IReadOnlyList<LayoutPage> Pages { get; }
 
         /// <summary>
-        /// The page showing a DOM position: the last page that starts at or before it. Positions in content
-        /// that is not laid out (hidden elements) land on the page where it would have been.
+        /// The page showing a DOM position: the last page that starts at or before it, or the next page when the
+        /// position is past everything on that one and before the next page's first content (the start of an
+        /// element a forced break begins a page with, ahead of its first character). Positions in content that
+        /// is not laid out (hidden elements) land on the page where it would have been.
         /// </summary>
         public LayoutPage PageOf (DomPosition position)
         {
@@ -42,6 +44,10 @@ namespace Majorsilence.Recital.Layout
                     high = mid - 1;
                 }
             }
+
+            // Between two pages: past this page's last content, so it belongs with what follows.
+            if (found + 1 < Pages.Count && Pages[found].EndPosition is { } end && DomOrder.Compare (end, position) < 0)
+                return Pages[found + 1];
 
             return Pages[found];
         }

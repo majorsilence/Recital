@@ -21,6 +21,9 @@ namespace Majorsilence.Recital.Layout.Tests
             "se-shelley-frankenstein.epub",
             "pg-11-alice-epub3.epub",
             "pg-1342-pride-and-prejudice-epub2.epub",
+            "pg-84-frankenstein-epub3.epub",
+            "pg-1661-sherlock-holmes-epub3.epub",
+            "pg-2701-moby-dick-epub3.epub",
         };
 
         /// <summary>

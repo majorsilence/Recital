@@ -75,7 +75,7 @@ namespace Majorsilence.Recital.UI.Tests
             && Math.Abs (a.Blue - b.Blue) <= ChannelTolerance
             && Math.Abs (a.Alpha - b.Alpha) <= ChannelTolerance;
 
-        private static string SourceDirectory ([System.Runtime.CompilerServices.CallerFilePath] string path = "")
+        internal static string SourceDirectory ([System.Runtime.CompilerServices.CallerFilePath] string path = "")
             => Path.GetDirectoryName (path)!;
     }
 }
