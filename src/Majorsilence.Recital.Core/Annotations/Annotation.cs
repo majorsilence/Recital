@@ -4,6 +4,7 @@ using Majorsilence.Recital.Core.Sync;
 
 namespace Majorsilence.Recital.Core.Annotations
 {
+    [JsonConverter (typeof (CamelCaseEnumConverter<AnnotationKind>))]
     public enum AnnotationKind
     {
         /// <summary>A coloured passage, optionally with a note.</summary>

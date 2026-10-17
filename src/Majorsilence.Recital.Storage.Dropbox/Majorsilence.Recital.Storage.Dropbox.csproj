@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Dropbox storage provider (plan 2.4, Phase 7): API v2 over HttpClient, OAuth with PKCE (no app secret). -->
+
+  <PropertyGroup>
+    <TargetFramework>$(_TargetFramework)</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Majorsilence.Recital.Storage\Majorsilence.Recital.Storage.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -26,6 +26,9 @@ namespace Majorsilence.Recital.Core.Sync
 
     public sealed record SettingValue (string Value, Hlc Hlc);
 
+    /// <summary>Enums in sync files are camelCase strings ("highlight"); numbers, as early Phase 6 builds wrote, still read.</summary>
+    public sealed class CamelCaseEnumConverter<T> () : JsonStringEnumConverter<T> (JsonNamingPolicy.CamelCase) where T : struct, Enum;
+
     [JsonSourceGenerationOptions (
         PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
@@ -40,6 +43,7 @@ namespace Majorsilence.Recital.Core.Sync
     [JsonSerializable (typeof (SyncOutboxFile))]
     [JsonSerializable (typeof (SyncIndexFile))]
     [JsonSerializable (typeof (SyncHomeSettings))]
+    [JsonSerializable (typeof (SyncHomeKind))]
     internal sealed partial class SyncJson : JsonSerializerContext
     {
     }

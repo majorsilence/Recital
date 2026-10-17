@@ -5,6 +5,7 @@ using Majorsilence.Forms.Backends;
 using Majorsilence.Forms.Drawing;
 using Majorsilence.Recital.Core.Library;
 using Majorsilence.Recital.Core.Sync;
+using Majorsilence.Recital.Storage;
 
 using Font = Majorsilence.Forms.Drawing.Font;
 
@@ -38,6 +39,12 @@ namespace Majorsilence.Recital.UI
         private readonly ToolStripDropDownButton sync_button = new ("Sync") { Visible = false, Alignment = ToolStripItemAlignment.Right };
         private readonly ToolStripMenuItem sync_now = new ("Sync now");
         private readonly ToolStripMenuItem stop_syncing = new ("Stop syncing");
+        private readonly Dictionary<SyncHomeKind, ToolStripMenuItem> home_items = [];
+        private readonly ToolStripButton import_remote = new ("Import from…") { Visible = false };
+        private readonly WebDavPanel webdav = new ();
+        private readonly RemoteBrowserPanel browser = new ();
+        private IStorageProvider? remote;
+        private string remote_name = "";
         private readonly Label empty = new () {
             Text = "Your library is empty.\nImport an EPUB, or drop one here, to start reading.",
             TextAlign = ContentAlignment.MiddleCenter,
@@ -66,13 +73,25 @@ namespace Majorsilence.Recital.UI
             }
             view_button.Click += (_, _) => ToggleView ();
 
-            var choose_folder = new ToolStripMenuItem ("Choose sync folder…");
-            choose_folder.Click += (_, _) => operations.Run (ChooseSyncFolderAsync);
+            foreach (var (kind, text) in new[] {
+                (SyncHomeKind.LocalFolder, "Local folder…"), (SyncHomeKind.WebDav, "WebDAV…"),
+                (SyncHomeKind.GoogleDrive, "Google Drive"), (SyncHomeKind.Dropbox, "Dropbox"), (SyncHomeKind.OneDrive, "OneDrive") }) {
+                var item = new ToolStripMenuItem (text) { Tag = kind };
+                item.Click += (_, _) => ChooseHome (kind);
+                home_items[kind] = item;
+                sync_button.DropDownItems.Add (item);
+            }
             sync_now.Click += (_, _) => SyncNowRequested?.Invoke (this, EventArgs.Empty);
             stop_syncing.Click += (_, _) => SyncFolderChosen?.Invoke (this, null);
-            sync_button.DropDownItems.AddRange ([choose_folder, sync_now, stop_syncing]);
+            sync_button.DropDownItems.AddRange ([new ToolStripSeparator (), sync_now, stop_syncing]);
+            import_remote.Click += (_, _) => operations.Run (OpenRemoteBrowserAsync);
 
-            tool_strip.Items.AddRange ([import, new ToolStripSeparator (), new ToolStripLabel ("Search"), search, sort_button, view_button, sync_button]);
+            webdav.ConnectRequested += (_, credentials) => WebDavRequested?.Invoke (this, credentials);
+            webdav.Cancelled += (_, _) => webdav.Visible = false;
+            browser.NavigateRequested += (_, path) => operations.Run (() => browser.ShowFolderAsync (path));
+            browser.ImportRequested += (_, _) => operations.Run (() => ImportFilesAsync (browser.PickedBooks ()));
+
+            tool_strip.Items.AddRange ([import, import_remote, new ToolStripSeparator (), new ToolStripLabel ("Search"), search, sort_button, view_button, sync_button]);
             status_strip.Items.Add (status);
             status_strip.Items.Add (sync_status);
 
@@ -105,6 +124,8 @@ namespace Majorsilence.Recital.UI
                     operations.Run (() => ImportFilesAsync (paths));
             };
 
+            Controls.Add (webdav);
+            Controls.Add (browser);
             Controls.Add (list);
             Controls.Add (empty);
             Controls.Add (tool_strip);
@@ -147,35 +168,96 @@ namespace Majorsilence.Recital.UI
         /// <summary>The user picked a folder to sync with (null: stop syncing).</summary>
         public event EventHandler<string?>? SyncFolderChosen;
 
+        /// <summary>The user chose Google Drive, Dropbox or OneDrive: sign in.</summary>
+        public event EventHandler<SyncHomeKind>? CloudRequested;
+
+        /// <summary>The user filled in the WebDAV form.</summary>
+        public event EventHandler<WebDavCredentials>? WebDavRequested;
+
         public event EventHandler? SyncNowRequested;
 
+        public WebDavPanel WebDav => webdav;
+        public RemoteBrowserPanel RemoteBrowser => browser;
+
         /// <summary>
-        /// Shows the sync menu where a local sync folder is possible, and the sync state in the status bar.
+        /// Shows the sync menu (with the sync homes this build and device can use), the sync state in the status
+        /// bar, and "Import from …" when the sync home can be browsed.
         /// </summary>
-        /// <param name="available">A sync folder can be chosen here (the desktop).</param>
-        /// <param name="folder">The folder synced with, or null.</param>
-        /// <param name="sync">The engine's latest status, or null when not syncing.</param>
-        public void ShowSync (bool available, string? folder, SyncStatus? sync)
+        public void ShowSync (SyncMenu menu)
         {
-            sync_button.Visible = available;
-            sync_now.Enabled = stop_syncing.Enabled = folder is not null;
-            sync_button.ToolTipText = folder is null ? "Keep this library in step with other devices through a shared folder" : "Syncing with " + folder;
-            sync_status.Text = SyncText (folder, sync);
+            sync_button.Visible = menu.Available;
+            foreach (var (kind, item) in home_items) {
+                var possible = menu.CanConnect (kind);
+                item.Visible = kind != SyncHomeKind.LocalFolder || possible;
+                item.Enabled = possible;
+                item.ToolTipText = possible ? "" : "Not set up in this build of Recital";
+                item.Checked = menu.Home?.EffectiveKind == kind;
+            }
+            var syncing = menu.Home is not null;
+            sync_now.Enabled = stop_syncing.Enabled = syncing;
+            sync_button.ToolTipText = syncing ? "Syncing with " + menu.Home!.DisplayName : "Keep this library in step with your other devices";
+            sync_status.Text = SyncText (menu.Home?.DisplayName, menu.Status);
+
+            remote = menu.Remote is { } r && r.Capabilities.HasFlag (StorageCapabilities.Browse) && menu.Home?.EffectiveKind != SyncHomeKind.LocalFolder ? r : null;
+            remote_name = menu.Home is { } home ? SyncHome.Label (home.EffectiveKind) : "";
+            import_remote.Visible = remote is not null;
+            import_remote.Text = "Import from " + remote_name + "…";
+        }
+
+        /// <summary>Opens the WebDAV form over the library (Sync > WebDAV…).</summary>
+        public void ShowWebDavForm ()
+        {
+            webdav.SetBounds (Math.Max (0, (Width - 420) / 2), 40, Math.Min (Width, 420), Math.Max (200, Math.Min (Height - 50, 440)));
+            webdav.Open ();
+        }
+
+        /// <summary>The WebDAV form, after a failed attempt: says why (keeping what was typed).</summary>
+        public void ShowWebDavError (string message)
+        {
+            webdav.Visible = true;
+            webdav.BringToFront ();
+            webdav.ShowMessage (message);
         }
 
         /// <summary>A few words on the sync state, for the status bar.</summary>
-        public static string SyncText (string? folder, SyncStatus? sync)
+        public static string SyncText (string? home, SyncStatus? sync)
         {
-            if (folder is null || sync is null)
+            if (home is null || sync is null)
                 return string.Empty;
             var waiting = sync.Pending > 0 ? $" ({sync.Pending} waiting)" : "";
             return sync.State switch {
                 SyncState.Syncing => "Syncing…",
-                SyncState.Offline => "Sync folder unavailable, retrying" + waiting,
-                SyncState.NewerFormat => "Sync folder needs a newer Recital",
+                SyncState.Offline => "Can't reach " + home + ", retrying" + waiting,
+                SyncState.SignInNeeded => "Sign in again to sync (Sync menu)" + waiting,
+                SyncState.NewerFormat => "The sync folder needs a newer Recital",
                 _ when sync.LastSuccess is { } last => "Synced " + last.ToLocalTime ().ToString ("t", CultureInfo.CurrentCulture) + waiting,
                 _ => "Not synced yet" + waiting,
             };
+        }
+
+        private void ChooseHome (SyncHomeKind kind)
+        {
+            switch (kind) {
+            case SyncHomeKind.LocalFolder:
+                operations.Run (ChooseSyncFolderAsync);
+                break;
+            case SyncHomeKind.WebDav:
+                ShowWebDavForm ();
+                break;
+            default:
+                CloudRequested?.Invoke (this, kind);
+                break;
+            }
+        }
+
+        /// <summary>Opens the browser on the sync home's storage, at its root.</summary>
+        public async Task OpenRemoteBrowserAsync ()
+        {
+            if (remote is null)
+                return;
+            browser.SetBounds (Math.Max (0, (Width - 560) / 2), 30, Math.Min (Width, 560), Math.Max (200, Height - 60));
+            browser.Open (remote, remote_name);
+            await browser.ShowFolderAsync ("");
         }
 
         /// <summary>Re-reads the library from the sync home.</summary>
@@ -365,5 +447,16 @@ namespace Majorsilence.Recital.UI
             }
             base.Dispose (disposing);
         }
+    }
+
+    /// <summary>What the library's Sync menu shows.</summary>
+    /// <param name="Available">The menu shows at all (there is local app data to keep the choice in).</param>
+    /// <param name="Home">The current sync home, or null.</param>
+    /// <param name="Status">The engine's latest status, or null.</param>
+    /// <param name="CanConnect">Whether each kind of sync home can be chosen here.</param>
+    /// <param name="Remote">The sync home's storage, offered for importing when it can be browsed.</param>
+    public sealed record SyncMenu (bool Available, SyncHomeSettings? Home, SyncStatus? Status, Func<SyncHomeKind, bool> CanConnect, IStorageProvider? Remote)
+    {
+        public static SyncMenu Hidden { get; } = new (false, null, null, _ => false, null);
     }
 }

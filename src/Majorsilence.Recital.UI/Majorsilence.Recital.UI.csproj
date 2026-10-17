@@ -13,6 +13,16 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Majorsilence.Recital.Core\Majorsilence.Recital.Core.csproj" />
+    <ProjectReference Include="..\Majorsilence.Recital.Platform\Majorsilence.Recital.Platform.csproj" />
+  </ItemGroup>
+
+  <!-- Cloud registrations (public app identifiers, not secrets), from -p:RecitalDropboxAppKey=... and friends.
+       docs/CLOUD_SETUP.md says how to get them. Empty: that service cannot be chosen in this build. -->
+  <ItemGroup>
+    <AssemblyMetadata Include="RecitalGoogleClientId" Value="$(RecitalGoogleClientId)" />
+    <AssemblyMetadata Include="RecitalGoogleClientSecret" Value="$(RecitalGoogleClientSecret)" />
+    <AssemblyMetadata Include="RecitalDropboxAppKey" Value="$(RecitalDropboxAppKey)" />
+    <AssemblyMetadata Include="RecitalOneDriveClientId" Value="$(RecitalOneDriveClientId)" />
   </ItemGroup>
 
 </Project>

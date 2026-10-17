@@ -10,6 +10,11 @@
     <ProjectReference Include="..\Majorsilence.Recital.Storage\Majorsilence.Recital.Storage.csproj" />
     <ProjectReference Include="..\Majorsilence.Recital.Epub\Majorsilence.Recital.Epub.csproj" />
     <ProjectReference Include="..\Majorsilence.Recital.Layout\Majorsilence.Recital.Layout.csproj" />
+    <!-- Storage providers: HttpClient libraries, no platform APIs. Secrets and sign-in come in through PlatformServices. -->
+    <ProjectReference Include="..\Majorsilence.Recital.Storage.WebDav\Majorsilence.Recital.Storage.WebDav.csproj" />
+    <ProjectReference Include="..\Majorsilence.Recital.Storage.Dropbox\Majorsilence.Recital.Storage.Dropbox.csproj" />
+    <ProjectReference Include="..\Majorsilence.Recital.Storage.OneDrive\Majorsilence.Recital.Storage.OneDrive.csproj" />
+    <ProjectReference Include="..\Majorsilence.Recital.Storage.GoogleDrive\Majorsilence.Recital.Storage.GoogleDrive.csproj" />
   </ItemGroup>
 
   <ItemGroup>

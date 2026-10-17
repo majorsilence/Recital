@@ -8,7 +8,7 @@ Severity: **blocker** (cannot ship the feature), **major** (workaround costs rea
 fidelity), **minor** (cosmetic or cheap to work around), **scope** (a question of what the framework
 should cover, not a bug).
 
-Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps. Phase 6 found GAP-012.
+Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps. Phase 6 found GAP-012. Phase 7 (cloud sync UI) found none.
 
 | ID | Area | Backends | Severity | Status |
 |---|---|---|---|---|

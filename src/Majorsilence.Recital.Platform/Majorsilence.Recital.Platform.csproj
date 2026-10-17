@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Platform services Core must not touch (plan 0.3): the OS secure store for secrets, and the desktop
+       OAuth sign-in (system browser + loopback redirect). P/Invoke only; no packages. -->
+
+  <PropertyGroup>
+    <TargetFramework>$(_TargetFramework)</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Majorsilence.Recital.Storage\Majorsilence.Recital.Storage.csproj" />
+  </ItemGroup>
+
+</Project>

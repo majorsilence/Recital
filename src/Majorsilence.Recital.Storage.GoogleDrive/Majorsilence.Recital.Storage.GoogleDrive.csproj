@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Google Drive storage provider (plan 2.4, Phase 7): Drive API v3 over HttpClient, drive.file scope, OAuth with PKCE. -->
+
+  <PropertyGroup>
+    <TargetFramework>$(_TargetFramework)</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Majorsilence.Recital.Storage\Majorsilence.Recital.Storage.csproj" />
+  </ItemGroup>
+
+</Project>

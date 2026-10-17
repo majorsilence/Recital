@@ -142,7 +142,12 @@ namespace Majorsilence.Recital.Core.Sync
                 RoundCompleted?.Invoke (this, new SyncRoundEventArgs (round));
                 return round;
             } catch (Exception ex) when (ex is not OperationCanceledException) {
-                Status = new SyncStatus (ex is SyncFormatException ? SyncState.NewerFormat : SyncState.Offline, Status.LastSuccess, ex.Message, PendingCount);
+                var state = ex switch {
+                    SyncFormatException => SyncState.NewerFormat,
+                    StorageAuthenticationException => SyncState.SignInNeeded,
+                    _ => SyncState.Offline,
+                };
+                Status = new SyncStatus (state, Status.LastSuccess, ex.Message, PendingCount);
                 RoundCompleted?.Invoke (this, new SyncRoundEventArgs (new SyncRound (pushed, pulled, ex)));
                 throw;
             } finally {
@@ -471,6 +476,8 @@ namespace Majorsilence.Recital.Core.Sync
         Offline,
         /// <summary>The sync home was written by a newer Recital; nothing is written to it.</summary>
         NewerFormat,
+        /// <summary>The sync home refused the sign-in (revoked, expired, a changed password): sign in again.</summary>
+        SignInNeeded,
     }
 
     /// <param name="LastSuccess">When a round last completed, by this device's clock.</param>

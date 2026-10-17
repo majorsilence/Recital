@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The provider conformance suite (plan Phase 7): every IStorageProvider against the same tests, on fakes in
+       normal CI and against real services when their RECITAL_TEST_* settings are present. -->
+
+  <PropertyGroup>
+    <TargetFramework>$(_TargetFramework)</TargetFramework>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Majorsilence.Recital.Core\Majorsilence.Recital.Core.csproj" />
+    <ProjectReference Include="..\..\src\Majorsilence.Recital.Storage.WebDav\Majorsilence.Recital.Storage.WebDav.csproj" />
+    <ProjectReference Include="..\..\src\Majorsilence.Recital.Platform\Majorsilence.Recital.Platform.csproj" />
+    <ProjectReference Include="..\..\src\Majorsilence.Recital.Storage.Dropbox\Majorsilence.Recital.Storage.Dropbox.csproj" />
+    <ProjectReference Include="..\..\src\Majorsilence.Recital.Storage.OneDrive\Majorsilence.Recital.Storage.OneDrive.csproj" />
+    <ProjectReference Include="..\..\src\Majorsilence.Recital.Storage.GoogleDrive\Majorsilence.Recital.Storage.GoogleDrive.csproj" />
+  </ItemGroup>
+
+  <!-- The Phase 5 simulation, run here over each cloud provider's fake. -->
+  <ItemGroup>
+    <Compile Include="..\Majorsilence.Recital.Sync.Tests\SyncSimulation.cs" Link="Simulation\SyncSimulation.cs" />
+    <Compile Include="..\Majorsilence.Recital.Sync.Tests\SimStorage.cs" Link="Simulation\SimStorage.cs" />
+    <Compile Include="..\Majorsilence.Recital.Sync.Tests\SyncJsonForTests.cs" Link="Simulation\SyncJsonForTests.cs" />
+    <Compile Include="..\Majorsilence.Recital.Epub.Tests\TestEpub.cs" Link="Simulation\TestEpub.cs" />
+  </ItemGroup>
+
+</Project>

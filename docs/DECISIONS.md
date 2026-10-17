@@ -296,3 +296,79 @@ then extends the selection, and lifting shows the highlight bar: five colours, N
 for an existing highlight. Tapping a highlight opens the bar for it. This keeps one gesture set for
 mouse and touch, and the page-turn gestures unchanged. The note editor is an in-window panel, like the
 typography panel, so it behaves the same on phones.
+
+## D-024: Cloud providers are thin HttpClient wrappers with in-process fakes (2026-10-17)
+
+Plan 1.2 prefers hand-written clients to SDKs. Each provider (`Majorsilence.Recital.Storage.WebDav`,
+`.Dropbox`, `.OneDrive`, `.GoogleDrive`) is one class over `HttpClient`, with no packages, so the
+browser build stays small and trimmable. Each has an in-process fake of its API in
+`Majorsilence.Recital.Storage.Tests`, answering the way the real service does: errors, paging in pages
+of three so paging code runs, change feeds, case rules. Normal CI runs the whole conformance suite and
+the three-device sync simulation (100 seeds per provider) against every fake. WebDAV also runs against
+a real Apache mod_dav in CI, and the cloud services run against real accounts when credentials are set
+(docs/CLOUD_SETUP.md). Real servers found bugs the fakes did not have, and those bugs were fixed and
+the fakes made stricter:
+- WebDAV: a missing base folder (409 on MKCOL), and Apache's weak ETags, which never satisfy If-Match.
+- OneDrive: `new Uri (base, "root:/...")` parses `root:` as a scheme.
+
+Per-service choices:
+- **WebDAV:** no change feed. The engine lists `Recital/` and diffs ETags. Folders are created as
+  needed, including the configured base. A weak ETag (`W/`) is compared before a conditional PUT
+  instead of being sent as If-Match.
+- **Dropbox:** Full Dropbox access, so the sync home is a visible `/Recital` folder and import can
+  browse everything. ETag = `rev`, conditional writes use upload's `update` mode, and the feed is
+  `list_folder/continue` scoped to `Recital/`. Dropbox paths are case-insensitive, and entries keep
+  the case Recital wrote.
+- **OneDrive:** path addressing (`root:/a/b:`), ETag = `eTag` with If-Match, and upload sessions above
+  4 MB, sent through a plain HttpClient because session URLs refuse a bearer token. The feed is `delta`
+  from the drive root, because OneDrive for Business supports delta only there. It starts at
+  `token=latest` after a recursive listing and is filtered to `Recital/`. Personal drives' delta items
+  have no parent path, so paths are rebuilt from parent ids.
+- **Google Drive:** the `drive.file` scope, so Recital sees only its own files and needs no security
+  review. Drive allows same-named files in one folder, which two devices racing to create `Recital/`
+  would produce. A path resolves to all matches: listings merge same-named folders, a duplicated file
+  reads as its oldest copy (first writer, as write-once needs), and writes go to the oldest folder.
+  Folder ids are cached for 5 minutes, and dropped at once when the feed shows an unknown folder at a
+  known path. ETag = `version`, and If-Match is checked before writing (Drive v3 has no conditional
+  write). The feed is `changes.list`, with paths rebuilt from parent ids. Browse is off: `drive.file`
+  cannot see the user's other files, so Drive import goes through the OS picker (plan 2.5).
+- **iCloud:** not a provider in v1. On macOS and Windows, iCloud Drive is a local folder, so the Local
+  folder choice covers it. The iOS ubiquity container needs an entitlement and a device, and is left for
+  Phase 10.
+
+## D-025: Secrets live only in the OS secure store, through P/Invoke (2026-10-17)
+
+`ISecretStore` (Storage) has three platform implementations in `Majorsilence.Recital.Platform`, and no
+packages:
+- **Windows:** Credential Manager generic credentials (`CredWriteW`/`CredReadW`), so not DPAPI blobs
+  in files.
+- **macOS:** the login keychain, through the SecKeychain generic-password calls. They are deprecated
+  but still present, and they take plain buffers rather than CoreFoundation dictionaries.
+- **Linux:** the Secret Service through libsecret, loaded at run time from the system. It is LGPL, but
+  it is the desktop's own library, dynamically loaded and not shipped. The non-variadic `...v_sync`
+  calls are used, because a variadic call cannot be declared portably (arm64).
+
+The browser keeps secrets in memory (plan 0.3), and so do Android and iOS until Phase 10 wires up
+Keystore and Keychain. The settings say "memory only" there. A test signs in through fake services and
+then checks that no token or password appears in `sync-home.json`, the local library or the sync home.
+
+## D-026: OAuth: PKCE everywhere, a raw-socket loopback on the desktop (2026-10-17)
+
+`OAuthClient` does the authorization-code flow with PKCE (S256) and a `state` check. `OAuthHandler`
+adds the bearer token and refreshes it on expiry or a 401. A refresh token the server rotates is
+stored again, and a refused refresh becomes `StorageAuthenticationException`. The engine then shows
+"Sign in again" instead of retrying for ever.
+
+The desktop broker opens the system browser and reads the redirect on `127.0.0.1`/`localhost` with a
+one-shot `TcpListener`. HttpListener on Windows needs a URL reservation (admin) to listen. Google and
+Microsoft accept any loopback port. Dropbox matches redirects exactly, so it gets the fixed port 47612.
+
+## D-027: A sync home is a kind plus settings; switching starts a fresh index (2026-10-17)
+
+`sync-home.json` records the kind (`localFolder`, `webDav`, `dropbox`, `oneDrive`, `googleDrive`) and
+what that kind needs: the folder, the WebDAV URL and user, or the cloud account's id and name. Files
+from Phase 5 with only `folder` still read. The engine's outbox and index are keyed by the sync home
+(`dropbox:<account id>`, `webdav:<url>|<user>`). Choosing another sync home, including another account
+on the same service, uploads the local library to it afresh. Stopping, or moving to another kind,
+forgets the old password or refresh token. Enums in sync files are now camelCase strings
+(`"kind": "highlight"`); the numbers early Phase 6 builds wrote still read.

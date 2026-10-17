@@ -109,8 +109,10 @@ namespace Majorsilence.Recital.UI
         {
             var percent = Math.Round (annotation.Percent * 100).ToString (CultureInfo.CurrentCulture) + "%";
             var excerpt = Shorten (annotation.Text ?? "", 70);
+            // Plain text, not an emoji: an emoji comes from whatever colour font the system has, so it looks
+            // different (or missing) from one machine to the next.
             if (annotation.Kind == AnnotationKind.Bookmark)
-                return $"🔖 {percent} {excerpt}";
+                return $"Bookmark, {percent}: {excerpt}";
             var colour = HighlightColors.All.FirstOrDefault (c => c.Name == annotation.Color).Label ?? "Highlight";
             var label = $"{colour}: “{excerpt}”";
             return annotation.HasNote ? label + " — " + Shorten (annotation.Note!.ReplaceLineEndings (" "), 50) : label;

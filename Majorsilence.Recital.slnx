@@ -3,6 +3,11 @@
     <Project Path="src/Majorsilence.Recital.Core/Majorsilence.Recital.Core.csproj" />
     <Project Path="src/Majorsilence.Recital.Epub/Majorsilence.Recital.Epub.csproj" />
     <Project Path="src/Majorsilence.Recital.Layout/Majorsilence.Recital.Layout.csproj" />
+    <Project Path="src/Majorsilence.Recital.Platform/Majorsilence.Recital.Platform.csproj" />
+    <Project Path="src/Majorsilence.Recital.Storage.Dropbox/Majorsilence.Recital.Storage.Dropbox.csproj" />
+    <Project Path="src/Majorsilence.Recital.Storage.GoogleDrive/Majorsilence.Recital.Storage.GoogleDrive.csproj" />
+    <Project Path="src/Majorsilence.Recital.Storage.OneDrive/Majorsilence.Recital.Storage.OneDrive.csproj" />
+    <Project Path="src/Majorsilence.Recital.Storage.WebDav/Majorsilence.Recital.Storage.WebDav.csproj" />
     <Project Path="src/Majorsilence.Recital.Storage/Majorsilence.Recital.Storage.csproj" />
     <Project Path="src/Majorsilence.Recital.Tts/Majorsilence.Recital.Tts.csproj" />
     <Project Path="src/Majorsilence.Recital.UI/Majorsilence.Recital.UI.csproj" />
@@ -17,6 +22,7 @@
     <Project Path="tests/Majorsilence.Recital.Core.Tests/Majorsilence.Recital.Core.Tests.csproj" />
     <Project Path="tests/Majorsilence.Recital.Epub.Tests/Majorsilence.Recital.Epub.Tests.csproj" />
     <Project Path="tests/Majorsilence.Recital.Layout.Tests/Majorsilence.Recital.Layout.Tests.csproj" />
+    <Project Path="tests/Majorsilence.Recital.Storage.Tests/Majorsilence.Recital.Storage.Tests.csproj" />
     <Project Path="tests/Majorsilence.Recital.Sync.Tests/Majorsilence.Recital.Sync.Tests.csproj" />
     <Project Path="tests/Majorsilence.Recital.UI.Tests/Majorsilence.Recital.UI.Tests.csproj" />
   </Folder>

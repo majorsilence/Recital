@@ -1,5 +1,26 @@
 # Changelog
 
+## Phase 7: Cloud providers (2026-10-17)
+
+- Providers: WebDAV, Dropbox, OneDrive (Microsoft Graph) and Google Drive, each a small `HttpClient`
+  wrapper with a change feed where the service has one, ETags, and retries for rate limits and
+  dropped connections (D-024). iCloud Drive is covered by Local folder on macOS and Windows.
+- Sign-in: OAuth with PKCE, refreshing tokens, and the system browser with a loopback redirect on the
+  desktop (D-026). Passwords and refresh tokens are kept only in the OS secure store: Credential Manager,
+  Keychain or libsecret (D-025).
+- The library's Sync menu offers a local folder, WebDAV (a form, checked before saving), Google Drive,
+  Dropbox and OneDrive. A service this build has no registration for is disabled
+  (docs/CLOUD_SETUP.md). "Import from …" browses WebDAV, Dropbox or OneDrive for EPUBs. The status
+  bar says when the service needs signing in again (D-027).
+- Fixed: annotation kinds were written as numbers; they are now names, as SYNC_FORMAT documents.
+- Tests: `Majorsilence.Recital.Storage.Tests`, the provider conformance suite, runs against InMemory,
+  LocalFolder and fakes of all four APIs. In CI it also runs against a real Apache mod_dav, and against
+  real accounts when credentials are set. Also: the three-device simulation over each fake (100 seeds
+  each), OAuth sign-in through the loopback listener, refresh, rotation and revocation, the platform
+  secret store, connecting WebDAV and Dropbox end to end with no secret left in settings or the sync
+  home, and a UI test that connects to WebDAV with a wrong and then a right password and imports a book
+  from it.
+
 ## Phase 6: Annotations (2026-10-17)
 
 - Highlights in five colours, notes on highlights, and bookmarks, anchored by CFI and synced per device

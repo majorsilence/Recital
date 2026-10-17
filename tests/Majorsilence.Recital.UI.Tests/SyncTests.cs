@@ -18,7 +18,7 @@ namespace Majorsilence.Recital.UI.Tests
             var desktopData = Path.Combine (temp, "desktop");
 
             using var ui = new UiTest ();
-            var form = new MainForm (ct => AppServices.OpenAsync (laptopData, ct));
+            var form = new MainForm (ct => AppServices.OpenAsync (laptopData, ct: ct));
             UiTest.Resize (form, 1000, 700);
             form.Show ();
             UiTest.WaitIdle (form);

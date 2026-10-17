@@ -4,6 +4,7 @@ using Majorsilence.Recital.Core;
 using Majorsilence.Recital.Core.Library;
 using Majorsilence.Recital.Core.Reading;
 using Majorsilence.Recital.Core.Sync;
+using Majorsilence.Recital.Storage;
 
 namespace Majorsilence.Recital.UI
 {
@@ -29,10 +30,35 @@ namespace Majorsilence.Recital.UI
         private Task? initialize;
         private bool closing_reader;
 
-        /// <summary>The app as the hosts run it: the library in local app data.</summary>
+        /// <summary>The app as the hosts run it: the library in local app data, secrets in the OS secure store.</summary>
         public MainForm ()
-            : this (ct => AppServices.OpenAsync (AppServices.DefaultDataDirectory (), ct))
+            : this (ct => AppServices.OpenAsync (AppServices.DefaultDataDirectory (), DefaultPlatform (), ct))
         {
+        }
+
+        /// <summary>
+        /// This device's secure store and sign-in (the system browser on the desktop), and the cloud registrations
+        /// this build carries (<c>-p:RecitalDropboxAppKey=...</c>, overridable by environment variables).
+        /// </summary>
+        public static PlatformServices DefaultPlatform ()
+        {
+            var desktop = OperatingSystem.IsWindows () || OperatingSystem.IsMacOS () || (OperatingSystem.IsLinux () && !OperatingSystem.IsAndroid ());
+            var metadata = typeof (MainForm).Assembly.GetCustomAttributes (typeof (System.Reflection.AssemblyMetadataAttribute), false)
+                .Cast<System.Reflection.AssemblyMetadataAttribute> ()
+                .Where (a => !string.IsNullOrEmpty (a.Value))
+                .ToDictionary (a => a.Key, a => a.Value);
+            var clients = new CloudClients (
+                metadata.GetValueOrDefault ("RecitalGoogleClientId"),
+                metadata.GetValueOrDefault ("RecitalGoogleClientSecret"),
+                metadata.GetValueOrDefault ("RecitalDropboxAppKey"),
+                metadata.GetValueOrDefault ("RecitalOneDriveClientId")).WithEnvironment ();
+            return new PlatformServices (
+                Platform.SecretStores.ForCurrentPlatform (),
+                desktop ? kind => {
+                    var (host, port) = SyncHome.LoopbackRedirect (kind);
+                    return new Platform.LoopbackAuthorizationBroker (host: host, port: port);
+                } : null,
+                clients);
         }
 
         public MainForm (Func<CancellationToken, Task<AppServices>> servicesFactory)
@@ -77,6 +103,8 @@ namespace Majorsilence.Recital.UI
             var library = new LibraryView (services.Library, Operations) { Dock = DockStyle.Fill };
             library.OpenRequested += (_, book) => Operations.Run (() => OpenBookAsync (book));
             library.SyncFolderChosen += (_, folder) => Operations.Run (() => ChangeSyncFolderAsync (folder));
+            library.CloudRequested += (_, kind) => Operations.Run (() => ConnectCloudAsync (kind));
+            library.WebDavRequested += (_, credentials) => Operations.Run (() => ConnectWebDavAsync (credentials));
             library.SyncNowRequested += (_, _) => Operations.Run (SyncNowAsync);
             var previous = Library;
             Library = library;
@@ -93,16 +121,50 @@ namespace Majorsilence.Recital.UI
         /// Makes <paramref name="folder"/> this device's sync home (null: stop syncing) and reopens the library
         /// on it. Only where the services have local app data to record the choice in.
         /// </summary>
-        public async Task ChangeSyncFolderAsync (string? folder)
+        public Task ChangeSyncFolderAsync (string? folder)
+            => folder == Services?.SyncFolder && folder is not null
+                ? Task.CompletedTask
+                : ChangeSyncHomeAsync (folder is null ? null : new SyncHomeSettings (SyncPaths.FormatVersion, folder, SyncHomeKind.LocalFolder));
+
+        /// <summary>Signs in to Google Drive, Dropbox or OneDrive in the browser, then syncs with it.</summary>
+        public async Task ConnectCloudAsync (SyncHomeKind kind)
+        {
+            var services = Services ?? throw new InvalidOperationException ("The library is not open yet.");
+            var settings = await SyncHome.ConnectCloudAsync (kind, services.Platform);
+            await ChangeSyncHomeAsync (settings);
+        }
+
+        /// <summary>Checks the WebDAV folder and credentials, then syncs with it; a refusal is shown in the form.</summary>
+        public async Task ConnectWebDavAsync (WebDavCredentials credentials)
+        {
+            var services = Services ?? throw new InvalidOperationException ("The library is not open yet.");
+            Library?.WebDav.ShowBusy (true);
+            SyncHomeSettings settings;
+            try {
+                settings = await SyncHome.ConnectWebDavAsync (credentials.Address, credentials.UserName, credentials.Password, services.Platform);
+            } catch (Exception ex) when (ex is IOException or ArgumentException) {
+                Library?.ShowWebDavError (ex is StorageAuthenticationException ? "The server refused the user name or password." : ex.Message);
+                return;
+            }
+            await ChangeSyncHomeAsync (settings);
+        }
+
+        /// <summary>
+        /// Makes <paramref name="settings"/> this device's sync home (null: stop syncing, forgetting its
+        /// password or sign-in) and reopens the library on it. The local copy of the library is kept either way.
+        /// </summary>
+        public async Task ChangeSyncHomeAsync (SyncHomeSettings? settings)
         {
             if (Services?.DataDirectory is not { } dataDirectory)
-                throw new InvalidOperationException ("This device has no local app data to keep a sync folder setting in.");
-            if (folder == Services.SyncFolder)
-                return;
+                throw new InvalidOperationException ("This device has no local app data to keep a sync setting in.");
 
-            await AppServices.SetSyncFolderAsync (dataDirectory, folder);
-            await CloseBookAsync ();
             var old = Services;
+            await AppServices.SetSyncHomeAsync (dataDirectory, settings);
+            if (old.SyncHome is { } previous && previous.RemoteKey != settings?.RemoteKey
+                && (settings is null || previous.EffectiveKind != settings.EffectiveKind || previous.EffectiveKind == SyncHomeKind.WebDav))
+                await SyncHome.ForgetSecretsAsync (previous, old.Platform);
+
+            await CloseBookAsync ();
             if (old.Sync is { } sync)
                 sync.RoundCompleted -= OnSyncRoundCompleted;
             Services = null;
@@ -143,7 +205,7 @@ namespace Majorsilence.Recital.UI
         private void ShowSyncStatus ()
         {
             if (Services is { } services)
-                Library?.ShowSync (services.CanUseSyncFolder, services.SyncFolder, services.Sync?.Status);
+                Library?.ShowSync (new SyncMenu (services.CanChooseSyncHome, services.SyncHome, services.Sync?.Status, services.CanConnect, services.Remote));
         }
 
         /// <summary>Switches to the reader and opens <paramref name="book"/> at its saved position.</summary>

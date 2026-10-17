@@ -367,28 +367,28 @@ namespace Majorsilence.Recital.Sync.Tests
                 await AppServices.SetSyncFolderAsync (Path.Combine (temp, "desktop"), folder, Ct);
                 await Assert.ThrowsAsync<ArgumentException> (() => AppServices.SetSyncFolderAsync (Path.Combine (temp, "laptop"), Path.Combine (temp, "laptop", "library"), Ct));
 
-                await using (var services = await AppServices.OpenAsync (Path.Combine (temp, "laptop"), Ct)) {
+                await using (var services = await AppServices.OpenAsync (Path.Combine (temp, "laptop"), ct: Ct)) {
                     Assert.Equal (folder, services.SyncFolder);
                     await services.Library.ImportAsync (new MemoryStream (Book ("Shared")), "shared.epub", Ct);
                     await services.Sync!.SyncOnceAsync (Ct);
                 }
                 Assert.True (File.Exists (Path.Combine (folder, "Recital", "format.json")));
 
-                await using (var services = await AppServices.OpenAsync (Path.Combine (temp, "desktop"), Ct)) {
+                await using (var services = await AppServices.OpenAsync (Path.Combine (temp, "desktop"), ct: Ct)) {
                     await services.Sync!.SyncOnceAsync (Ct);
                     Assert.Equal ("Shared", Assert.Single (await services.Library.ListAsync (Ct)).Title);
                 }
 
                 // A sync folder on a drive that is not connected: offline, not a new empty library.
                 Directory.Delete (folder, recursive: true);
-                await using (var services = await AppServices.OpenAsync (Path.Combine (temp, "desktop"), Ct)) {
+                await using (var services = await AppServices.OpenAsync (Path.Combine (temp, "desktop"), ct: Ct)) {
                     await Assert.ThrowsAsync<DirectoryNotFoundException> (() => services.Sync!.SyncOnceAsync (Ct));
                     Assert.False (Directory.Exists (folder));
                     Assert.Single (await services.Library.ListAsync (Ct));
                 }
 
                 await AppServices.SetSyncFolderAsync (Path.Combine (temp, "desktop"), null, Ct);
-                await using (var services = await AppServices.OpenAsync (Path.Combine (temp, "desktop"), Ct))
+                await using (var services = await AppServices.OpenAsync (Path.Combine (temp, "desktop"), ct: Ct))
                     Assert.Null (services.Sync);
             } finally {
                 if (Directory.Exists (temp))

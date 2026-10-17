@@ -159,9 +159,9 @@ namespace Majorsilence.Recital.Core.Tests
             var root = Path.Combine (Path.GetTempPath (), "recital-tests", Guid.NewGuid ().ToString ("N"));
             try {
                 string first;
-                using (var services = await AppServices.OpenAsync (root, Ct))
+                using (var services = await AppServices.OpenAsync (root, ct: Ct))
                     first = services.Device.DeviceId;
-                using (var again = await AppServices.OpenAsync (root, Ct))
+                using (var again = await AppServices.OpenAsync (root, ct: Ct))
                     Assert.Equal (first, again.Device.DeviceId);
 
                 Assert.True (File.Exists (Path.Combine (root, "device.json")));

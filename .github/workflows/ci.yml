@@ -37,6 +37,15 @@ jobs:
       - name: Build
         run: dotnet build Majorsilence.Recital.slnx --configuration Release -p:EnableAndroidHead=false
 
+      # A real WebDAV server (Apache mod_dav) for the provider conformance suite. Linux runners have Docker.
+      - name: Start WebDAV server
+        if: runner.os == 'Linux'
+        run: |
+          tests/webdav/run.sh
+          echo "RECITAL_TEST_WEBDAV_URL=http://localhost:8088/dav/" >> "$GITHUB_ENV"
+          echo "RECITAL_TEST_WEBDAV_USER=recital" >> "$GITHUB_ENV"
+          echo "RECITAL_TEST_WEBDAV_PASSWORD=recital-test-only" >> "$GITHUB_ENV"
+
       - name: Test
         run: dotnet test Majorsilence.Recital.slnx --configuration Release --no-build -p:EnableAndroidHead=false
 

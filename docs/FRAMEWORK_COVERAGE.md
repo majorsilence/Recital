@@ -39,6 +39,9 @@ heads, **Headless** = offscreen Skia (UI tests).
 | `Clipboard.SetTextAsync` | — | — | — | — | — (called, not checked) | |
 | `TextBox` (`Multiline`, `AcceptsReturn`, `WordWrap`, `PlaceholderText`), `Button` | — | — | — | — | ✅ | |
 | `TreeNode.ToolTipText`, `TreeView.ContextMenuStrip` | — | — | — | — | — (built, not opened in a test) | |
+| `TextBox.UseSystemPasswordChar`, `Label.MaximumSize` (wrapping) | — | | | | ✅ | |
+| `ListView` `Details` with `MultiSelect`, `SelectedIndexChanged` (import browser) | — | — | — | — | ✅ | |
+| `ToolStripMenuItem` `Enabled`/`Checked`/`ToolTipText` per state (Sync menu) | — | — | — | — | ✅ | |
 | Drag-and-drop file import (`AllowDrop`, `DragEnter`, `DragDrop`, `DataFormats.FileDrop`) | — | — | — | — | — | |
 | `Majorsilence.Forms.Timer` (progress-save debounce) | — | — | — | — | ✅ (implicitly: saves happen) | |
 | `Graphics` in owner draw: `FillRectangle`, `DrawImage`, `DrawString` with `StringFormat`, `Bitmap (Stream)` | — | — | — | — | ✅ | |
@@ -56,6 +59,10 @@ Phase 6: selection gestures (`OnMouseMove` after a hold, `OnLongPress`), the flo
 (a `ToolStrip` placed over the page), the note editor (multiline `TextBox`), the Notes panel
 (`TreeView`), `SaveFileDialog` for Markdown export and `Clipboard.SetTextAsync`. One new gap: GAP-012,
 saves on phones and in the browser.
+
+Phase 7: the Sync menu grew one item per kind of sync home. The WebDAV form (password `TextBox`) and
+the import browser (`ListView` with multi-select) are in-window panels; Headless tests drive both. No
+new gaps.
 
 Phases 2 and 3 used no Majorsilence.Forms APIs (EPUB parsing and the layout engine are UI-free by design), so this table is unchanged.
 

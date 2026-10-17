@@ -126,6 +126,23 @@ namespace Majorsilence.Recital.Core.Tests
         }
 
         [Fact]
+        public async Task KindsAreWrittenAsNamesAndOldNumbersStillRead ()
+        {
+            var home = new InMemoryStorageProvider ();
+            var library = new LibraryService (home, new DeviceIdentity ("aaaa", "Laptop", "linux"));
+            await library.SaveAnnotationAsync ("0123abcd", new Annotation { Id = Guid.NewGuid (), Kind = AnnotationKind.Bookmark, Cfi = "epubcfi(/6/2!/4)" }, Ct);
+            await using (var stream = await home.OpenReadAsync (SyncPaths.State ("0123abcd", "aaaa"), Ct)) {
+                var json = await new StreamReader (stream).ReadToEndAsync (Ct);
+                Assert.Contains ("\"kind\": \"bookmark\"", json, StringComparison.Ordinal);
+            }
+
+            // An early Phase 6 build wrote the kind as a number.
+            var old = $$"""{ "formatVersion": 1, "bookId": "0123abcd", "deviceId": "bbbb", "annotations": [ { "id": "{{Guid.NewGuid ()}}", "kind": 1, "hlc": "0000000000000001-0000-bbbb" } ] }""";
+            await home.WriteAsync (SyncPaths.State ("0123abcd", "bbbb"), new MemoryStream (System.Text.Encoding.UTF8.GetBytes (old)), null, Ct);
+            Assert.Equal (2, (await library.GetAnnotationsAsync ("0123abcd", Ct)).Count (a => a.Kind == AnnotationKind.Bookmark));
+        }
+
+        [Fact]
         public void TheDeletionWinsWhateverTheClocks ()
         {
             var id = Guid.NewGuid ();

@@ -27,4 +27,8 @@
     <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\Majorsilence.Recital.Storage.Tests\FakeWebDavServer.cs" Link="Fakes\FakeWebDavServer.cs" />
+  </ItemGroup>
+
 </Project>

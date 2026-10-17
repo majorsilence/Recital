@@ -18,5 +18,10 @@ Unlicense or similar permissive licenses; anything copyleft needs sign-off first
 | xunit.v3, xunit.runner.visualstudio | tests | Apache-2.0 |
 | Microsoft.NET.Test.Sdk | tests | MIT |
 
+System libraries used at run time and not redistributed: libsecret and GLib on Linux (LGPL, loaded
+by `Majorsilence.Recital.Platform` for the Secret Service), Security.framework on macOS, and advapi32
+on Windows. Test-only: the `httpd:2.4.62` Docker image (Apache-2.0) runs the WebDAV conformance tests
+in CI (`tests/webdav/`).
+
 Content (test corpus books, TTS voices) is listed with its license where it is committed: the EPUB
 test corpus in [tests/corpus/README.md](tests/corpus/README.md).

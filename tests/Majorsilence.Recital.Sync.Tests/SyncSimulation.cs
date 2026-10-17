@@ -26,8 +26,9 @@ namespace Majorsilence.Recital.Sync.Tests
 
         private readonly int seed;
         private readonly Random random;
-        private readonly string root;
-        private readonly LocalFolderStorageProvider shared;
+        // The shared folder for a local-folder run; null when the sync home is another provider.
+        private readonly string? root;
+        private readonly IStorageProvider shared;
         private readonly SimHistory history = new ();
         private readonly List<Device> devices = [];
         private readonly HashSet<string> imported = new (StringComparer.Ordinal);
@@ -38,16 +39,24 @@ namespace Majorsilence.Recital.Sync.Tests
         private DateTimeOffset now = new (2026, 10, 17, 12, 0, 0, TimeSpan.Zero);
         private int conflict_counter;
 
-        public SyncSimulation (int seed)
+        /// <param name="sharedProvider">
+        /// Makes a client of the sync home: one per device and one for the simulated sync client. Null: a real
+        /// temporary folder through <see cref="LocalFolderStorageProvider"/>, with a 2 s file clock.
+        /// </param>
+        public SyncSimulation (int seed, Func<IStorageProvider>? sharedProvider = null)
         {
             this.seed = seed;
             random = new Random (seed);
-            root = Path.Combine (Path.GetTempPath (), "recital-sync-sim", Guid.NewGuid ().ToString ("N"));
-            shared = new LocalFolderStorageProvider (root);
+            if (sharedProvider is null) {
+                root = Path.Combine (Path.GetTempPath (), "recital-sync-sim", Guid.NewGuid ().ToString ("N"));
+                var folder = root;
+                sharedProvider = () => new LocalFolderStorageProvider (folder);
+            }
+            shared = sharedProvider ();
             for (var i = 0; i < DeviceCount; i++) {
                 var id = Convert.ToHexStringLower (BitConverter.GetBytes (random.NextInt64 ())) + Convert.ToHexStringLower (BitConverter.GetBytes (random.NextInt64 ()));
                 var skew = TimeSpan.FromMilliseconds (random.Next (-600_000, 600_001));
-                devices.Add (new Device (id, "D" + (i + 1), new SimClock (() => now, skew), new InMemoryStorageProvider (), new DeviceStorage (new LocalFolderStorageProvider (root), id, random, history, Coarsen)));
+                devices.Add (new Device (id, "D" + (i + 1), new SimClock (() => now, skew), new InMemoryStorageProvider (), new DeviceStorage (sharedProvider (), id, random, history, Coarsen)));
             }
         }
 
@@ -317,6 +326,8 @@ namespace Majorsilence.Recital.Sync.Tests
         /// </summary>
         private void Coarsen (string path)
         {
+            if (root is null)
+                return;
             var physical = Path.Combine (root, path.Replace ('/', Path.DirectorySeparatorChar));
             var time = File.GetLastWriteTimeUtc (physical);
             File.SetLastWriteTimeUtc (physical, new DateTime (time.Ticks - time.Ticks % (2 * TimeSpan.TicksPerSecond), DateTimeKind.Utc));
@@ -326,6 +337,8 @@ namespace Majorsilence.Recital.Sync.Tests
         private async Task WriteBackdatedAsync (string path, byte[] bytes, CancellationToken ct)
         {
             await shared.WriteAsync (path, new MemoryStream (bytes), null, ct);
+            if (root is null)
+                return;
             var physical = Path.Combine (root, path.Replace ('/', Path.DirectorySeparatorChar));
             File.SetLastWriteTimeUtc (physical, DateTime.UtcNow - TimeSpan.FromMinutes (random.Next (1, 60)));
         }
@@ -376,7 +389,7 @@ namespace Majorsilence.Recital.Sync.Tests
             foreach (var device in devices)
                 device.Stop ();
             try {
-                if (Directory.Exists (root))
+                if (root is not null && Directory.Exists (root))
                     Directory.Delete (root, recursive: true);
             } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) {
                 // Best effort.

@@ -116,11 +116,17 @@ keep the original machine's time.
 In the device's app data directory:
 
 - `device.json`: `{ "deviceId": "...", "name": "..." }`, this device's id.
-- `sync-home.json`: `{ "formatVersion": 1, "folder": "/home/me/Dropbox" }`, the chosen sync folder
-  (`null` for none). Recital writes `Recital/` inside it.
+- `sync-home.json`: where this device syncs, and never a secret:
+  `{ "formatVersion": 1, "kind": "dropbox", "accountId": "dbid:...", "accountName": "me@example.com" }`.
+  The `kind` is `localFolder` (with `folder`), `webDav` (with `url` and `user`), `dropbox`, `oneDrive` or
+  `googleDrive` (with `accountId` and `accountName`), or `none`. A file with only `folder` (Phase 5) is a
+  local folder. Recital writes `Recital/` inside the folder or account.
+- Passwords and refresh tokens: only in the OS secure store, under `webdav:<url>|<user>` and
+  `oauth:<service>`.
 - `library/Recital/...`: the local copy of the sync home.
 - `library/sync/<key>/outbox.json`: `{ "formatVersion": 1, "sequence": 12, "paths": { "<path>": <seq> } }`,
   writes waiting to be pushed. `<key>` is the first 16 hex digits of SHA-256 of the sync home's name
-  (`local:<folder>`), so choosing another sync home starts afresh and re-uploads the local library.
+  (`local:<folder>`, `webdav:<url>|<user>`, `dropbox:<account id>`, ...), so choosing another sync home
+  starts afresh and re-uploads the local library.
 - `library/sync/<key>/index.json`: `{ "formatVersion": 1, "remote": "local:...", "attached": true,
   "cursor": null, "pulled": { "<path>": "<etag>" } }`, the sync home's ETag of each file last copied.

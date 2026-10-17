@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- OneDrive storage provider (plan 2.4, Phase 7): Microsoft Graph over HttpClient, OAuth with PKCE (public client). -->
+
+  <PropertyGroup>
+    <TargetFramework>$(_TargetFramework)</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Majorsilence.Recital.Storage\Majorsilence.Recital.Storage.csproj" />
+  </ItemGroup>
+
+</Project>

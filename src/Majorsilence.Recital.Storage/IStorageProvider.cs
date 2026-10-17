@@ -73,3 +73,17 @@ namespace Majorsilence.Recital.Storage
         public string Path { get; }
     }
 }
+
+namespace Majorsilence.Recital.Storage
+{
+    /// <summary>The account a cloud provider is signed in to.</summary>
+    /// <param name="Id">Stable and unique (Dropbox account id, Graph user id, Drive permission id).</param>
+    /// <param name="Name">For display: an email address or name.</param>
+    public sealed record StorageAccount (string Id, string Name);
+
+    /// <summary>A provider that signs in to an account (the cloud ones).</summary>
+    public interface IStorageAccountProvider
+    {
+        Task<StorageAccount> GetAccountAsync (CancellationToken ct = default);
+    }
+}
