@@ -90,6 +90,8 @@ namespace Majorsilence.Recital.UI
             tts_bar.SpeedChanged += (_, rate) => ChangePreferences (this.preferences with { TtsRate = (float)rate });
             tts_bar.VoiceChosen += (_, voice) => ChangePreferences (this.preferences with { TtsVoice = voice is null || tts_engine is null ? null : tts_engine.Id + ":" + voice });
             tts_bar.SleepChosen += (_, minutes) => SetSleep (minutes);
+            tts_bar.EngineChosen += (_, id) => ChangePreferences (this.preferences with { TtsVoice = id + ":" });
+            tts_bar.SettingsRequested += (_, _) => VoiceSettingsRequested?.Invoke (this, EventArgs.Empty);
             title_label.Text = book.Title;
 
             var themes = new ToolStripDropDownButton ("Theme");
@@ -195,6 +197,9 @@ namespace Majorsilence.Recital.UI
         public string StatusText => $"{chapter_label.Text} | {page_label.Text} | {percent_label.Text}";
 
         public event EventHandler? CloseRequested;
+
+        /// <summary>The user asked for voice settings (keys, Piper): the form shows them.</summary>
+        public event EventHandler? VoiceSettingsRequested;
         public event EventHandler<ReaderPreferences>? PreferencesChanged;
 
         /// <summary>Opens the book at the newest saved position from any device.</summary>
@@ -288,7 +293,9 @@ namespace Majorsilence.Recital.UI
             preferences = next;
             if (ttsChanged) {
                 tts_bar.Rate = next.TtsRate;
-                if (player?.IsPlaying == true)
+                if (tts_engine is not null && EngineIdOf (next) is { } wanted && wanted != tts_engine.Id)
+                    operations.Run (SwitchEngineAsync);
+                else if (player?.IsPlaying == true)
                     operations.Run (() => player.ChangeSettingsAsync (TtsSettingsFor (next)));
                 operations.Run (ShowVoicesAsync);
             }
@@ -476,7 +483,9 @@ namespace Majorsilence.Recital.UI
             }
             if (Engine () is null) {
                 tts_bar.Visible = true;
-                tts_bar.StatusText = "No voices available on this device";
+                tts_bar.StatusText = "No voices on this device: add a cloud key or Piper in Voice settings";
+                tts_bar.ShowEngines ([], null);
+                listen_button.Checked = true;
                 ArrangeChildren ();
                 return;
             }
@@ -544,13 +553,34 @@ namespace Majorsilence.Recital.UI
             }
         }
 
+        /// <summary>The engine in use: the one the preferences name if this device has it, else the first.</summary>
         private ITtsEngine? Engine ()
         {
             if (tts_engine is not null)
                 return tts_engine;
             var engines = TtsEngines?.Invoke () ?? [];
-            tts_engine = engines.FirstOrDefault ();
+            tts_engine = engines.FirstOrDefault (e => e.Id == EngineIdOf (preferences)) ?? engines.FirstOrDefault ();
             return tts_engine;
+        }
+
+        private static string? EngineIdOf (ReaderPreferences prefs)
+            => prefs.TtsVoice is { } voice && voice.IndexOf (':') is > 0 and var colon ? voice[..colon] : null;
+
+        /// <summary>Another engine (or the list changed): drop the player and carry on with the new one.</summary>
+        public async Task SwitchEngineAsync ()
+        {
+            var wasPlaying = player?.IsPlaying == true;
+            if (player is not null) {
+                await player.DisposeAsync ();
+                player = null;
+            }
+            tts_engine = null;
+            PageView.Spoken = [];
+            await ShowVoicesAsync ();
+            if (wasPlaying)
+                await StartListeningAsync ();
+            else
+                tts_bar.ShowState (false, false);
         }
 
         private TtsSettings TtsSettingsFor (ReaderPreferences prefs)
@@ -563,6 +593,7 @@ namespace Majorsilence.Recital.UI
 
         private async Task ShowVoicesAsync ()
         {
+            tts_bar.ShowEngines (TtsEngines?.Invoke () ?? [], Engine ()?.Id);
             if (Engine () is not { } engine || !tts_bar.Visible)
                 return;
             try {

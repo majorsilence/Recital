@@ -9,6 +9,8 @@
     <Project Path="src/Majorsilence.Recital.Storage.OneDrive/Majorsilence.Recital.Storage.OneDrive.csproj" />
     <Project Path="src/Majorsilence.Recital.Storage.WebDav/Majorsilence.Recital.Storage.WebDav.csproj" />
     <Project Path="src/Majorsilence.Recital.Storage/Majorsilence.Recital.Storage.csproj" />
+    <Project Path="src/Majorsilence.Recital.Tts.Cloud/Majorsilence.Recital.Tts.Cloud.csproj" />
+    <Project Path="src/Majorsilence.Recital.Tts.Piper/Majorsilence.Recital.Tts.Piper.csproj" />
     <Project Path="src/Majorsilence.Recital.Tts.Platform/Majorsilence.Recital.Tts.Platform.csproj" />
     <Project Path="src/Majorsilence.Recital.Tts/Majorsilence.Recital.Tts.csproj" />
     <Project Path="src/Majorsilence.Recital.UI/Majorsilence.Recital.UI.csproj" />

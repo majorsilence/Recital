@@ -19,6 +19,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Majorsilence.Recital.Tts\Majorsilence.Recital.Tts.csproj" />
     <ProjectReference Include="..\..\src\Majorsilence.Recital.Tts.Platform\Majorsilence.Recital.Tts.Platform.csproj" />
+    <ProjectReference Include="..\..\src\Majorsilence.Recital.Tts.Cloud\Majorsilence.Recital.Tts.Cloud.csproj" />
+    <ProjectReference Include="..\..\src\Majorsilence.Recital.Tts.Piper\Majorsilence.Recital.Tts.Piper.csproj" />
   </ItemGroup>
 
   <ItemGroup>

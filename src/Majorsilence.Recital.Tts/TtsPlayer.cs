@@ -49,6 +49,8 @@ namespace Majorsilence.Recital.Tts
         private bool exhausted;
         private SpeechChunk? speaking_chunk;
         private int speaking_char;
+        // Where the channel was started: the current sentence until the first word is heard.
+        private (int Spine, int Chunk, int Sentence)? started_at;
         private CancellationTokenSource? sleep;
         private int generation;
 
@@ -223,6 +225,7 @@ namespace Majorsilence.Recital.Tts
                 exhausted = false;
                 next = (spine, chunk);
                 speaking_chunk = null;
+                started_at = (spine, chunk, sentence);
             }
             if (chunk >= plan.Count) {
                 // Past the chapter's last text: start at the next one.
@@ -328,7 +331,7 @@ namespace Majorsilence.Recital.Tts
         {
             lock (state_gate) {
                 if (speaking_chunk is not { } chunk)
-                    return null;
+                    return channel is null ? null : started_at;
                 // A sliced chunk counts characters from its slice; the plan's chunk from its start.
                 var planned = plans.TryGetValue (chunk.SpineIndex, out var plan) ? plan[chunk.Index] : chunk;
                 var sentence = planned.SentenceAt (speaking_char + chunk.SliceStart);

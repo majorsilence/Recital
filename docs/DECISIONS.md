@@ -430,3 +430,35 @@ Each word passed since the last 40 ms tick is reported, so a short sentence is n
   MPNowPlayingInfoCenter), the Android foreground service, iOS background audio, and engines for
   Android, iOS and the browser. They need the mobile heads running on devices (Phase 10). Linux
   without speech-dispatcher has no voice until Piper (Phase 9).
+
+## D-030: Piper only as the user's own program; cloud voices with the user's own key (2026-10-18)
+
+- **Piper.** The original MIT Piper was archived in 2025. Its successor is GPL-3.0, and every Piper
+  phonemizes with espeak-ng (GPL-3.0). Plan 0.1 says to ask before adding anything copyleft, so
+  Recital does not ship, download or link Piper. `PiperSynthesizer` starts the `piper` program the user
+  installed (from the PATH or a path in voice settings) and talks to it over pipes:
+  - One process per voice and speed, because a model takes a second to load.
+  - A line of text per chunk; with `--output_dir`, Piper writes a WAVE file per line and prints its path.
+  - Voices are the `.onnx` files (with their `.onnx.json`) in a folder, by default `piper-voices` in
+    app data. A voice in the book's language is preferred.
+  - There are no timings, so progress is interpolated. Each voice model's licence is the user's to
+    check.
+- **Cloud voices** (`Majorsilence.Recital.Tts.Cloud`, plain HttpClient):
+  - **ElevenLabs:** `with-timestamps`, so character alignment gives exact word timings.
+  - **Google Cloud:** v1beta1 with SSML marks and `enableTimePointing`, so timings are exact. The key is
+    sent in `X-Goog-Api-Key`, never in the URL.
+  - **OpenAI:** `gpt-4o-mini-tts` with a narrator instruction, and no timings.
+  - **Azure Speech:** REST SSML with a prosody rate and dialogue in a second voice. The REST endpoint
+    has no word boundaries, so progress is interpolated.
+  - Keys live only in the secure store (`tts:<service>`), and an engine appears only once its key is
+    there.
+  - The voice settings panel says, before any key is entered, that the text being read is sent to the
+    chosen service while listening with it, and only then.
+  - Errors never contain the key. A test checks this against a service that fails with 401, 429 and
+    500, and also checks the audio cache and its keys.
+- **Engine choice** is part of the synced voice preference (`engine:voice`). A device without that
+  engine falls back to its first one. Device-specific settings (the Piper paths, the Azure region) are
+  in `tts.json` in local app data, never synced.
+- **Not done, needing the user:** the plan's side-by-side recordings in `docs/tts-samples/` need real
+  keys, or a real Piper and voice. Word-level highlighting is exact for ElevenLabs, Google, SAPI and
+  speech-dispatcher, and interpolated for the rest.

@@ -1,5 +1,20 @@
 # Changelog
 
+## Phase 9: Expressive voices (2026-10-18)
+
+- Cloud voices with the user's own key: ElevenLabs and Google with exact word timings, OpenAI with a
+  narrator instruction, and Azure Speech with SSML and a second voice for dialogue. Keys are kept only
+  in the secure store, and a test checks they never reach an error message or the cache (D-030).
+- Piper, offline neural voices, through the user's own `piper` program: one process per voice and
+  speed, with WAVE files over pipes. Recital ships nothing of it (GPL).
+- The reader's Engine menu lists the engines this device can use, with Voice settings for keys, the
+  Azure region and Piper. A notice says text is sent to the chosen service while listening.
+- Fixed: a speed change right after skipping a sentence did nothing. A chunk's last words could go
+  unreported when it ended inside the end tolerance.
+- Tests: each cloud engine against a fake service (request shape, key placement, timings); keys never
+  leaked; Piper through a stand-in that speaks its protocol (or a real Piper with RECITAL_PIPER); the
+  voice settings UI keeps keys out of every settings file.
+
 ## Phase 8: Reading aloud, v1 (2026-10-17)
 
 - `Majorsilence.Recital.Tts`:

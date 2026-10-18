@@ -23,7 +23,8 @@ System libraries and tools used at run time and not redistributed: libsecret and
 (LGPL, loaded by `Majorsilence.Recital.Platform` for the Secret Service), Security.framework on macOS,
 and advapi32 on Windows. For speech: the speech-dispatcher service on Linux, reached over its SSIP
 socket (a protocol; nothing linked), `pw-cat`/`pacat`/`aplay` for audio output on Linux, `say` and
-`afplay` on macOS, and winmm on Windows. Test-only: the `httpd:2.4.62` Docker image (Apache-2.0) runs the WebDAV conformance tests
+`afplay` on macOS, and winmm on Windows. Piper (GPL-3.0, with espeak-ng) is run only if the user
+installed it; Recital does not ship, download or link it. Piper voice models carry their own licences. Test-only: the `httpd:2.4.62` Docker image (Apache-2.0) runs the WebDAV conformance tests
 in CI (`tests/webdav/`).
 
 Content (test corpus books, TTS voices) is listed with its license where it is committed: the EPUB

@@ -23,6 +23,7 @@ namespace Majorsilence.Recital.UI
 
         private readonly ToolStripButton play = new ("Play");
         private readonly ToolStripDropDownButton speed = new ();
+        private readonly ToolStripDropDownButton engine = new ("Engine");
         private readonly ToolStripDropDownButton voice = new ("Voice");
         private readonly ToolStripDropDownButton sleep = new ("Sleep");
         private readonly ToolStripLabel status = new ();
@@ -59,12 +60,18 @@ namespace Majorsilence.Recital.UI
                 sleep.DropDownItems.Add (item);
             }
             UpdateSpeed ();
-            Items.AddRange ([back, play, forward, stop, new ToolStripSeparator (), speed, voice, sleep, new ToolStripSeparator (), status, close]);
+            Items.AddRange ([back, play, forward, stop, new ToolStripSeparator (), engine, voice, speed, sleep, new ToolStripSeparator (), status, close]);
             close.Alignment = ToolStripItemAlignment.Right;
         }
 
         public event EventHandler<TtsCommand>? Command;
         public event EventHandler<double>? SpeedChanged;
+
+        /// <summary>An engine was chosen, by id.</summary>
+        public event EventHandler<string>? EngineChosen;
+
+        /// <summary>"Voice settings…": API keys and Piper.</summary>
+        public event EventHandler? SettingsRequested;
 
         /// <summary>A voice was chosen (null: the engine's default).</summary>
         public event EventHandler<string?>? VoiceChosen;
@@ -88,6 +95,23 @@ namespace Majorsilence.Recital.UI
         /// <summary>Shows play or pause, as the state is.</summary>
         public void ShowState (bool playing, bool paused)
             => play.Text = playing && !paused ? "Pause" : "Play";
+
+        /// <summary>Lists the engines, ticking the one in use, and the way to voice settings.</summary>
+        public void ShowEngines (IReadOnlyList<ITtsEngine> engines, string? selected)
+        {
+            engine.DropDownItems.Clear ();
+            foreach (var e in engines) {
+                var item = new ToolStripMenuItem (e.Name) { Checked = e.Id == selected, Tag = e.Id };
+                item.Click += (_, _) => EngineChosen?.Invoke (this, e.Id);
+                engine.DropDownItems.Add (item);
+            }
+            if (engines.Count > 0)
+                engine.DropDownItems.Add (new ToolStripSeparator ());
+            var settings = new ToolStripMenuItem ("Voice settings…");
+            settings.Click += (_, _) => SettingsRequested?.Invoke (this, EventArgs.Empty);
+            engine.DropDownItems.Add (settings);
+            engine.Text = engines.FirstOrDefault (e => e.Id == selected)?.Name ?? "Engine";
+        }
 
         /// <summary>Lists the engine's voices, ticking <paramref name="selected"/>.</summary>
         public void ShowVoices (IReadOnlyList<TtsVoice> voices, string? selected)

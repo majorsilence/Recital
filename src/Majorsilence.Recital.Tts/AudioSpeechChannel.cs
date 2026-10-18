@@ -247,6 +247,9 @@ namespace Majorsilence.Recital.Tts
                             for (var w = 0; w < words.Count && words[w].Offset <= into; w++)
                                 word = w;
                             // Every word passed since the last tick, so a short sentence is never skipped over.
+                            // A finished chunk reports the rest of its words too: the end tolerance can come before the last one.
+                            if (finish)
+                                word = words.Count - 1;
                             var report = new List<int> ();
                             for (var w = entry.LastWord + 1; w <= word; w++)
                                 report.Add (words[w].CharIndex);

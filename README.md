@@ -19,8 +19,9 @@ logged in [docs/FRAMEWORK_GAPS.md](docs/FRAMEWORK_GAPS.md).
 Screenshots are Headless renders of Project Gutenberg books from the test corpus;
 `RECITAL_SCREENSHOTS=1 dotnet test tests/Majorsilence.Recital.UI.Tests --filter ScreenshotTests` redraws them.
 
-Status: Phase 8 done for the desktop. The reader reads aloud with the OS voices (speech-dispatcher on
-Linux, SAPI on Windows, `say` on macOS), highlighting the sentence and word and turning pages. The
+Status: Phases 8 and 9 done for the desktop. The reader reads aloud, highlighting the sentence and word
+and turning pages, with the OS voices (speech-dispatcher on Linux, SAPI on Windows, `say` on macOS),
+Piper if installed, or ElevenLabs, OpenAI, Azure or Google voices with your own key. The
 library, reading positions, highlights, notes and bookmarks sync through a local folder, WebDAV, Google
 Drive, Dropbox or OneDrive (Library > Sync). Google Drive, Dropbox and OneDrive need app registrations
 built in ([docs/CLOUD_SETUP.md](docs/CLOUD_SETUP.md)). Still to do by hand: the desktop check on

@@ -58,7 +58,8 @@ namespace Majorsilence.Recital.Tts.Tests
                 var expected = chunkStart[chunk] + perChar * ch;
                 var sentence = chunk.Sentences[chunk.SentenceAt (ch)];
                 var sentenceLength = perChar * (sentence.End - sentence.Start);
-                Assert.True (at >= expected - TimeSpan.FromMilliseconds (1), $"Reported '{chunk.Text[ch..Math.Min (chunk.Text.Length, ch + 10)]}' {(expected - at).TotalMilliseconds} ms early");
+                // A chunk's last words can come up to the channel's 15 ms end tolerance early.
+                Assert.True (at >= expected - TimeSpan.FromMilliseconds (16), $"Reported '{chunk.Text[ch..Math.Min (chunk.Text.Length, ch + 10)]}' {(expected - at).TotalMilliseconds} ms early");
                 Assert.True (at - expected < sentenceLength + TimeSpan.FromMilliseconds (120), $"Reported {(at - expected).TotalMilliseconds} ms late, a sentence lasts {sentenceLength.TotalMilliseconds}");
             }
             // Every sentence of every chunk was reported.

@@ -80,3 +80,6 @@ new gaps.
 Phase 8: the reading-aloud bar (a bottom `ToolStrip` with drop-downs for speed, voice and sleep) and
 speech highlighting (marks under the text, from `BeginInvoke` on engine threads). The framework's audio
 classes were evaluated and not used: GAP-013.
+
+Phase 9: the Engine menu (a `ToolStripDropDownButton` rebuilt as engines come and go) and the voice
+settings panel (password `TextBox`es with placeholders). No new gaps.

@@ -10,6 +10,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Majorsilence.Recital.Tts\Majorsilence.Recital.Tts.csproj" />
+    <ProjectReference Include="..\Majorsilence.Recital.Tts.Cloud\Majorsilence.Recital.Tts.Cloud.csproj" />
+    <ProjectReference Include="..\Majorsilence.Recital.Tts.Piper\Majorsilence.Recital.Tts.Piper.csproj" />
+    <ProjectReference Include="..\Majorsilence.Recital.Storage\Majorsilence.Recital.Storage.csproj" />
   </ItemGroup>
 
   <ItemGroup>

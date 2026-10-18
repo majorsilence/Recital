@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Bring-your-own-key cloud voices (plan 3.3, Phase 9): Azure Speech, ElevenLabs, OpenAI, Google Cloud.
+       HttpClient only. Keys come from the secure store and are never written anywhere else or logged. -->
+
+  <PropertyGroup>
+    <TargetFramework>$(_TargetFramework)</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Majorsilence.Recital.Tts\Majorsilence.Recital.Tts.csproj" />
+  </ItemGroup>
+
+</Project>

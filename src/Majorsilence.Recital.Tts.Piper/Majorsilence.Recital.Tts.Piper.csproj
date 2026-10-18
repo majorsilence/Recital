@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Piper, offline neural voices (plan 3.3, Phase 9), as an external program the user installs.
+       Nothing of Piper is shipped, downloaded or linked: its current releases and espeak-ng are GPL. -->
+
+  <PropertyGroup>
+    <TargetFramework>$(_TargetFramework)</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Majorsilence.Recital.Tts\Majorsilence.Recital.Tts.csproj" />
+  </ItemGroup>
+
+</Project>

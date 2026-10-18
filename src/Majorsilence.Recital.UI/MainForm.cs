@@ -28,6 +28,9 @@ namespace Majorsilence.Recital.UI
         };
         private readonly Panel content = new () { Dock = DockStyle.Fill };
         private Task? initialize;
+        private IReadOnlyList<Tts.ITtsEngine>? tts_engines;
+        private bool custom_tts_engines;
+        private readonly TtsSettingsPanel tts_settings = new (Tts.Platform.TtsEngines.CloudServices);
         private bool closing_reader;
 
         /// <summary>The app as the hosts run it: the library in local app data, secrets in the OS secure store.</summary>
@@ -64,15 +67,17 @@ namespace Majorsilence.Recital.UI
         public MainForm (Func<CancellationToken, Task<AppServices>> servicesFactory)
         {
             services_factory = servicesFactory;
-            IReadOnlyList<Tts.ITtsEngine>? engines = null;
-            TtsEngines = () => engines ??= Tts.Platform.TtsEngines.ForCurrentPlatform (
+            // The OS voices until InitializeAsync has found the rest (Piper, cloud keys).
+            TtsEngines = () => tts_engines ??= Tts.Platform.TtsEngines.ForCurrentPlatform (
                 Services?.DataDirectory is { } data ? Path.Combine (data, "tts-cache") : null);
+            tts_settings.Saved += (_, input) => Operations.Run (() => SaveVoiceSettingsAsync (input));
             Text = "Recital";
             ClientSize = new Size (1000, 700);
 
             error_banner.Click += (_, _) => error_banner.Visible = false;
             Controls.Add (content);
             Controls.Add (error_banner);
+            Controls.Add (tts_settings);
 
             Operations.Failed += (_, ex) => ShowError (ex);
             ApplyTheme ();
@@ -87,7 +92,15 @@ namespace Majorsilence.Recital.UI
         /// Makes the reading-aloud engines (default: this OS's voices, caching audio in app data). Tests set
         /// their own.
         /// </summary>
-        public Func<IReadOnlyList<Tts.ITtsEngine>> TtsEngines { get; set; }
+        public Func<IReadOnlyList<Tts.ITtsEngine>> TtsEngines {
+            get;
+            set {
+                field = value;
+                custom_tts_engines = initialize is not null;
+            }
+        }
+
+        public TtsSettingsPanel VoiceSettings => tts_settings;
         public LibraryView? Library { get; private set; }
         public ReaderView? Reader { get; private set; }
         public ReaderPreferences Preferences { get; private set; } = new ();
@@ -106,6 +119,8 @@ namespace Majorsilence.Recital.UI
         {
             var services = await services_factory (CancellationToken.None);
             Services = services;
+            if (!custom_tts_engines)
+                tts_engines = await Tts.Platform.TtsEngines.AvailableAsync (services.DataDirectory, services.Platform.Secrets);
             Preferences = await services.Library.LoadPreferencesAsync ();
             ApplyTheme ();
 
@@ -227,6 +242,7 @@ namespace Majorsilence.Recital.UI
 
             var reader = new ReaderView (Services.Library, book, Preferences, Operations) { Dock = DockStyle.Fill, TtsEngines = TtsEngines };
             reader.CloseRequested += (_, _) => Operations.Run (CloseBookAsync);
+            reader.VoiceSettingsRequested += (_, _) => Operations.Run (ShowVoiceSettingsAsync);
             reader.PreferencesChanged += (_, preferences) => {
                 Preferences = preferences;
                 ApplyTheme ();
@@ -237,6 +253,37 @@ namespace Majorsilence.Recital.UI
             ApplyTheme ();
             Show (reader);
             await reader.OpenAsync ();
+        }
+
+        /// <summary>Opens the voice settings over the window, showing which cloud keys are saved.</summary>
+        public async Task ShowVoiceSettingsAsync ()
+        {
+            if (Services is not { } services)
+                return;
+            var saved = new HashSet<string> (StringComparer.Ordinal);
+            foreach (var (id, _) in Tts.Platform.TtsEngines.CloudServices)
+                if (await services.Platform.Secrets.GetAsync (Tts.Platform.TtsEngines.KeyFor (id)) is { Length: > 0 })
+                    saved.Add (id);
+            var settings = await Tts.Platform.TtsEngineSettings.LoadAsync (services.DataDirectory);
+            tts_settings.SetBounds (Math.Max (0, (ClientSize.Width - 440) / 2), 40, Math.Min (ClientSize.Width, 440), Math.Max (240, ClientSize.Height - 80));
+            tts_settings.Open (saved, settings.AzureRegion, settings.PiperProgram, settings.PiperVoices);
+        }
+
+        /// <summary>Keys into the secure store, the rest into local app data; then the engines are found again.</summary>
+        public async Task SaveVoiceSettingsAsync (TtsSettingsInput input)
+        {
+            if (Services is not { } services)
+                return;
+            foreach (var (id, key) in input.Keys)
+                if (key is not null)
+                    await services.Platform.Secrets.SetAsync (Tts.Platform.TtsEngines.KeyFor (id), key.Length == 0 ? null : key);
+            if (services.DataDirectory is { } data)
+                await new Tts.Platform.TtsEngineSettings (input.PiperProgram, input.PiperVoices, input.AzureRegion).SaveAsync (data);
+            tts_settings.Visible = false;
+            if (!custom_tts_engines)
+                tts_engines = await Tts.Platform.TtsEngines.AvailableAsync (services.DataDirectory, services.Platform.Secrets);
+            if (Reader is { } reader)
+                await reader.SwitchEngineAsync ();
         }
 
         /// <summary>Saves the position, closes the book and goes back to the library.</summary>
