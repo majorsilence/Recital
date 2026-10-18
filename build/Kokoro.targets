@@ -27,11 +27,12 @@
     <_RecitalKokoroFile Include="voices/bm_george.bin" Url="$(_RecitalKokoroBase)/voices/bm_george.bin" Sha256="c4b235a4c1f2cd3b939fed08b899ce9385638b763f7b73a59616c4fc9bd6c9bc" />
   </ItemGroup>
 
-  <!-- Each file: download to .part, check the hash, then move into place; a file in place was checked already. -->
+  <!-- Each file: download to .part, check the hash, then move into place; a file in place was checked already.
+       Each project has its own .part, as projects build in parallel; the first to finish puts its copy in place. -->
   <Target Name="RecitalFetchKokoro" BeforeTargets="AssignTargetPaths" Condition="'$(RecitalBundleKokoro)' == 'true'">
     <ItemGroup>
       <_RecitalKokoroMissing Include="@(_RecitalKokoroFile)" Condition="!Exists('$(RecitalKokoroCache)/%(Identity)')">
-        <Part>$(RecitalKokoroCache)/%(Identity).part</Part>
+        <Part>$(RecitalKokoroCache)/%(Identity).$(MSBuildProjectName).part</Part>
         <Final>$(RecitalKokoroCache)/%(Identity)</Final>
       </_RecitalKokoroMissing>
     </ItemGroup>
@@ -39,7 +40,9 @@
     <DownloadFile SourceUrl="%(_RecitalKokoroMissing.Url)" DestinationFolder="$([System.IO.Path]::GetDirectoryName('%(_RecitalKokoroMissing.Part)'))"
                   DestinationFileName="$([System.IO.Path]::GetFileName('%(_RecitalKokoroMissing.Part)'))" Retries="3" Condition="'@(_RecitalKokoroMissing)' != ''" />
     <VerifyFileHash File="%(_RecitalKokoroMissing.Part)" Hash="%(_RecitalKokoroMissing.Sha256)" Algorithm="SHA256" Condition="'@(_RecitalKokoroMissing)' != ''" />
-    <Move SourceFiles="%(_RecitalKokoroMissing.Part)" DestinationFiles="%(_RecitalKokoroMissing.Final)" Condition="'@(_RecitalKokoroMissing)' != ''" />
+    <Copy SourceFiles="%(_RecitalKokoroMissing.Part)" DestinationFiles="%(_RecitalKokoroMissing.Final)" Retries="10" RetryDelayMilliseconds="500"
+          Condition="'@(_RecitalKokoroMissing)' != '' and !Exists('%(_RecitalKokoroMissing.Final)')" />
+    <Delete Files="%(_RecitalKokoroMissing.Part)" Condition="'@(_RecitalKokoroMissing)' != ''" />
 
     <ItemGroup>
       <None Include="$(RecitalKokoroCache)/%(_RecitalKokoroFile.Identity)" Link="kokoro/%(_RecitalKokoroFile.Identity)"

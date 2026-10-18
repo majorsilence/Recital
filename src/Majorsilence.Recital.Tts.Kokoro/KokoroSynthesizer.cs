@@ -246,7 +246,9 @@ namespace Majorsilence.Recital.Tts.Kokoro
             var session = new InferenceSession (Path.Combine (folder, "model.onnx"), options);
             using var vocabStream = typeof (KokoroSynthesizer).Assembly.GetManifestResourceStream ("Majorsilence.Recital.Tts.Kokoro.Data.kokoro_vocab.json")
                 ?? throw new InvalidOperationException ("Missing resource kokoro_vocab.json.");
-            var vocab = JsonSerializer.Deserialize<Dictionary<string, long>> (vocabStream) ?? [];
+            // Read by hand, not with the serializer: the browser head trims, and reflection would not survive it.
+            using var document = JsonDocument.Parse (vocabStream);
+            var vocab = document.RootElement.EnumerateObject ().ToDictionary (p => p.Name, p => p.Value.GetInt64 (), StringComparer.Ordinal);
             return (session, EnglishPhonemizer.LoadAmerican (), vocab);
         }
 
