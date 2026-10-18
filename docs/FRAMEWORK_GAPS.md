@@ -8,7 +8,7 @@ Severity: **blocker** (cannot ship the feature), **major** (workaround costs rea
 fidelity), **minor** (cosmetic or cheap to work around), **scope** (a question of what the framework
 should cover, not a bug).
 
-Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps. Phase 6 found GAP-012. Phase 7 (cloud sync UI) found none. Phase 8 found GAP-013.
+Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps. Phase 6 found GAP-012. Phase 7 (cloud sync UI) found none. Phase 8 found GAP-013. Starting Phase 10 found GAP-014.
 
 | ID | Area | Backends | Severity | Status |
 |---|---|---|---|---|
@@ -25,6 +25,7 @@ Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps. Phase 
 | GAP-011 | `Application.SetDefaultFont` does not change the typeface controls draw with | all | minor | Fixed in 26.11.6 by [Forms PR #483](https://github.com/majorsilence/Majorsilence.Forms/pull/483); Recital's workaround removed |
 | GAP-012 | `SaveFileDialog` returns a path only; mobile and browser save pickers give nothing writable | Avalonia Android, iOS, Browser | major (export on mobile/browser) | Open; Recital offers Copy as Markdown everywhere and file export on the desktop |
 | GAP-013 | No streaming audio output on the desktop backends (gapless PCM with a play position) | Avalonia desktop | scope (major for reading aloud) | Open; Recital has an `IAudioOutput` per OS |
+| GAP-014 | The browser head starts but draws nothing in headless Firefox; a start-up call blocks the main thread over 10 s | Avalonia Browser | unknown until checked in a real browser | Open; needs a check by hand (`tools/browser-smoke/run.sh`) |
 
 ---
 
@@ -234,4 +235,21 @@ Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps. Phase 
   `Stop`, an underrun event) implemented per backend: Android `AudioTrack`, iOS `AVAudioEngine`, the
   browser's Web Audio, and on the desktop either the OS APIs above or an opt-in native dependency. Plus
   a Headless fake that advances with a test clock.
+
+## GAP-014: The browser head draws nothing in headless Firefox, and blocks the main thread at start-up
+
+- **Found:** starting Phase 10, the first time the browser head ran. Until then it had only been built
+  and published.
+- **What was seen** (`tools/browser-smoke/run.sh`, Firefox headless on Linux):
+  - The runtime starts and Avalonia creates its 1000x700 canvas about 0.6 s after the page loads.
+    WebGL2 is available.
+  - With Firefox's default 10 s script limit, a single call from `avalonia.js`'s `initGlobalDomEvents`
+    into the WebAssembly runs long enough that Firefox stops it ("Script terminated by timeout").
+  - With the limit off there are no errors, but the canvas is still blank after 30 s.
+- **Not known yet:** whether this is headless Firefox (it may not capture a WebGL canvas), or a real
+  problem that a desktop browser shows too. If it is real, the next question is whether the block is in
+  Recital's start-up, in the Majorsilence.Forms browser row, or in Avalonia.Browser.
+- **Severity:** unknown until someone opens the published build in a normal browser.
+- **Measured:** the bundle is 38.3 MB, 11.5 MB with brotli. The largest parts are
+  `Majorsilence.Forms.Drawing.Common.wasm` and `dotnet.native.wasm`.
 

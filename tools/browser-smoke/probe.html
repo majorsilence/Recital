@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html><head><title>Recital</title><meta charset="UTF-8"><link rel="stylesheet" href="./app.css" /></head>
+<body style="margin: 0; overflow: hidden">
+<div id="out"><div class="avalonia-splash"><h2>Loading Recital&hellip;</h2></div></div>
+<script>
+  const t0 = performance.now();
+  const poll = setInterval(() => {
+    if (!document.querySelector('.avalonia-splash') || document.querySelector('canvas')) {
+      clearInterval(poll);
+      const ready = performance.now() - t0;
+      setTimeout(() => {
+        const canvases = [...document.querySelectorAll('canvas')].map(x => x.width + 'x' + x.height);
+        const webgl2 = !!document.createElement('canvas').getContext('webgl2');
+        fetch('/ready?ms=' + Math.round(ready) + '&canvases=' + encodeURIComponent(canvases.join(',')) + '&webgl2=' + webgl2);
+      }, 20000);
+    }
+  }, 50);
+</script>
+<script type='module' src="./main.js"></script>
+<img src="/hold.png" style="position:absolute;width:1px;height:1px;opacity:0">
+</body></html>

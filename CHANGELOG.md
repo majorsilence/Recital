@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased: Phase 10 started
+
+- `tools/browser-smoke/run.sh` publishes the browser head and loads it in headless Firefox, reporting
+  the bundle size (38.3 MB, 11.5 MB with brotli), the start-up time and a screenshot. Avalonia starts
+  and creates its canvas in about 0.6 s, but nothing is drawn in headless Firefox, and a start-up call
+  runs over Firefox's 10 s script limit (GAP-014). This needs a check in a real browser.
+
 ## Phase 9: Expressive voices (2026-10-18)
 
 - Cloud voices with the user's own key: ElevenLabs and Google with exact word timings, OpenAI with a
