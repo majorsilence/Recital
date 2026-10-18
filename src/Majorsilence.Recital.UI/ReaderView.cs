@@ -233,6 +233,16 @@ namespace Majorsilence.Recital.UI
             // The view may have been resized while the book opened.
             RequestRelayout ();
             PageView.Focus ();
+            PrepareVoice ();
+        }
+
+        // Loads an on-device voice now, in the background, so Listen starts at once. A failure here is left for
+        // Listen to report: it meets the same error.
+        private void PrepareVoice ()
+        {
+            if (Engine () is IPreparable preparable)
+                _ = preparable.PrepareAsync ().ContinueWith (t => _ = t.Exception, CancellationToken.None,
+                    TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
         }
 
         /// <summary>Saves the position and releases the book.</summary>
@@ -606,6 +616,7 @@ namespace Majorsilence.Recital.UI
                 player = null;
             }
             tts_engine = null;
+            PrepareVoice ();
             PageView.Spoken = [];
             await ShowVoicesAsync ();
             if (wasPlaying)

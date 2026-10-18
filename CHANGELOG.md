@@ -11,6 +11,14 @@
 - Links in books work: tapping a link's text goes to its target inside the book (a footnote, a list of
   illustrations), and a "‹ Back" button returns to where you were. A web link asks before opening in
   the system browser.
+- Recital's own offline voices: Kokoro-82M runs on the device in ONNX Runtime, with six English voices,
+  a C# port of misaki's English pronunciation rules and dictionaries, and its fallback network for
+  names. Nothing to install and no account needed. The model and voices are downloaded at build time
+  from a pinned revision and checked by hash (D-031).
+- Listen starts in about a second with the offline voices, not about ten. The model loads when a book
+  opens, the first clause plays while the rest of the paragraph is still being made, and paragraphs are
+  made in reading order.
+- The browser head reads aloud with the browser's own voices (Web Speech API).
 
 ## Phase 9: Expressive voices (2026-10-18)
 

@@ -4,7 +4,7 @@ namespace Majorsilence.Recital.Tts
     /// An <see cref="ITtsEngine"/> made from a synthesizer (chunk to audio) and an audio output, for every
     /// engine that produces audio rather than speaking itself.
     /// </summary>
-    public sealed class AudioTtsEngine (ISpeechSynthesizer synthesizer, Func<IAudioOutput> output, AudioCache? cache = null, TimeProvider? time = null) : ITtsEngine
+    public sealed class AudioTtsEngine (ISpeechSynthesizer synthesizer, Func<IAudioOutput> output, AudioCache? cache = null, TimeProvider? time = null) : ITtsEngine, IPreparable
     {
         public string Id => synthesizer.Id;
         public string Name => synthesizer.Name;
@@ -15,6 +15,9 @@ namespace Majorsilence.Recital.Tts
         public ISpeechChannel OpenChannel (TtsSettings settings, string? language)
             => new AudioSpeechChannel (synthesizer, output (), settings, language, cache, time);
 
+        public Task PrepareAsync (CancellationToken ct = default)
+            => synthesizer is IPreparable preparable ? preparable.PrepareAsync (ct) : Task.CompletedTask;
+
         public ValueTask DisposeAsync () => synthesizer.DisposeAsync ();
     }
 
@@ -22,6 +25,7 @@ namespace Majorsilence.Recital.Tts
     /// Speaks chunks through a synthesizer and an <see cref="IAudioOutput"/>. Each enqueued chunk is
     /// synthesized at once (or found in the cache), in order, and its audio queued on the output behind the
     /// one before, so as long as the player enqueues ahead, playback has no gaps (plan Phase 8: under 300 ms).
+    /// A streaming synthesizer's parts are queued as they come, so the first chunk starts on its first part.
     /// Progress comes from the output's play position: exact where the engine gave word timings, otherwise
     /// interpolated through the chunk by character count (plan 3.3).
     /// </summary>
@@ -56,11 +60,15 @@ namespace Majorsilence.Recital.Tts
         private sealed class Entry (SpeechChunk chunk)
         {
             public SpeechChunk Chunk { get; } = chunk;
-            public Task<SynthesizedAudio>? Audio;
+            public System.Threading.Channels.Channel<SynthesizedAudio> Parts { get; } = System.Threading.Channels.Channel.CreateUnbounded<SynthesizedAudio> (
+                new () { SingleReader = true, SingleWriter = true });
             public TimeSpan? Start;
             public TimeSpan? End;
             public bool Started;
             public int LastWord = -1;
+            // Audio made for this chunk, and how much of it has gone to the output.
+            public TimeSpan Made;
+            public TimeSpan Fed;
         }
 
         public AudioSpeechChannel (ISpeechSynthesizer synthesizer, IAudioOutput output, TtsSettings settings, string? language, AudioCache? cache = null, TimeProvider? time = null)
@@ -95,7 +103,7 @@ namespace Majorsilence.Recital.Tts
                 entries.Add (entry);
                 // Start synthesizing now: by the time it is needed, it is ready.
                 var token = stop.Token;
-                entry.Audio = Task.Run (() => SynthesizeAsync (chunk, token), token);
+                _ = Task.Run (() => SynthesizeAsync (entry, token), CancellationToken.None);
                 if (!feeding) {
                     feeding = true;
                     var feedToken = stop.Token;
@@ -155,15 +163,50 @@ namespace Majorsilence.Recital.Tts
             await output.DisposeAsync ().ConfigureAwait (false);
         }
 
-        private async Task<SynthesizedAudio> SynthesizeAsync (SpeechChunk chunk, CancellationToken ct)
+        // What the output still has to play, plus what is made but not yet given to it, up to and including this chunk.
+        private TimeSpan Ahead (Entry entry)
         {
-            var key = cache is null ? null : AudioCache.Key (synthesizer.Id, settings, language, chunk);
-            if (key is not null && await cache!.TryGetAsync (key, ct).ConfigureAwait (false) is { } cached)
-                return cached;
-            var audio = await synthesizer.SynthesizeAsync (chunk, settings, language, ct).ConfigureAwait (false);
-            if (key is not null)
-                await cache!.PutAsync (key, audio, ct).ConfigureAwait (false);
-            return audio;
+            var played = output.Played;
+            lock (gate) {
+                var ahead = format is null ? TimeSpan.Zero : format.Duration (written) - played;
+                foreach (var e in entries) {
+                    ahead += e.Made - e.Fed;
+                    if (e == entry)
+                        break;
+                }
+                return ahead > TimeSpan.Zero ? ahead : TimeSpan.Zero;
+            }
+        }
+
+        // Fills the entry's parts: the cached audio, the synthesizer's parts as they come, or its whole chunk.
+        private async Task SynthesizeAsync (Entry entry, CancellationToken ct)
+        {
+            var writer = entry.Parts.Writer;
+            try {
+                var chunk = entry.Chunk;
+                var key = cache is null ? null : AudioCache.Key (synthesizer.Id, settings, language, chunk);
+                if (key is not null && await cache!.TryGetAsync (key, ct).ConfigureAwait (false) is { } cached) {
+                    await writer.WriteAsync (cached, ct).ConfigureAwait (false);
+                } else if (synthesizer is IStreamingSpeechSynthesizer streaming) {
+                    var parts = new List<SynthesizedAudio> ();
+                    await foreach (var part in streaming.SynthesizePartsAsync (chunk, settings, language, () => Ahead (entry), ct).ConfigureAwait (false)) {
+                        lock (gate)
+                            entry.Made += part.Duration;
+                        await writer.WriteAsync (part, ct).ConfigureAwait (false);
+                        parts.Add (part);
+                    }
+                    if (key is not null && parts.Count > 0)
+                        await cache!.PutAsync (key, SynthesizedAudio.Join (parts[0].Format, parts), ct).ConfigureAwait (false);
+                } else {
+                    var audio = await synthesizer.SynthesizeAsync (chunk, settings, language, ct).ConfigureAwait (false);
+                    await writer.WriteAsync (audio, ct).ConfigureAwait (false);
+                    if (key is not null)
+                        await cache!.PutAsync (key, audio, ct).ConfigureAwait (false);
+                }
+                writer.TryComplete ();
+            } catch (Exception ex) {
+                writer.TryComplete (ex);
+            }
         }
 
         /// <summary>Writes each chunk's audio to the output, in order, as soon as it is ready.</summary>
@@ -179,24 +222,44 @@ namespace Majorsilence.Recital.Tts
                             return;
                         }
                     }
-                    var audio = await entry.Audio!.WaitAsync (ct).ConfigureAwait (false);
-                    if (!started) {
-                        format = audio.Format;
-                        await output.StartAsync (audio.Format, ct).ConfigureAwait (false);
-                        if (paused)
-                            output.Pause ();
-                        started = true;
-                    } else if (audio.Format != format) {
-                        throw new InvalidOperationException ($"The engine changed audio format mid-stream ({format} to {audio.Format}).");
+                    var timed = false;
+                    await foreach (var audio in entry.Parts.Reader.ReadAllAsync (ct).ConfigureAwait (false)) {
+                        if (!started) {
+                            format = audio.Format;
+                            await output.StartAsync (audio.Format, ct).ConfigureAwait (false);
+                            if (paused)
+                                output.Pause ();
+                            started = true;
+                        } else if (audio.Format != format) {
+                            throw new InvalidOperationException ($"The engine changed audio format mid-stream ({format} to {audio.Format}).");
+                        }
+                        if (entry.Start is null) {
+                            await WriteSilenceAsync (entry.Chunk.PauseBefore, ct).ConfigureAwait (false);
+                            lock (gate) {
+                                entry.Start = format!.Duration (written);
+                                Words[entry] = [];
+                            }
+                        }
+                        // The part's words are known before it plays, so the monitor can follow it as it does.
+                        lock (gate) {
+                            var into = format!.Duration (written) - entry.Start!.Value;
+                            Words[entry].AddRange (audio.Words.Select (w => w with { Offset = w.Offset + into }));
+                        }
+                        timed |= audio.Words.Count > 0;
+                        await output.WriteAsync (audio.Pcm, ct).ConfigureAwait (false);
+                        lock (gate) {
+                            written += audio.Pcm.Length;
+                            entry.Fed += audio.Duration;
+                        }
                     }
-                    await WriteSilenceAsync (entry.Chunk.PauseBefore, ct).ConfigureAwait (false);
-                    lock (gate)
-                        entry.Start = format!.Duration (written);
-                    await output.WriteAsync (audio.Pcm, ct).ConfigureAwait (false);
-                    written += audio.Pcm.Length;
                     lock (gate) {
-                        entry.End = format.Duration (written);
-                        Words[entry] = audio.Words.Count > 0 ? audio.Words : Interpolate (entry.Chunk, audio.Duration);
+                        // No audio at all: a moment of nothing, so the chunk still starts and finishes.
+                        entry.Start ??= format?.Duration (written) ?? TimeSpan.Zero;
+                        if (!Words.ContainsKey (entry))
+                            Words[entry] = [];
+                        entry.End = format?.Duration (written) ?? TimeSpan.Zero;
+                        if (!timed)
+                            Words[entry] = Interpolate (entry.Chunk, entry.End.Value - entry.Start.Value);
                     }
                     await WriteSilenceAsync (entry.Chunk.PauseAfter, ct).ConfigureAwait (false);
                 }
@@ -210,7 +273,7 @@ namespace Majorsilence.Recital.Tts
             }
         }
 
-        private readonly Dictionary<Entry, IReadOnlyList<WordTiming>> Words = [];
+        private readonly Dictionary<Entry, List<WordTiming>> Words = [];
 
         private async Task WriteSilenceAsync (TimeSpan duration, CancellationToken ct)
         {

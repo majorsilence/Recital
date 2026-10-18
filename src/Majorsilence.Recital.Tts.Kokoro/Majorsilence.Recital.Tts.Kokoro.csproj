@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Kokoro (D-031): the bundled offline voices. Kokoro-82M (Apache-2.0) runs in ONNX Runtime (MIT); text
+       becomes phonemes through a C# port of misaki's English rules with its dictionaries (Apache-2.0) and a
+       small letters-to-phonemes network (Apache-2.0) for names and rare words. No espeak-ng, nothing GPL.
+       The model and voice files are not in the repository: build/Kokoro.targets fetches and checks them. -->
+
+  <PropertyGroup>
+    <TargetFramework>$(_TargetFramework)</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Data\us_gold.json.gz" LogicalName="Majorsilence.Recital.Tts.Kokoro.Data.us_gold.json.gz" />
+    <EmbeddedResource Include="Data\us_silver.json.gz" LogicalName="Majorsilence.Recital.Tts.Kokoro.Data.us_silver.json.gz" />
+    <EmbeddedResource Include="Data\g2p_en_us.safetensors" LogicalName="Majorsilence.Recital.Tts.Kokoro.Data.g2p_en_us.safetensors" />
+    <EmbeddedResource Include="Data\kokoro_vocab.json" LogicalName="Majorsilence.Recital.Tts.Kokoro.Data.kokoro_vocab.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Majorsilence.Recital.Tts\Majorsilence.Recital.Tts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Majorsilence.Recital.Tts.Tests" />
+  </ItemGroup>
+
+</Project>

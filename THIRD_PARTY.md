@@ -16,6 +16,10 @@ Unlicense or similar permissive licenses; anything copyleft needs sign-off first
 | HarfBuzzSharp (+ native assets) | Layout (text shaping) | MIT |
 | DejaVu fonts 2.37 (Serif, Sans, Sans Mono), embedded in Majorsilence.Recital.Layout | Layout (default and fallback faces) | Bitstream Vera license (permissive) + public domain; see `src/Majorsilence.Recital.Layout/Fonts/DejaVu/LICENSE` |
 | System.Speech | Tts.Platform (Windows SAPI voices; does nothing on other OSes) | MIT |
+| Microsoft.ML.OnnxRuntime (+ .Managed, native runtimes) | Tts.Kokoro (runs the bundled voices) | MIT |
+| Kokoro-82M v1.0, onnx-community ONNX export (`model_uint8f16.onnx` and six voices; fetched at build time by `build/Kokoro.targets`, shipped beside the app) | Tts.Kokoro, desktop head | Apache-2.0. Trained in part on Koniwa `tnc` (CC BY 3.0) and SIWIS (CC BY 4.0), credited here as their licences ask |
+| misaki English dictionaries `us_gold.json`, `us_silver.json` (embedded, gzipped) and the logic of `misaki/en.py` (ported to C#) | Tts.Kokoro | Apache-2.0, © hexgrad |
+| PeterReid/graphemes_to_phonemes_en_us weights (embedded `g2p_en_us.safetensors`) | Tts.Kokoro (names and rare words) | Apache-2.0 |
 | xunit.v3, xunit.runner.visualstudio | tests | Apache-2.0 |
 | Microsoft.NET.Test.Sdk | tests | MIT |
 

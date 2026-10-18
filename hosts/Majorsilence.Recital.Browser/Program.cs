@@ -7,6 +7,8 @@ namespace Majorsilence.Recital.Browser
     {
         // No blocking Application.Run: the browser backend attaches to the "out" div in
         // wwwroot/index.html and is then driven by the browser's own event loop.
-        private static Task Main () => Application.RunBrowserAsync (() => new MainForm ());
+        private static Task Main () => Application.RunBrowserAsync (() => new MainForm {
+            HostTtsEngines = WebSpeechEngine.IsAvailable ? [new WebSpeechEngine ()] : [],
+        });
     }
 }

@@ -18,6 +18,15 @@ namespace Majorsilence.Recital.Tts
     /// <param name="MaxChunkChars">The longest chunk it takes.</param>
     public sealed record TtsCapabilities (bool Ssml, bool WordTimings, int MaxChunkChars);
 
+    /// <summary>
+    /// An engine (or synthesizer) with something slow to load the first time, such as an on-device model: the reader
+    /// asks it to load when a book opens, so Listen does not wait for it.
+    /// </summary>
+    public interface IPreparable
+    {
+        Task PrepareAsync (CancellationToken ct = default);
+    }
+
     /// <summary>A text-to-speech engine (plan 3.3): it lists voices and opens channels that speak chunks.</summary>
     public interface ITtsEngine : IAsyncDisposable
     {

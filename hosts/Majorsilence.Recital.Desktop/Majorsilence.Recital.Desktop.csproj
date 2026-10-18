@@ -16,4 +16,7 @@
     <ProjectReference Include="..\..\src\Majorsilence.Recital.UI\Majorsilence.Recital.UI.csproj" />
   </ItemGroup>
 
+  <!-- The bundled offline voices (D-031), copied beside the app as kokoro/. -->
+  <Import Project="..\..\build\Kokoro.targets" />
+
 </Project>

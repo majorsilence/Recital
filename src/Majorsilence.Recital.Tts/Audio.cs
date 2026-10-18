@@ -25,6 +25,21 @@ namespace Majorsilence.Recital.Tts
     public sealed record SynthesizedAudio (PcmFormat Format, byte[] Pcm, IReadOnlyList<WordTiming> Words)
     {
         public TimeSpan Duration => Format.Duration (Pcm.Length);
+
+        /// <summary>Parts (of one format) as one, each part's word times moved by the audio before it.</summary>
+        public static SynthesizedAudio Join (PcmFormat format, IReadOnlyList<SynthesizedAudio> parts)
+        {
+            var pcm = new byte[parts.Sum (p => p.Pcm.Length)];
+            var words = new List<WordTiming> ();
+            var at = 0;
+            foreach (var part in parts) {
+                var offset = format.Duration (at);
+                words.AddRange (part.Words.Select (w => w with { Offset = w.Offset + offset }));
+                part.Pcm.CopyTo (pcm, at);
+                at += part.Pcm.Length;
+            }
+            return new SynthesizedAudio (format, pcm, words);
+        }
     }
 
     /// <summary>An engine that turns a chunk into audio (Windows SAPI, macOS say, Piper, the cloud engines).</summary>
@@ -35,6 +50,20 @@ namespace Majorsilence.Recital.Tts
         TtsCapabilities Capabilities { get; }
         Task<IReadOnlyList<TtsVoice>> GetVoicesAsync (CancellationToken ct = default);
         Task<SynthesizedAudio> SynthesizeAsync (SpeechChunk chunk, TtsSettings settings, string? language, CancellationToken ct = default);
+    }
+
+    /// <summary>
+    /// A synthesizer that hands over a chunk's audio in parts as it makes them, so playback starts on the first
+    /// part rather than after the whole chunk (an on-device model, slower to finish a paragraph than a server).
+    /// </summary>
+    public interface IStreamingSpeechSynthesizer : ISpeechSynthesizer
+    {
+        /// <summary>The chunk's audio in order; each part's word offsets count from the start of that part.</summary>
+        /// <param name="ahead">
+        /// How much audio is ready to play before the next part, asked as often as wanted: with little ahead the
+        /// listener is waiting, so a short part now beats a long one later.
+        /// </param>
+        IAsyncEnumerable<SynthesizedAudio> SynthesizePartsAsync (SpeechChunk chunk, TtsSettings settings, string? language, Func<TimeSpan> ahead, CancellationToken ct = default);
     }
 
     /// <summary>

@@ -69,8 +69,8 @@ namespace Majorsilence.Recital.UI
         {
             services_factory = servicesFactory;
             // The OS voices until InitializeAsync has found the rest (Piper, cloud keys).
-            TtsEngines = () => tts_engines ??= Tts.Platform.TtsEngines.ForCurrentPlatform (
-                Services?.DataDirectory is { } data ? Path.Combine (data, "tts-cache") : null);
+            TtsEngines = () => tts_engines ??= [.. HostTtsEngines, .. Tts.Platform.TtsEngines.ForCurrentPlatform (
+                Services?.DataDirectory is { } data ? Path.Combine (data, "tts-cache") : null)];
             tts_settings.Saved += (_, input) => Operations.Run (() => SaveVoiceSettingsAsync (input));
             Text = "Recital";
             ClientSize = new Size (1000, 700);
@@ -101,6 +101,9 @@ namespace Majorsilence.Recital.UI
             }
         }
 
+        /// <summary>Engines the host supplies itself, offered first (the browser's own voices in the browser head).</summary>
+        public IReadOnlyList<Tts.ITtsEngine> HostTtsEngines { get; init; } = [];
+
         public TtsSettingsPanel VoiceSettings => tts_settings;
         public LibraryView? Library { get; private set; }
         public ReaderView? Reader { get; private set; }
@@ -121,7 +124,7 @@ namespace Majorsilence.Recital.UI
             var services = await services_factory (CancellationToken.None);
             Services = services;
             if (!custom_tts_engines)
-                tts_engines = await Tts.Platform.TtsEngines.AvailableAsync (services.DataDirectory, services.Platform.Secrets);
+                tts_engines = [.. HostTtsEngines, .. await Tts.Platform.TtsEngines.AvailableAsync (services.DataDirectory, services.Platform.Secrets)];
             Preferences = await services.Library.LoadPreferencesAsync ();
             ApplyTheme ();
 
@@ -299,7 +302,7 @@ namespace Majorsilence.Recital.UI
                 await new Tts.Platform.TtsEngineSettings (input.PiperProgram, input.PiperVoices, input.AzureRegion).SaveAsync (data);
             tts_settings.Visible = false;
             if (!custom_tts_engines)
-                tts_engines = await Tts.Platform.TtsEngines.AvailableAsync (services.DataDirectory, services.Platform.Secrets);
+                tts_engines = [.. HostTtsEngines, .. await Tts.Platform.TtsEngines.AvailableAsync (services.DataDirectory, services.Platform.Secrets)];
             if (Reader is { } reader)
                 await reader.SwitchEngineAsync ();
         }

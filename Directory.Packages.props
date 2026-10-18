@@ -29,6 +29,7 @@
     <!-- CSS parsing and selector matching for Majorsilence.Recital.Layout's cascade. -->
     <PackageVersion Include="AngleSharp.Css" Version="1.1.2" />
     <PackageVersion Include="System.Speech" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.ML.OnnxRuntime" Version="1.30.0" />
 
     <!-- Tests -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />

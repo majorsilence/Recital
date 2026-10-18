@@ -45,7 +45,10 @@ namespace Majorsilence.Recital.Tts.Platform
     {
     }
 
-    /// <summary>The reading-aloud engines this device can use: the OS voices, Piper when installed, and each cloud service with a key.</summary>
+    /// <summary>
+    /// The reading-aloud engines this device can use: Recital's bundled voices, the OS voices, Piper when installed,
+    /// and each cloud service with a key.
+    /// </summary>
     public static class TtsEngines
     {
         /// <summary>The cloud engines Recital can use with the user's own key, by id.</summary>
@@ -61,6 +64,10 @@ namespace Majorsilence.Recital.Tts.Platform
         {
             var cache = cacheDirectory is null ? null : new AudioCache (cacheDirectory);
             var engines = new List<ITtsEngine> ();
+            // Recital's own voices first, when this build carries them: they need nothing installed and stay on
+            // the device. Their audio is quick to make again, so it is not cached.
+            if (Kokoro.KokoroSynthesizer.FindFolder () is { } kokoro && AudioOutputFactory () is { } output)
+                engines.Add (new AudioTtsEngine (new Kokoro.KokoroSynthesizer (kokoro), output));
             if (OperatingSystem.IsWindows ())
                 engines.Add (new AudioTtsEngine (new SapiSynthesizer (), WindowsOutput, cache));
             else if (OperatingSystem.IsMacOS () && File.Exists ("/usr/bin/say") && AfplayAudioOutput.IsAvailable ())

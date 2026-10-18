@@ -21,11 +21,15 @@
     <ProjectReference Include="..\..\src\Majorsilence.Recital.Tts.Platform\Majorsilence.Recital.Tts.Platform.csproj" />
     <ProjectReference Include="..\..\src\Majorsilence.Recital.Tts.Cloud\Majorsilence.Recital.Tts.Cloud.csproj" />
     <ProjectReference Include="..\..\src\Majorsilence.Recital.Tts.Piper\Majorsilence.Recital.Tts.Piper.csproj" />
+    <ProjectReference Include="..\..\src\Majorsilence.Recital.Tts.Kokoro\Majorsilence.Recital.Tts.Kokoro.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="..\corpus\*.epub" LinkBase="corpus" CopyToOutputDirectory="PreserveNewest" />
     <Compile Include="..\Majorsilence.Recital.Epub.Tests\TestEpub.cs" Link="TestEpub.cs" />
   </ItemGroup>
+
+  <!-- The bundled Kokoro voices, so the Kokoro tests run against the real model. -->
+  <Import Project="..\..\build\Kokoro.targets" />
 
 </Project>

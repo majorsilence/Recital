@@ -462,3 +462,66 @@ Each word passed since the last 40 ms tick is reported, so a short sentence is n
 - **Not done, needing the user:** the plan's side-by-side recordings in `docs/tts-samples/` need real
   keys, or a real Piper and voice. Word-level highlighting is exact for ElevenLabs, Google, SAPI and
   speech-dispatcher, and interpolated for the rest.
+
+## D-031: Recital's own offline voices: Kokoro in ONNX Runtime with a C# misaki (2026-10-18)
+
+The user asked for voices that always work, with no account and nothing to install, keeping cloud
+keys optional. They chose Kokoro over a Piper voice and bundling over a download button.
+
+- **Model:** Kokoro-82M v1.0 (Apache-2.0; trained only on permissive or public-domain audio, with two
+  small CC BY sets credited in THIRD_PARTY.md), the onnx-community export at a pinned revision.
+  `model_uint8f16.onnx` (114 MB). On a Ryzen 5 3600 it makes speech about 4× faster than it plays:
+  - the plain 8-bit file (92 MB) is slower than real time on CPU;
+  - fp16 (163 MB) is no faster;
+  - fp32 (326 MB) is only slightly faster;
+  - `model_q8f16.onnx` crashes ONNX Runtime 1.30 (a segfault on its first run).
+
+  The cost is almost all the vocoder, so it grows with the length of the audio, not with a fixed cost
+  per run. Running graph branches in parallel (`ORT_PARALLEL`) and more threads gain nothing.
+- **Voices:** six of the 28 English ones (af_heart, af_bella, am_michael, am_puck, bf_emma, bm_george),
+  0.5 MB each. Heart is the default.
+- **Runtime:** Microsoft.ML.OnnxRuntime 1.30.0 (MIT). It has native builds for Windows, macOS, Linux,
+  Android and iOS. Not the browser: the browser head uses the browser's own voices (Web Speech API,
+  `WebSpeechEngine`).
+- **Text to phonemes, with no espeak-ng (GPL):**
+  - A C# port of misaki's English rules (Apache-2.0): its gold and silver dictionaries (183k words,
+    1.4 MB gzipped, embedded), regular -s/-ed/-ing endings, stress, initialisms, numbers, money and
+    years.
+  - spaCy's part-of-speech tagger is not ported. Words said differently as noun and verb get their
+    default reading, and "a" is always the article.
+  - Words not in the dictionaries (most names) go to misaki's own fallback network,
+    PeterReid/graphemes_to_phonemes_en_us (Apache-2.0). It is a 750k-weight BART trained on misaki's
+    dictionaries; its training script used WikiText only as a list of real plural forms. It runs in
+    plain C# (about 3 ms a word, cached per book), reproduces 67% of dictionary words exactly, and is
+    close on the rest.
+- **Timing:** a chunk (up to 240 characters) is spoken sentence by sentence, so each sentence starts
+  at an exact time. Words are placed by their share of the sentence's phonemes. The model reads up to
+  510 phonemes at once, so a longer sentence is split at a pause.
+- **Starting quickly:** at first, pressing Listen took about 10 seconds: the model loaded only then,
+  the whole first chunk (often one long sentence) had to be made before any of it played, and the
+  chunks queued behind it could take the model first. Now:
+  - The reader loads the model in the background when a book opens (`IPreparable`).
+  - `IStreamingSpeechSynthesizer` hands over a chunk in parts, and `AudioSpeechChannel` plays each part
+    as it comes. The channel tells the synthesizer how much audio is waiting to play before the next part.
+  - With nothing waiting, Kokoro makes a short first part: one clause, about 2.5 s of speech, ending at a
+    pause. Each later part is sized to be ready before the audio ahead runs out, using the synthesis
+    speed it measures, and grows to whole sentences.
+  - Chunks take the model in reading order: when the model frees up, the earliest waiting chunk goes next,
+    and a chunk hands over between parts if an earlier one is waiting.
+
+  The first words now come in about a second on the Ryzen 5 3600, even with other work running. The
+  short first part is the only place a sentence is split for speed, and only right after Listen or a jump.
+  Disposing waits for a run in progress, because a stopped channel does not wait for its synthesis.
+- **Packaging:** the model and voices are not in git. `build/Kokoro.targets`:
+  - downloads each file once into a per-user cache;
+  - checks it against a pinned SHA-256 before use;
+  - copies it beside the app as `kokoro/`.
+
+  The desktop head and the TTS tests import it. The app itself never downloads anything.
+  `-p:RecitalBundleKokoro=false` opts out. CI caches the files.
+- **Order:** `TtsEngines` offers Kokoro first when the files are present, then the OS voices, Piper and
+  the cloud services. Its audio is quick to remake, so it is not cached on disk.
+- **Not yet:**
+  - British voices still use the American dictionary; misaki has a British one too.
+  - Only English.
+  - Android/iOS packaging (the model has to reach a file path, or be loaded from bytes).
