@@ -235,7 +235,14 @@ namespace Majorsilence.Recital.Tts.Kokoro
 
         private (InferenceSession, EnglishPhonemizer, Dictionary<string, long>) Load ()
         {
-            using var options = new SessionOptions { GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL };
+            // A few threads, and no spinning: by default ONNX Runtime takes every core and busy-waits between steps,
+            // burning about 4 s of CPU per second of speech. Three threads without spinning measured as fast or
+            // faster on a 12-thread Ryzen (more so with other work running) for about 0.9 s of CPU.
+            using var options = new SessionOptions {
+                GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL,
+                IntraOpNumThreads = Math.Clamp (Environment.ProcessorCount / 4, 2, 4),
+            };
+            options.AddSessionConfigEntry ("session.intra_op.allow_spinning", "0");
             var session = new InferenceSession (Path.Combine (folder, "model.onnx"), options);
             using var vocabStream = typeof (KokoroSynthesizer).Assembly.GetManifestResourceStream ("Majorsilence.Recital.Tts.Kokoro.Data.kokoro_vocab.json")
                 ?? throw new InvalidOperationException ("Missing resource kokoro_vocab.json.");

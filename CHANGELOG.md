@@ -17,7 +17,7 @@
   from a pinned revision and checked by hash (D-031).
 - Listen starts in about a second with the offline voices, not about ten. The model loads when a book
   opens, the first clause plays while the rest of the paragraph is still being made, and paragraphs are
-  made in reading order.
+  made in reading order, using about a fifth of the CPU (no busy-waiting threads).
 - The browser head reads aloud with the browser's own voices (Web Speech API).
 
 ## Phase 9: Expressive voices (2026-10-18)

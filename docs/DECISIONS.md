@@ -478,6 +478,11 @@ keys optional. They chose Kokoro over a Piper voice and bundling over a download
 
   The cost is almost all the vocoder, so it grows with the length of the audio, not with a fixed cost
   per run. Running graph branches in parallel (`ORT_PARALLEL`) and more threads gain nothing.
+
+  CPU use: ONNX Runtime's defaults take every core and spin between steps, which used about 4 s of
+  CPU for each second of speech. With spinning off and a quarter of the logical cores (2 to 4 threads)
+  it uses about 0.9 s, and is as fast or faster: 0.43 s of work per second of speech, against 0.63 s,
+  with other work running.
 - **Voices:** six of the 28 English ones (af_heart, af_bella, am_michael, am_puck, bf_emma, bm_george),
   0.5 MB each. Heart is the default.
 - **Runtime:** Microsoft.ML.OnnxRuntime 1.30.0 (MIT). It has native builds for Windows, macOS, Linux,
