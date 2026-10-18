@@ -23,6 +23,7 @@ namespace Majorsilence.Recital.Core.Reading
         private ChapterLayout chapter = null!;
         private DomPosition anchor;
         private ReadingLocator locator = null!;
+        private readonly Stack<ReadingLocator> link_history = new ();
 
         private ReadingSession (EpubBook book, LayoutSettings settings)
         {
@@ -115,19 +116,62 @@ namespace Majorsilence.Recital.Core.Reading
         public int? NextReadableChapter (int spine) => NextReadable (spine, +1);
 
         /// <summary>Goes to a table-of-contents entry. Returns false when it points outside the spine.</summary>
-        public Task<bool> GoToAsync (TocEntry entry, CancellationToken ct = default) => Serialised (async () => {
-            if (entry.SpineIndex is not { } spine)
-                return false;
+        public Task<bool> GoToAsync (TocEntry entry, CancellationToken ct = default)
+            => Serialised (() => entry.SpineIndex is { } spine ? GoToFragmentCoreAsync (spine, entry.Fragment, ct) : Task.FromResult (false), ct);
 
+        /// <summary>
+        /// The link whose text is under a point (content-box coordinates) on the current page, resolved against
+        /// this chapter; null when there is none, or it leads to something that is neither in the spine nor on the web.
+        /// </summary>
+        public BookLink? LinkAt (float x, float y)
+            => chapter.Pages.Count > 0 && Page.LinkAt (x, y) is { } link ? Resolve (link) : null;
+
+        /// <summary>Where a link on the current chapter's pages leads; null when it is neither in the spine nor on the web.</summary>
+        public BookLink? Resolve (PageLink link)
+        {
+            if (ContentDocument.IsRemoteLink (link.Href))
+                return Uri.TryCreate (link.Href, UriKind.Absolute, out var uri) ? new BookLink (link.Href, null, null, uri, link.Rects) : null;
+            return chapter.Document.ResolveLink (link.Href) is var (spine, fragment) ? new BookLink (link.Href, spine, fragment, null, link.Rects) : null;
+        }
+
+        /// <summary>Whether a followed link can be returned from (see <see cref="ReturnAsync"/>).</summary>
+        public bool CanReturn => link_history.Count > 0;
+
+        /// <summary>
+        /// Follows a link inside the book, remembering where the reader was so <see cref="ReturnAsync"/> can come
+        /// back (to read a footnote and carry on). Returns false for a web link or a target that cannot be shown.
+        /// </summary>
+        public Task<bool> FollowAsync (BookLink link, CancellationToken ct = default) => Serialised (async () => {
+            if (link.SpineIndex is not { } spine)
+                return false;
+            var from = locator;
+            if (!await GoToFragmentCoreAsync (spine, link.Fragment, ct).ConfigureAwait (false))
+                return false;
+            link_history.Push (from);
+            return true;
+        }, ct);
+
+        /// <summary>Goes back to where the reader was before the last followed link. Returns false when there is none.</summary>
+        public Task<bool> ReturnAsync (CancellationToken ct = default) => Serialised (async () => {
+            while (link_history.TryPop (out var back))
+                if (await TryGoToCoreAsync (back, ct).ConfigureAwait (false))
+                    return true;
+            return false;
+        }, ct);
+
+        private async Task<bool> GoToFragmentCoreAsync (int spine, string? fragment, CancellationToken ct)
+        {
+            if (spine < 0 || spine >= Book.Spine.Count)
+                return false;
             var target = await LayoutAsync (spine, ct).ConfigureAwait (false);
             if (target.Pages.Count == 0)
                 return false;
-            var element = entry.Fragment is { Length: > 0 } fragment ? target.Document.FindFragment (fragment) : null;
+            var element = fragment is { Length: > 0 } ? target.Document.FindFragment (fragment) : null;
             Show (target, element is null ? 0 : target.PageOf (new DomPosition (element, 0)).Index);
             if (element is not null)
                 SetAnchor (new DomPosition (element, 0));
             return true;
-        }, ct);
+        }
 
         /// <summary>
         /// Lays the book out again for a new viewport or typography and shows the page holding the anchor,
@@ -476,5 +520,11 @@ namespace Majorsilence.Recital.Core.Reading
     /// <param name="Cfi">A range CFI, or null when none could be made.</param>
     /// <param name="CharOffset">Characters in the chapter before its start (the fallback anchor).</param>
     /// <param name="Text">The selected words, whitespace collapsed.</param>
+    /// <summary>
+    /// A link on the page: inside the book (<see cref="SpineIndex"/> and an optional <see cref="Fragment"/>) or on
+    /// the web (<see cref="External"/>), with the rectangles its text covers (content-box coordinates).
+    /// </summary>
+    public sealed record BookLink (string Href, int? SpineIndex, string? Fragment, Uri? External, IReadOnlyList<PageRect> Rects);
+
     public sealed record SelectedPassage (DomPosition Start, DomPosition End, int SpineIndex, string? Cfi, int CharOffset, double Percent, string Text);
 }

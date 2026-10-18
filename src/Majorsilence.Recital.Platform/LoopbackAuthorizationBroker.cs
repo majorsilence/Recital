@@ -30,7 +30,7 @@ namespace Majorsilence.Recital.Platform
         /// <param name="port">A fixed port for a provider that wants the exact redirect registered; 0 picks a free one.</param>
         public LoopbackAuthorizationBroker (Action<Uri>? openBrowser = null, string host = "127.0.0.1", int port = 0, TimeSpan? timeout = null)
         {
-            open_browser = openBrowser ?? OpenWithShell;
+            open_browser = openBrowser ?? SystemBrowser.Launch;
             this.host = host;
             this.port = port;
             this.timeout = timeout ?? TimeSpan.FromMinutes (5);
@@ -92,13 +92,5 @@ namespace Majorsilence.Recital.Platform
             return line.Length >= 2 && line[0] == "GET" ? line[1] : null;
         }
 
-        private static void OpenWithShell (Uri uri)
-        {
-            // UseShellExecute hands the URL to the OS: the default browser on Windows and macOS, xdg-open on Linux.
-            if (OperatingSystem.IsLinux ())
-                Process.Start (new ProcessStartInfo ("xdg-open", uri.AbsoluteUri) { UseShellExecute = false })?.Dispose ();
-            else
-                Process.Start (new ProcessStartInfo (uri.AbsoluteUri) { UseShellExecute = true })?.Dispose ();
-        }
     }
 }

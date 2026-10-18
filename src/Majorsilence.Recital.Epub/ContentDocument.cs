@@ -203,6 +203,21 @@ namespace Majorsilence.Recital.Epub
         /// <summary>The element a <c>#fragment</c> names, if any.</summary>
         public IElement? FindFragment (string fragment) => Document.GetElementById (fragment);
 
+        /// <summary>
+        /// Where an href written in this document leads in the book: a spine item and an optional fragment. Null for a
+        /// web address (see <see cref="IsRemoteLink"/>) or a resource outside the spine.
+        /// </summary>
+        public (int SpineIndex, string? Fragment)? ResolveLink (string href)
+        {
+            if (SpineItem.Content.Path is not { } self)
+                return null;
+            var (path, fragment) = EpubPaths.Resolve (EpubPaths.Directory (self), href, self);
+            return path is not null && Package.SpineIndexOf (path) is { } spine ? (spine, fragment) : null;
+        }
+
+        /// <summary>Whether an href names something outside the book (it has a URL scheme such as https: or mailto:).</summary>
+        public static bool IsRemoteLink (string href) => EpubPaths.IsRemote (href.Trim ());
+
         private List<CfiStep> ElementPath (IElement target)
         {
             var path = new List<CfiStep> ();

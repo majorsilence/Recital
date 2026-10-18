@@ -30,6 +30,11 @@ namespace Majorsilence.Recital.UI
         public Rectangle Bounds { get; } = bounds;
     }
 
+    public sealed class LinkTappedEventArgs (PageLink link) : EventArgs
+    {
+        public PageLink Link { get; } = link;
+    }
+
     public sealed class HighlightTappedEventArgs (PageHighlight highlight, Rectangle bounds) : EventArgs
     {
         public PageHighlight Highlight { get; } = highlight;
@@ -45,7 +50,7 @@ namespace Majorsilence.Recital.UI
     /// raises <see cref="CenterTapped"/>; a horizontal drag (mouse or touch) or a touch swipe turns the page;
     /// the wheel, arrow keys, Page Up/Down, Space and Home/End do the obvious. Text is selected by pressing,
     /// holding still for <see cref="SelectHoldTime"/> and then dragging, or by a long press (which selects
-    /// the word, then dragging extends it); tapping a highlight raises <see cref="HighlightTapped"/>. Pages are drawn in logical
+    /// the word, then dragging extends it); tapping a highlight raises <see cref="HighlightTapped"/> and tapping a link <see cref="LinkTapped"/>. Pages are drawn in logical
     /// units, which are the layout's CSS pixels, so the layout's geometry is the page's geometry at any
     /// display scale.
     /// </remarks>
@@ -145,6 +150,9 @@ namespace Majorsilence.Recital.UI
         public event EventHandler? SelectionCleared;
 
         public event EventHandler<HighlightTappedEventArgs>? HighlightTapped;
+
+        /// <summary>A link's text was tapped or clicked (instead of turning the page).</summary>
+        public event EventHandler<LinkTappedEventArgs>? LinkTapped;
 
         /// <summary>The middle of the page was tapped or clicked: show or hide the reader's chrome.</summary>
         public event EventHandler? CenterTapped;
@@ -373,6 +381,11 @@ namespace Majorsilence.Recital.UI
             }
             if (TappedHighlight (e.Location) is { } tapped) {
                 HighlightTapped?.Invoke (this, new HighlightTappedEventArgs (tapped, Union (tapped.Rects.Select (ToView))));
+                return;
+            }
+            if (LinkTapped is not null && page is not null && page_settings is not null
+                && page.LinkAt (e.X - page_settings.MarginLeft, e.Y - page_settings.MarginTop) is { } link) {
+                LinkTapped (this, new LinkTappedEventArgs (link));
                 return;
             }
 

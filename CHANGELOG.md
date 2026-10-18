@@ -6,6 +6,11 @@
   the bundle size (38.3 MB, 11.5 MB with brotli), the start-up time and a screenshot. Avalonia starts
   and creates its canvas in about 0.6 s, but nothing is drawn in headless Firefox, and a start-up call
   runs over Firefox's 10 s script limit (GAP-014). This needs a check in a real browser.
+- Checked by hand in Brave: the browser head draws and imports and reads books, so the blank page was
+  headless Firefox's screenshot, not the app (GAP-014).
+- Links in books work: tapping a link's text goes to its target inside the book (a footnote, a list of
+  illustrations), and a "‹ Back" button returns to where you were. A web link asks before opening in
+  the system browser.
 
 ## Phase 9: Expressive voices (2026-10-18)
 

@@ -4,6 +4,7 @@ using Majorsilence.Recital.Core;
 using Majorsilence.Recital.Core.Library;
 using Majorsilence.Recital.Core.Reading;
 using Majorsilence.Recital.Core.Sync;
+using Majorsilence.Recital.Platform;
 using Majorsilence.Recital.Storage;
 
 namespace Majorsilence.Recital.UI
@@ -243,6 +244,7 @@ namespace Majorsilence.Recital.UI
             var reader = new ReaderView (Services.Library, book, Preferences, Operations) { Dock = DockStyle.Fill, TtsEngines = TtsEngines };
             reader.CloseRequested += (_, _) => Operations.Run (CloseBookAsync);
             reader.VoiceSettingsRequested += (_, _) => Operations.Run (ShowVoiceSettingsAsync);
+            reader.ExternalLinkRequested += (_, uri) => Operations.Run (() => OpenExternalLinkAsync (uri));
             reader.PreferencesChanged += (_, preferences) => {
                 Preferences = preferences;
                 ApplyTheme ();
@@ -253,6 +255,22 @@ namespace Majorsilence.Recital.UI
             ApplyTheme ();
             Show (reader);
             await reader.OpenAsync ();
+        }
+
+        /// <summary>
+        /// Asks before opening a book's web link in the system browser: the reader never touches the network itself,
+        /// and an address in a book is the book's content, so the reader sees it first.
+        /// </summary>
+        public async Task OpenExternalLinkAsync (Uri uri)
+        {
+            if (!SystemBrowser.CanOpen (uri)) {
+                await MessageBox.ShowAsync ($"This link can't be opened from Recital:\n{uri}", "Link");
+                return;
+            }
+            if (await MessageBox.ShowAsync ($"Open this link in your browser?\n\n{uri}", "Open link", MessageBoxButtons.OKCancel) != DialogResult.OK)
+                return;
+            if (!SystemBrowser.Open (uri))
+                await MessageBox.ShowAsync ($"Recital couldn't open your browser. The address is:\n{uri}", "Open link");
         }
 
         /// <summary>Opens the voice settings over the window, showing which cloud keys are saved.</summary>

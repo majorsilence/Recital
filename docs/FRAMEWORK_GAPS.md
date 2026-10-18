@@ -25,7 +25,7 @@ Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps. Phase 
 | GAP-011 | `Application.SetDefaultFont` does not change the typeface controls draw with | all | minor | Fixed in 26.11.6 by [Forms PR #483](https://github.com/majorsilence/Majorsilence.Forms/pull/483); Recital's workaround removed |
 | GAP-012 | `SaveFileDialog` returns a path only; mobile and browser save pickers give nothing writable | Avalonia Android, iOS, Browser | major (export on mobile/browser) | Open; Recital offers Copy as Markdown everywhere and file export on the desktop |
 | GAP-013 | No streaming audio output on the desktop backends (gapless PCM with a play position) | Avalonia desktop | scope (major for reading aloud) | Open; Recital has an `IAudioOutput` per OS |
-| GAP-014 | The browser head starts but draws nothing in headless Firefox; a start-up call blocks the main thread over 10 s | Avalonia Browser | unknown until checked in a real browser | Open; needs a check by hand (`tools/browser-smoke/run.sh`) |
+| GAP-014 | The browser head starts but draws nothing in headless Firefox; a start-up call blocks the main thread over 10 s | Avalonia Browser | Low: headless Firefox only | Drawing checked by hand in Brave on 2026-10-18 (it draws, imports and reads); the slow start-up call is still to measure |
 
 ---
 

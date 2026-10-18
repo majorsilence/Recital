@@ -131,8 +131,49 @@ namespace Majorsilence.Recital.Layout
             return rects;
         }
 
+        /// <summary>
+        /// The link (an <c>a</c> element with an href) whose text is under a point (content-box coordinates),
+        /// with the rectangles its text covers on this page; null when the point is not on a link's text.
+        /// </summary>
+        public PageLink? LinkAt (float x, float y, float slop = 3)
+        {
+            if (LineAt (x, y) is not { } line || y < line.Y - slop || y > line.Y + line.Height + slop)
+                return null;
+            foreach (var position in line.PositionsAround (x - line.X)) {
+                if (LinkElement (position.Node) is not var (element, href))
+                    continue;
+                var start = new DomPosition (element, 0);
+                var rects = TextRects (start, EndOf (element));
+                foreach (var rect in rects)
+                    if (x >= rect.X - slop && x <= rect.X + rect.Width + slop && y >= rect.Y - slop && y <= rect.Y + rect.Height + slop)
+                        return new PageLink (element, href, rects);
+            }
+            return null;
+        }
+
+        private static (IElement Element, string Href)? LinkElement (INode node)
+        {
+            for (var element = node as IElement ?? node.ParentElement; element is not null; element = element.ParentElement)
+                if (string.Equals (element.LocalName, "a", StringComparison.OrdinalIgnoreCase)
+                    && (element.GetAttribute ("href") ?? element.GetAttribute ("xlink:href")) is { Length: > 0 } href)
+                    return (element, href.Trim ());
+            return null;
+        }
+
+        // A position after everything inside the element: the end of its last descendant.
+        private static DomPosition EndOf (IElement element)
+        {
+            INode last = element;
+            while (last.LastChild is { } child)
+                last = child;
+            return new DomPosition (last, last is ICharacterData text ? text.Length : 1);
+        }
+
         public override string ToString () => $"Page {Index}: {Items.Count} items";
     }
+
+    /// <summary>A link on a page: its element, its href as written, and where its text is (content-box coordinates).</summary>
+    public sealed record PageLink (IElement Element, string Href, IReadOnlyList<PageRect> Rects);
 
     /// <summary>Something placed on a page. Coordinates are CSS px from the page's content-box origin.</summary>
     public abstract class PageItem
@@ -192,6 +233,15 @@ namespace Majorsilence.Recital.Layout
         {
             var best = IndexAt (x);
             return best >= EndIndex ? EndPosition : paragraph.PositionAt (best);
+        }
+
+        /// <summary>The positions of the characters either side of <paramref name="x"/> (line coordinates).</summary>
+        internal IEnumerable<DomPosition> PositionsAround (float x)
+        {
+            var index = IndexAt (x);
+            foreach (var i in new[] { index, index - 1 })
+                if (i >= StartIndex && i < EndIndex && paragraph.PositionAt (i) is { } position)
+                    yield return position;
         }
 
         /// <summary>The word under <paramref name="x"/> (line coordinates), or the character there when it is not part of a word.</summary>

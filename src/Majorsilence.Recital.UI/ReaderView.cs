@@ -37,6 +37,7 @@ namespace Majorsilence.Recital.UI
         private readonly ToolStripButton notes_button = new ("Notes") { ToolTipText = "Highlights, notes and bookmarks" };
         private readonly ToolStripButton bookmark_button = new ("Bookmark") { ToolTipText = "Bookmark this page" };
         private readonly ToolStripButton listen_button = new ("Listen") { ToolTipText = "Read aloud from this page" };
+        private readonly ToolStripButton return_button = new ("‹ Back") { ToolTipText = "Back to where you were before following a link", Visible = false };
         private readonly TtsBar tts_bar = new ();
         private ITtsEngine? tts_engine;
         private TtsPlayer? player;
@@ -101,7 +102,7 @@ namespace Majorsilence.Recital.UI
                 themes.DropDownItems.Add (item);
             }
 
-            tool_strip.Items.AddRange ([back, new ToolStripSeparator (), contents_button, notes_button, typography_button, themes, bookmark_button, listen_button, new ToolStripSeparator (), title_label]);
+            tool_strip.Items.AddRange ([back, new ToolStripSeparator (), return_button, contents_button, notes_button, typography_button, themes, bookmark_button, listen_button, new ToolStripSeparator (), title_label]);
             status_strip.Items.AddRange ([chapter_label, page_label, percent_label]);
 
             split.Panel2.Controls.Add (PageView);
@@ -131,6 +132,8 @@ namespace Majorsilence.Recital.UI
                     PlaceBar (e.Bounds);
                 }
             };
+            PageView.LinkTapped += (_, e) => operations.Run (() => FollowLinkAsync (e.Link));
+            return_button.Click += (_, _) => operations.Run (ReturnFromLinkAsync);
             highlight_bar.ActionChosen += (_, e) => operations.Run (() => OnHighlightActionAsync (e));
             note_editor.Saved += (_, text) => operations.Run (() => SaveNoteAsync (text));
             note_editor.Cancelled += (_, _) => CloseNoteEditor ();
@@ -200,6 +203,9 @@ namespace Majorsilence.Recital.UI
 
         /// <summary>The user asked for voice settings (keys, Piper): the form shows them.</summary>
         public event EventHandler? VoiceSettingsRequested;
+
+        /// <summary>A link to a web page (or mail address) was tapped: the host asks before opening it.</summary>
+        public event EventHandler<Uri>? ExternalLinkRequested;
         public event EventHandler<ReaderPreferences>? PreferencesChanged;
 
         /// <summary>Opens the book at the newest saved position from any device.</summary>
@@ -280,6 +286,30 @@ namespace Majorsilence.Recital.UI
             PositionChanged ();
             if (IsNarrow)
                 ToggleSide (null);
+            PageView.Focus ();
+        }
+
+        /// <summary>Follows a tapped link: within the book it goes there (and offers the way back); a web link goes to the host.</summary>
+        public async Task FollowLinkAsync (Layout.PageLink link)
+        {
+            if (session is null || closed || session.Resolve (link) is not { } target)
+                return;
+            if (target.External is { } uri) {
+                ExternalLinkRequested?.Invoke (this, uri);
+                return;
+            }
+            if (!await session.FollowAsync (target))
+                return;
+            PositionChanged ();
+            PageView.Focus ();
+        }
+
+        /// <summary>Goes back to where the reader was before the last followed link.</summary>
+        public async Task ReturnFromLinkAsync ()
+        {
+            if (session is null || closed || !await session.ReturnAsync ())
+                return;
+            PositionChanged ();
             PageView.Focus ();
         }
 
@@ -465,6 +495,7 @@ namespace Majorsilence.Recital.UI
             chapter_label.Text = session.CurrentTocEntry ()?.Title ?? book.Title;
             page_label.Text = string.Format (CultureInfo.CurrentCulture, "Page {0} of {1}", session.PageIndex + 1, session.Chapter.Pages.Count);
             percent_label.Text = session.Locator.Percent.ToString ("P0", CultureInfo.CurrentCulture);
+            return_button.Visible = session.CanReturn;
             if (side_content == contents)
                 SelectCurrentContentsEntry ();
         }
