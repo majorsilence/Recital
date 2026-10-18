@@ -57,8 +57,13 @@ jobs:
           echo "RECITAL_TEST_WEBDAV_USER=recital" >> "$GITHUB_ENV"
           echo "RECITAL_TEST_WEBDAV_PASSWORD=recital-test-only" >> "$GITHUB_ENV"
 
+      # The bundled voice model takes the CPU, which would make the timing tests in other assemblies late,
+      # so its tests run in a step of their own.
       - name: Test
-        run: dotnet test Majorsilence.Recital.slnx --configuration Release --no-build -p:EnableAndroidHead=false
+        run: dotnet test Majorsilence.Recital.slnx --configuration Release --no-build -p:EnableAndroidHead=false --filter "FullyQualifiedName!~KokoroEngineTests"
+
+      - name: Test the bundled voices
+        run: dotnet test tests/Majorsilence.Recital.Tts.Tests --configuration Release --no-build --filter "FullyQualifiedName~KokoroEngineTests"
 
       # Mismatched renders are written next to the test assembly as *.actual.png, their differences as *.diff.png.
       - name: Upload mismatched UI renders
