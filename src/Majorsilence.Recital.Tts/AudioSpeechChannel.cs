@@ -60,7 +60,9 @@ namespace Majorsilence.Recital.Tts
         private sealed class Entry (SpeechChunk chunk)
         {
             public SpeechChunk Chunk { get; } = chunk;
-            public System.Threading.Channels.Channel<SynthesizedAudio> Parts { get; } = System.Threading.Channels.Channel.CreateUnbounded<SynthesizedAudio> (
+            // The chunk's audio as it comes; Last marks a whole chunk (cached, or from a synthesizer that does not
+            // stream), so the feeder can finish it without waiting to hear that nothing follows.
+            public System.Threading.Channels.Channel<(SynthesizedAudio Audio, bool Last)> Parts { get; } = System.Threading.Channels.Channel.CreateUnbounded<(SynthesizedAudio, bool)> (
                 new () { SingleReader = true, SingleWriter = true });
             public TimeSpan? Start;
             public TimeSpan? End;
@@ -186,26 +188,31 @@ namespace Majorsilence.Recital.Tts
                 var chunk = entry.Chunk;
                 var key = cache is null ? null : AudioCache.Key (synthesizer.Id, settings, language, chunk);
                 if (key is not null && await cache!.TryGetAsync (key, ct).ConfigureAwait (false) is { } cached) {
-                    await writer.WriteAsync (cached, ct).ConfigureAwait (false);
+                    await writer.WriteAsync ((cached, true), ct).ConfigureAwait (false);
+                    writer.TryComplete ();
                 } else if (synthesizer is IStreamingSpeechSynthesizer streaming) {
                     var parts = new List<SynthesizedAudio> ();
                     await foreach (var part in streaming.SynthesizePartsAsync (chunk, settings, language, () => Ahead (entry), ct).ConfigureAwait (false)) {
                         lock (gate)
                             entry.Made += part.Duration;
-                        await writer.WriteAsync (part, ct).ConfigureAwait (false);
+                        await writer.WriteAsync ((part, false), ct).ConfigureAwait (false);
                         parts.Add (part);
                     }
+                    // Done before the cache is written, so the feeder moves on at once.
+                    writer.TryComplete ();
                     if (key is not null && parts.Count > 0)
                         await cache!.PutAsync (key, SynthesizedAudio.Join (parts[0].Format, parts), ct).ConfigureAwait (false);
                 } else {
                     var audio = await synthesizer.SynthesizeAsync (chunk, settings, language, ct).ConfigureAwait (false);
-                    await writer.WriteAsync (audio, ct).ConfigureAwait (false);
+                    await writer.WriteAsync ((audio, true), ct).ConfigureAwait (false);
+                    writer.TryComplete ();
                     if (key is not null)
                         await cache!.PutAsync (key, audio, ct).ConfigureAwait (false);
                 }
-                writer.TryComplete ();
-            } catch (Exception ex) {
-                writer.TryComplete (ex);
+            } catch (Exception ex) when (writer.TryComplete (ex)) {
+                // Reported by the feeder, which reads the error from the parts.
+            } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or OperationCanceledException) {
+                // The audio is already playing: a cache that could not be written costs only a remake later.
             }
         }
 
@@ -223,7 +230,7 @@ namespace Majorsilence.Recital.Tts
                         }
                     }
                     var timed = false;
-                    await foreach (var audio in entry.Parts.Reader.ReadAllAsync (ct).ConfigureAwait (false)) {
+                    await foreach (var (audio, last) in entry.Parts.Reader.ReadAllAsync (ct).ConfigureAwait (false)) {
                         if (!started) {
                             format = audio.Format;
                             await output.StartAsync (audio.Format, ct).ConfigureAwait (false);
@@ -251,6 +258,8 @@ namespace Majorsilence.Recital.Tts
                             written += audio.Pcm.Length;
                             entry.Fed += audio.Duration;
                         }
+                        if (last)
+                            break;
                     }
                     lock (gate) {
                         // No audio at all: a moment of nothing, so the chunk still starts and finishes.
