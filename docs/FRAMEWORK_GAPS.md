@@ -26,7 +26,8 @@ Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps. Phase 
 | GAP-012 | `SaveFileDialog` returns a path only; mobile and browser save pickers give nothing writable | Avalonia Android, iOS, Browser | major (export on mobile/browser) | Open; Recital offers Copy as Markdown everywhere and file export on the desktop |
 | GAP-013 | No streaming audio output on the desktop backends (gapless PCM with a play position) | Avalonia desktop | scope (major for reading aloud) | Open; Recital has an `IAudioOutput` per OS |
 | GAP-014 | The browser head starts but draws nothing in headless Firefox; a start-up call blocks the main thread over 10 s | Avalonia Browser | Low: headless Firefox only | Drawing checked by hand in Brave on 2026-10-18 (it draws, imports and reads); the slow start-up call is still to measure |
-| GAP-015 | Tool strip drop-down menus never appear on Android (single-view host) | Avalonia Android (iOS and browser likely) | major (Theme, Engine, Voice and speed menus on phones) | Open; under investigation in a Forms worktree (branch `android-popup-menus`) |
+| GAP-015 | Tool strip drop-down menus never appear on Android (single-view host) | Avalonia single-view (Android, iOS; browsers above a pixel ratio of 1) | major (Theme, Engine, Voice and speed menus on phones) | Fixed by [Forms PR #509](https://github.com/majorsilence/Majorsilence.Forms/pull/509); Recital takes it with the next Forms release (pinned 26.11.6 until then) |
+| GAP-016 | Tool strip captions wrap their last letter at fractional scales ("Bookmar" over "k") | All Avalonia heads at a fractional scale (phones at 2.625) | minor (looks broken on phones) | Fixed by [Forms PR #510](https://github.com/majorsilence/Majorsilence.Forms/pull/510); with the next Forms release |
 
 ---
 
@@ -263,12 +264,28 @@ Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps. Phase 
   top bar) or upwards (the reading-aloud bar, which now sets `DefaultDropDownDirection = AboveRight`). A
   comment in `AvaloniaPlatformBackend` already says the single-view host "never showed" the small combo
   box drop-down (#438), which was worked around with a native picker for `ComboBox` only.
-- **Suspects, not yet confirmed:** the popup is added to the single-view canvas but closed by the same
-  tap (pointer up lands outside it), or it is sized or placed in device rather than logical units.
+- **Cause (confirmed):** a popup's `Location` is a screen point in device pixels (what `PointToScreen`
+  returns), but the single-view host set it as `Canvas.Left/Top`, which take device-independent units. Each
+  popup landed at `RenderScaling` times its place. On the Pixel 7 emulator (2.625) the Gallery's File
+  menu opened at x = 659 on a screen 411 units wide. The same happens in Majorsilence.Forms' own
+  `samples/Gallery.Android`.
+- **Fix:** [Forms PR #509](https://github.com/majorsilence/Majorsilence.Forms/pull/509) converts the
+  point through the root's TopLevel. Checked on the emulator: the File menu opens under its button, and
+  File > Save registers. Recital cannot work around it (the placement is inside the framework). It takes
+  the fix by moving its Forms pin to the next release.
 - **Repro:** Recital's Android head, open a book, tap the centre to show the bars, tap Theme.
 - **Severity:** major on phones: voice, engine, speed and theme cannot be changed there, including the
   Voice settings item that offers the download of Recital's voices (D-033).
-- **Next:** run Majorsilence.Forms' `samples/Gallery.Android` on the emulator to see whether its menus
-  show. That decides between a framework fix (a Forms PR) and something in Recital.
 - **Code:** none yet (no `FRAMEWORK-GAP: GAP-015` marker until there is a workaround).
+
+## GAP-016: Tool strip captions wrap their last letter at fractional scales
+
+- **Found:** 2026-10-19, Android emulator (scale 2.625). The reader's "Bookmark" and "Listen" and the
+  library's "Search" and "Import…" break onto two lines. Drop-down buttons, which have room for an arrow,
+  do not.
+- **Cause:** `MenuItem.GetPreferredSize` measures text in device pixels and converts to logical units
+  rounding to the nearest unit. That loses up to half a unit (1.3 device pixels at 2.625), so the
+  laid-out box is narrower than its text, and `DrawText` wraps.
+- **Fix:** [Forms PR #510](https://github.com/majorsilence/Majorsilence.Forms/pull/510) rounds measured
+  sizes up, with a test at 2.625, 1.75 and 1.25. It reaches Recital with the next Forms release.
 

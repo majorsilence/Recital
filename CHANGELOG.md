@@ -29,6 +29,14 @@
   and falls back to the CPU. Its audio is cached there, so listening again costs no battery. Android
   and iOS audio outputs (AudioTrack, AVAudioEngine) also let the cloud voices play on phones (D-033).
 - The reading-aloud bar's menus open upwards, as the bar sits at the bottom of the reader.
+- Phones and tablets keep secrets (sign-in tokens, voice keys) in the platform's secure store, not in
+  memory only. On Android each value is encrypted with an AES-GCM key held in the Android Keystore,
+  and kept in the app's no-backup folder. On iOS they go in the Keychain, for this device only, with no
+  iCloud sync. The Android store was checked on the emulator.
+- On a phone or tablet one tap opens a book in the library; a desktop keeps double-click.
+- Found and fixed in Majorsilence.Forms (taken with its next release): menus and drop-downs were drawn
+  off screen on phones (GAP-015, PR #509), and toolbar captions wrapped their last letter at fractional
+  scales (GAP-016, PR #510).
 - Fixed: Next or Back while paused started speaking again while the button still showed Play. Now it
   stays paused and highlights the sentence Play will start from.
 

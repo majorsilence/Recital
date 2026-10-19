@@ -100,6 +100,9 @@ namespace Majorsilence.Recital.UI
             list.Columns.Add ("Progress", 90, HorizontalAlignment.Right);
             list.Columns.Add ("Added", 120);
             list.DrawItem += DrawTile;
+            // On a touch screen a tap opens the book; a desktop keeps double-click (a click selects).
+            if (OperatingSystem.IsAndroid () || OperatingSystem.IsIOS ())
+                list.Activation = ItemActivation.OneClick;
             list.ItemActivate += (_, _) => {
                 if (list.SelectedItems.Count == 1 && list.SelectedItems[0].Tag is LibraryBook book)
                     OpenRequested?.Invoke (this, book);

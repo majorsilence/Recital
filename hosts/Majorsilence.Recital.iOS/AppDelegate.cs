@@ -18,6 +18,9 @@ namespace Majorsilence.Recital.iOS
     {
         public override void OnFrameworkInitializationCompleted ()
         {
+            // Secrets in the Keychain, before anything asks for them.
+            Majorsilence.Recital.Platform.SecretStores.Host = new KeychainSecretStore ();
+
             if (ApplicationLifetime is ISingleViewApplicationLifetime)
                 // The device's own voices first: offline, instant, and light on the battery.
                 MSForms.Application.RunIOS (() => new MainForm {

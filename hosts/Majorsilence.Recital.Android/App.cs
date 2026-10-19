@@ -23,6 +23,11 @@ namespace Majorsilence.Recital.Android
             // AvaloniaMainActivity asks for MainViewFactory once the Activity exists, so the form is only
             // created then. RunAndroid shows it in the single-view host, which registers itself as
             // ISingleViewApplicationLifetime.MainView; hand that back to the Activity.
+            // Secrets in the Android Keystore, before anything asks for them.
+            var context = global::Android.App.Application.Context;
+            Majorsilence.Recital.Platform.SecretStores.Host = new AndroidKeystoreSecretStore (
+                System.IO.Path.Combine (context.NoBackupFilesDir!.AbsolutePath, "secrets"));
+
             if (ApplicationLifetime is IActivityApplicationLifetime activityLifetime) {
                 activityLifetime.MainViewFactory = () => {
                     // The device's own voices first: offline, instant, and light on the battery.
