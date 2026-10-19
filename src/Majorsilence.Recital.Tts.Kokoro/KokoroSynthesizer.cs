@@ -33,6 +33,7 @@ namespace Majorsilence.Recital.Tts.Kokoro
         private double phonemes_per_second = 40;
         private readonly Dictionary<string, float[]> voices = new (StringComparer.Ordinal);
         private readonly Lazy<Task<(InferenceSession Session, EnglishPhonemizer Phonemizer, Dictionary<string, long> Vocab)>> loaded;
+        private readonly Lazy<Task<EnglishPhonemizer>> british = new (() => Task.Run (EnglishPhonemizer.LoadBritish));
 
         /// <param name="folder">Holds <c>model.onnx</c> and <c>voices/*.bin</c>.</param>
         public KokoroSynthesizer (string folder)
@@ -91,8 +92,11 @@ namespace Majorsilence.Recital.Tts.Kokoro
         public async IAsyncEnumerable<SynthesizedAudio> SynthesizePartsAsync (SpeechChunk chunk, TtsSettings settings, string? language, Func<TimeSpan> ahead,
             [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
         {
-            var (session, phonemizer, vocab) = await loaded.Value.ConfigureAwait (false);
-            var voice = await VoiceAsync (settings.VoiceId ?? DefaultVoice, ct).ConfigureAwait (false);
+            var (session, american, vocab) = await loaded.Value.ConfigureAwait (false);
+            var voiceId = settings.VoiceId ?? DefaultVoice;
+            var voice = await VoiceAsync (voiceId, ct).ConfigureAwait (false);
+            // A British voice reads British pronunciations ("tomato", no flapped t); loaded the first time one is used.
+            var phonemizer = voiceId.StartsWith ('b') ? await british.Value.ConfigureAwait (false) : american;
             var speed = (float) settings.ClampedRate;
             var starts = chunk.WordStarts ().ToArray ();
             var lastWord = -1;

@@ -34,6 +34,9 @@
   and kept in the app's no-backup folder. On iOS they go in the Keychain, for this device only, with no
   iCloud sync. The Android store was checked on the emulator.
 - On a phone or tablet one tap opens a book in the library; a desktop keeps double-click.
+- The British voices (Emma, George) have British pronunciations: misaki's British dictionaries and
+  endings, and its British network for names. For example, "tomato" is təmˈɑːtQ, not təmˈAɾO. They load
+  only when a British voice is used.
 - Reading aloud goes on with the screen off. On Android a media-playback foreground service shows a
   "Reading aloud" notification while it reads, asking once for permission to show notifications. The
   emulator kept reading for 40 s with the screen off, and Stop removed the notification. On iOS, the

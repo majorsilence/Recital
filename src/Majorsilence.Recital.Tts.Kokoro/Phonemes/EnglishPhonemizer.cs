@@ -35,16 +35,22 @@ namespace Majorsilence.Recital.Tts.Kokoro.Phonemes
             this.network = network;
         }
 
-        /// <summary>Loads the dictionaries and the network shipped inside this assembly (a few hundred milliseconds).</summary>
-        public static EnglishPhonemizer LoadAmerican ()
+        /// <summary>Loads the American dictionaries and network shipped inside this assembly (a few hundred milliseconds).</summary>
+        public static EnglishPhonemizer LoadAmerican () => Load ("us", british: false);
+
+        /// <summary>Loads the British ones, for the British voices (bf_, bm_): misaki's gb dictionaries and its gb network.</summary>
+        public static EnglishPhonemizer LoadBritish () => Load ("gb", british: true);
+
+        private static EnglishPhonemizer Load (string accent, bool british)
         {
             var assembly = typeof (EnglishPhonemizer).Assembly;
             Stream Open (string name) => assembly.GetManifestResourceStream ("Majorsilence.Recital.Tts.Kokoro.Data." + name)
                 ?? throw new InvalidOperationException ($"Missing resource {name}.");
-            using var gold = Open ("us_gold.json.gz");
-            using var silver = Open ("us_silver.json.gz");
-            using var weights = Open ("g2p_en_us.safetensors");
-            return new EnglishPhonemizer (Lexicon.Load (gold, silver), GraphemeNetwork.Load (weights));
+            using var gold = Open ($"{accent}_gold.json.gz");
+            using var silver = Open ($"{accent}_silver.json.gz");
+            using var weights = Open ($"g2p_en_{accent}.safetensors");
+            var network = british ? GraphemeNetwork.LoadBritish (weights) : GraphemeNetwork.LoadAmerican (weights);
+            return new EnglishPhonemizer (Lexicon.Load (gold, silver, british), network);
         }
 
         /// <summary>The letters-to-phonemes network alone (for tests that check it against the dictionary).</summary>
@@ -240,7 +246,7 @@ namespace Majorsilence.Recital.Tts.Kokoro.Phonemes
                         parts.Add (lexicon.NumberWord ("and"));
                     Say (NumberWords.Cardinal (amounts[i].Amount));
                     var unit = lexicon.NumberWord (amounts[i].Unit);
-                    parts.Add (amounts[i].Amount != 1 && amounts[i].Unit != "pence" ? Lexicon.AddS (unit) : unit);
+                    parts.Add (amounts[i].Amount != 1 && amounts[i].Unit != "pence" ? Lexicon.AddS (unit, lexicon.British) : unit);
                 }
             } else if (isInteger && NumberWords.TryParse (digits, out var cardinal)) {
                 Say (NumberWords.Cardinal (cardinal));
@@ -257,9 +263,9 @@ namespace Majorsilence.Recital.Tts.Kokoro.Phonemes
                 return null;
             var result = string.Join (" ", parts);
             return suffix switch {
-                "s" or "'s" => Lexicon.AddS (result),
-                "ed" => Lexicon.AddEd (result),
-                "ing" => Lexicon.AddIng (result),
+                "s" or "'s" => Lexicon.AddS (result, lexicon.British),
+                "ed" => Lexicon.AddEd (result, lexicon.British),
+                "ing" => Lexicon.AddIng (result, lexicon.British),
                 _ => result,
             };
         }

@@ -13,6 +13,9 @@
     <EmbeddedResource Include="Data\us_gold.json.gz" LogicalName="Majorsilence.Recital.Tts.Kokoro.Data.us_gold.json.gz" />
     <EmbeddedResource Include="Data\us_silver.json.gz" LogicalName="Majorsilence.Recital.Tts.Kokoro.Data.us_silver.json.gz" />
     <EmbeddedResource Include="Data\g2p_en_us.safetensors" LogicalName="Majorsilence.Recital.Tts.Kokoro.Data.g2p_en_us.safetensors" />
+    <EmbeddedResource Include="Data\gb_gold.json.gz" LogicalName="Majorsilence.Recital.Tts.Kokoro.Data.gb_gold.json.gz" />
+    <EmbeddedResource Include="Data\gb_silver.json.gz" LogicalName="Majorsilence.Recital.Tts.Kokoro.Data.gb_silver.json.gz" />
+    <EmbeddedResource Include="Data\g2p_en_gb.safetensors" LogicalName="Majorsilence.Recital.Tts.Kokoro.Data.g2p_en_gb.safetensors" />
     <EmbeddedResource Include="Data\kokoro_vocab.json" LogicalName="Majorsilence.Recital.Tts.Kokoro.Data.kokoro_vocab.json" />
   </ItemGroup>
 

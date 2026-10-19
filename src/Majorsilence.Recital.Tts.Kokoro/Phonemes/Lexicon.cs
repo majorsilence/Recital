@@ -29,14 +29,18 @@ namespace Majorsilence.Recital.Tts.Kokoro.Phonemes
         /// <summary>A dictionary entry: one pronunciation, or one per part of speech with a default.</summary>
         private sealed record Entry (string? Default, Dictionary<string, string?>? ByTag);
 
-        private Lexicon (Dictionary<string, Entry> golds, Dictionary<string, Entry> silvers)
+        private Lexicon (Dictionary<string, Entry> golds, Dictionary<string, Entry> silvers, bool british)
         {
             this.golds = golds;
             this.silvers = silvers;
+            British = british;
         }
 
+        /// <summary>British English (misaki's gb dictionaries and endings): no flapped t, and ɪ for ᵻ in endings.</summary>
+        public bool British { get; }
+
         /// <summary>Loads the gzipped gold (hand-checked) and silver (generated) dictionaries.</summary>
-        public static Lexicon Load (Stream gold, Stream silver) => new (Read (gold), Read (silver));
+        public static Lexicon Load (Stream gold, Stream silver, bool british = false) => new (Read (gold), Read (silver), british);
 
         private static Dictionary<string, Entry> Read (Stream gzipped)
         {
@@ -212,9 +216,9 @@ namespace Majorsilence.Recital.Tts.Kokoro.Phonemes
 
         // ── Regular endings (misaki's stem_s, stem_ed, stem_ing) ────────────────────────────────────
 
-        internal static string? AddS (string? stem) => string.IsNullOrEmpty (stem) ? null
+        internal static string? AddS (string? stem, bool british = false) => string.IsNullOrEmpty (stem) ? null
             : "ptkfθ".Contains (stem[^1]) ? stem + "s"
-            : "szʃʒʧʤ".Contains (stem[^1]) ? stem + "ᵻz"
+            : "szʃʒʧʤ".Contains (stem[^1]) ? stem + (british ? "ɪz" : "ᵻz")
             : stem + "z";
 
         private string? StemS (string word, string? tag, double? stress, WordContext ctx)
@@ -230,10 +234,10 @@ namespace Majorsilence.Recital.Tts.Kokoro.Phonemes
                 stem = word[..^3] + "y";
             else
                 return null;
-            return AddS (Lookup (stem, tag, stress, ctx));
+            return AddS (Lookup (stem, tag, stress, ctx), British);
         }
 
-        internal static string? AddEd (string? stem)
+        internal static string? AddEd (string? stem, bool british = false)
         {
             if (string.IsNullOrEmpty (stem))
                 return null;
@@ -241,10 +245,10 @@ namespace Majorsilence.Recital.Tts.Kokoro.Phonemes
             if ("pkfθʃsʧ".Contains (last))
                 return stem + "t";
             if (last == 'd')
-                return stem + "ᵻd";
+                return stem + (british ? "ɪd" : "ᵻd");
             if (last != 't')
                 return stem + "d";
-            if (stem.Length < 2)
+            if (british || stem.Length < 2)
                 return stem + "ɪd";
             return UsTaus.Contains (stem[^2]) ? stem[..^1] + "ɾᵻd" : stem + "ᵻd";
         }
@@ -260,10 +264,13 @@ namespace Majorsilence.Recital.Tts.Kokoro.Phonemes
                 stem = word[..^2];
             else
                 return null;
-            return AddEd (Lookup (stem, tag, stress, ctx));
+            return AddEd (Lookup (stem, tag, stress, ctx), British);
         }
 
-        internal static string? AddIng (string? stem) => string.IsNullOrEmpty (stem) ? null
+        // British: no flap, and a stem ending in ə or ː (a dropped r: "stirring") is left to the dictionary or the network,
+        // as misaki does.
+        internal static string? AddIng (string? stem, bool british = false) => string.IsNullOrEmpty (stem) ? null
+            : british ? ("əː".Contains (stem[^1]) ? null : stem + "ɪŋ")
             : stem.Length > 1 && stem[^1] == 't' && UsTaus.Contains (stem[^2]) ? stem[..^1] + "ɾɪŋ"
             : stem + "ɪŋ";
 
@@ -280,7 +287,7 @@ namespace Majorsilence.Recital.Tts.Kokoro.Phonemes
                 stem = word[..^4];
             else
                 return null;
-            return AddIng (Lookup (stem, tag, stress, ctx));
+            return AddIng (Lookup (stem, tag, stress, ctx), British);
         }
 
         // misaki: ([bcdgklmnprstvxz])\1ing$|cking$

@@ -527,7 +527,13 @@ keys optional. They chose Kokoro over a Piper voice and bundling over a download
 - **Order:** `TtsEngines` offers Kokoro first when the files are present, then the OS voices, Piper and
   the cloud services. Its audio is quick to remake, so it is not cached on disk.
 - **Not yet:**
-  - British voices still use the American dictionary; misaki has a British one too.
+  - ~~British voices still use the American dictionary~~ Done 2026-10-19:
+    - `bf_` and `bm_` voices read misaki's gb dictionaries, its British endings (no flapped t; ɪ for
+      ᵻ), and its British fallback network (`graphemes_to_phonemes_en_gb`, same shape, its own
+      vocabularies).
+    - These load only when a British voice is first used.
+    - The data is pinned: misaki at commit fba1236 (its us files match those already embedded), and the
+      networks by revision (THIRD_PARTY.md).
   - Only English.
   - Android/iOS packaging (the model has to reach a file path, or be loaded from bytes).
 

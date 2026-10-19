@@ -14,30 +14,40 @@ namespace Majorsilence.Recital.Tts.Kokoro.Phonemes
         private const int PositionOffset = 2;   // BART's learned positions start at index 2
         private const int Bos = 1, Eos = 2, Unknown = 3;
 
-        // The model's own vocabularies (config.json): an id is the position in these strings, the first four
-        // being pad, <s>, </s> and <unk>.
-        private const string Graphemes = "____AIOWYbdfhijklmnpstuvwz'-.BCDEFGHJKLMNPQRSTUVXZacegoqrxy";
-        private const string Phonemes = "____AIOWYbdfhijklmnpstuvwzæðŋɑɔəɛɜɡɪɹɾʃʊʌʒʔʤʧˈˌθᵊᵻ";
+        // Each model's own vocabularies (its config.json): an id is the position in these strings, the first four
+        // being pad, <s>, </s> and <unk>. The British model has Q (əʊ), ɒ and ː, and no flap or glottal stop.
+        private const string AmericanGraphemes = "____AIOWYbdfhijklmnpstuvwz'-.BCDEFGHJKLMNPQRSTUVXZacegoqrxy";
+        private const string AmericanPhonemes = "____AIOWYbdfhijklmnpstuvwzæðŋɑɔəɛɜɡɪɹɾʃʊʌʒʔʤʧˈˌθᵊᵻ";
+        private const string BritishGraphemes = "____AIQWYabdfhijklmnpstuvwz'-.BCDEFGHJKLMNOPRSTUVXZcegoqrxy";
+        private const string BritishPhonemes = "____AIQWYabdfhijklmnpstuvwzðŋɑɒɔəɛɜɡɪɹʃʊʌʒʤʧˈˌːθᵊ";
 
+        private readonly string grapheme_chars;
+        private readonly string phoneme_chars;
         private readonly Dictionary<string, float[]> w;
         private readonly int max_positions;
         private readonly int vocab;
 
-        private GraphemeNetwork (Dictionary<string, float[]> weights)
+        private GraphemeNetwork (Dictionary<string, float[]> weights, string graphemes, string phonemes)
         {
+            grapheme_chars = graphemes;
+            phoneme_chars = phonemes;
             w = weights;
             max_positions = weights["model.encoder.embed_positions.weight"].Length / Width - PositionOffset;
             vocab = weights["model.shared.weight"].Length / Width;
         }
 
-        public static GraphemeNetwork Load (Stream safetensors) => new (ReadSafetensors (safetensors));
+        /// <summary>PeterReid/graphemes_to_phonemes_en_us.</summary>
+        public static GraphemeNetwork LoadAmerican (Stream safetensors) => new (ReadSafetensors (safetensors), AmericanGraphemes, AmericanPhonemes);
+
+        /// <summary>PeterReid/graphemes_to_phonemes_en_gb: the same shape, other vocabularies.</summary>
+        public static GraphemeNetwork LoadBritish (Stream safetensors) => new (ReadSafetensors (safetensors), BritishGraphemes, BritishPhonemes);
 
         /// <summary>The phonemes for <paramref name="word"/>, or null when it has no letters the network knows.</summary>
         public string? Phonemize (string word)
         {
             var input = new List<int> { Bos };
             foreach (var c in word) {
-                var id = Graphemes.IndexOf (c, 4);
+                var id = grapheme_chars.IndexOf (c, 4);
                 input.Add (id < 0 ? Unknown : id);
             }
             input.Add (Eos);
@@ -52,8 +62,8 @@ namespace Majorsilence.Recital.Tts.Kokoro.Phonemes
                 next = decoder.Step (next, position);
                 if (next == Eos)
                     break;
-                if (next > Unknown && next < Phonemes.Length)
-                    phonemes.Append (Phonemes[next]);
+                if (next > Unknown && next < phoneme_chars.Length)
+                    phonemes.Append (phoneme_chars[next]);
             }
             return phonemes.Length == 0 ? null : phonemes.ToString ();
         }

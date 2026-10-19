@@ -18,8 +18,9 @@ Unlicense or similar permissive licenses; anything copyleft needs sign-off first
 | System.Speech | Tts.Platform (Windows SAPI voices; does nothing on other OSes) | MIT |
 | Microsoft.ML.OnnxRuntime (+ .Managed, native runtimes) | Tts.Kokoro (runs the bundled voices) | MIT |
 | Kokoro-82M v1.0, onnx-community ONNX export (`model_uint8f16.onnx` and six voices; fetched at build time by `build/Kokoro.targets`, shipped beside the app) | Tts.Kokoro, desktop head | Apache-2.0. Trained in part on Koniwa `tnc` (CC BY 3.0) and SIWIS (CC BY 4.0), credited here as their licences ask |
-| misaki English dictionaries `us_gold.json`, `us_silver.json` (embedded, gzipped) and the logic of `misaki/en.py` (ported to C#) | Tts.Kokoro | Apache-2.0, © hexgrad |
-| PeterReid/graphemes_to_phonemes_en_us weights (embedded `g2p_en_us.safetensors`) | Tts.Kokoro (names and rare words) | Apache-2.0 |
+| misaki English dictionaries `us_gold.json`, `us_silver.json`, `gb_gold.json`, `gb_silver.json` (embedded, gzipped) and the logic of `misaki/en.py` (ported to C#), at commit fba1236595f2d2bf21d414ba6e57d25256afada3 | Tts.Kokoro | Apache-2.0, © hexgrad |
+| PeterReid/graphemes_to_phonemes_en_us weights (embedded `g2p_en_us.safetensors`, revision a5631b285d18d59483c32c0c3379cb9fac924f4b) | Tts.Kokoro (names and rare words, American voices) | Apache-2.0 |
+| PeterReid/graphemes_to_phonemes_en_gb weights (embedded `g2p_en_gb.safetensors`, revision d8357d5067fa26a5c34134d6bbcf4bbf000c0ac8) | Tts.Kokoro (names and rare words, British voices) | Apache-2.0 |
 | xunit.v3, xunit.runner.visualstudio | tests | Apache-2.0 |
 | Microsoft.NET.Test.Sdk | tests | MIT |
 

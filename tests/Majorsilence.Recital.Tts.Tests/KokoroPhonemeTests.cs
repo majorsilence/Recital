@@ -10,7 +10,41 @@ namespace Majorsilence.Recital.Tts.Tests
     {
         private static readonly Lazy<EnglishPhonemizer> Phonemizer = new (EnglishPhonemizer.LoadAmerican);
 
+        private static readonly Lazy<EnglishPhonemizer> British = new (EnglishPhonemizer.LoadBritish);
+
         private static string Say (string text) => Phonemizer.Value.Phonemize (text).Phonemes;
+
+        private static string SayBritish (string text) => British.Value.Phonemize (text).Phonemes;
+
+        // The British voices read misaki's gb dictionaries: no flapped t, no r after a vowel, əʊ (Q).
+        [Theory]
+        [InlineData ("tomato", "təmˈɑːtQ")]
+        [InlineData ("water", "wˈɔːtə")]
+        public void BritishVoicesReadBritishPronunciations (string word, string expected)
+        {
+            Assert.Equal (expected, SayBritish (word));
+            Assert.NotEqual (expected, Say (word));
+        }
+
+        // An ending made by rule, not found in the dictionary: "affret" + ed. American flaps the t (written T, as
+        // misaki writes the flap for Kokoro); British does not.
+        [Fact]
+        public void BritishEndingsDoNotFlap ()
+        {
+            Assert.EndsWith ("tɪd", SayBritish ("affreted"));
+            Assert.EndsWith ("Tᵻd", Say ("affreted"));
+        }
+
+        // A name in neither dictionary goes to the British network, which knows no American-only sounds.
+        [Fact]
+        public void BritishGuessesUseOnlyBritishSounds ()
+        {
+            var said = SayBritish ("Netherfield Bingley Wickham");
+            Assert.DoesNotContain ("ɾ", said);
+            Assert.DoesNotContain ("ᵻ", said);
+            Assert.DoesNotContain ("ʔ", said);
+            Assert.NotEmpty (said.Trim ());
+        }
 
         [Fact]
         public void ReadsDictionaryWordsWithStressAndPunctuation ()
