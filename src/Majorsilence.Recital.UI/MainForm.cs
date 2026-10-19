@@ -105,6 +105,12 @@ namespace Majorsilence.Recital.UI
         /// <summary>Engines the host supplies itself, offered first (the browser's own voices in the browser head).</summary>
         public IReadOnlyList<Tts.ITtsEngine> HostTtsEngines { get; init; } = [];
 
+        /// <summary>
+        /// Reading aloud started or ended, with the book's title: Android keeps a media notification (a foreground
+        /// service) up meanwhile, so it goes on with the screen off.
+        /// </summary>
+        public event EventHandler<ReadingAloudState>? ReadingAloudChanged;
+
         /// <summary>The host's audio output, where the OS has none Recital knows (phones and tablets), for engines that make audio.</summary>
         public Func<Tts.IAudioOutput>? HostAudioOutput { get; init; }
 
@@ -252,6 +258,7 @@ namespace Majorsilence.Recital.UI
             reader.CloseRequested += (_, _) => Operations.Run (CloseBookAsync);
             reader.VoiceSettingsRequested += (_, _) => Operations.Run (ShowVoiceSettingsAsync);
             reader.ExternalLinkRequested += (_, uri) => Operations.Run (() => OpenExternalLinkAsync (uri));
+            reader.ListeningChanged += (_, on) => ReadingAloudChanged?.Invoke (this, new ReadingAloudState (on, book.Title));
             reader.PreferencesChanged += (_, preferences) => {
                 Preferences = preferences;
                 ApplyTheme ();
@@ -429,4 +436,7 @@ namespace Majorsilence.Recital.UI
             error_banner.BringToFront ();
         }
     }
+
+    /// <param name="Listening">True while reading aloud (paused or not).</param>
+    public sealed record ReadingAloudState (bool Listening, string Title);
 }

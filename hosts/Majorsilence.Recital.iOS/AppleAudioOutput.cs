@@ -29,6 +29,7 @@ namespace Majorsilence.Recital.iOS
 
         public Task StartAsync (PcmFormat format, CancellationToken ct = default)
         {
+            AppleSpeechEngine.PrepareSession ();
             lock (gate) {
                 if (engine is null || current != format) {
                     Release ();

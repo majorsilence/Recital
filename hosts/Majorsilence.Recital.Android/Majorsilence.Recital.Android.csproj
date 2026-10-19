@@ -31,6 +31,7 @@
     <Compile Remove="AndroidSpeechEngine.cs" />
     <Compile Remove="AndroidAudioOutput.cs" />
     <Compile Remove="AndroidKeystoreSecretStore.cs" />
+    <Compile Remove="ReadingAloudService.cs" />
     <Compile Remove="MainActivity.cs" />
     <None Remove="AndroidManifest.xml" />
   </ItemGroup>

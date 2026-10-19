@@ -34,6 +34,10 @@
   and kept in the app's no-backup folder. On iOS they go in the Keychain, for this device only, with no
   iCloud sync. The Android store was checked on the emulator.
 - On a phone or tablet one tap opens a book in the library; a desktop keeps double-click.
+- Reading aloud goes on with the screen off. On Android a media-playback foreground service shows a
+  "Reading aloud" notification while it reads, asking once for permission to show notifications. The
+  emulator kept reading for 40 s with the screen off, and Stop removed the notification. On iOS, the
+  spoken-audio session now covers Recital's own voices and the cloud voices too.
 - The reading-aloud bar's Play button keeps Pause's width, so the buttons after it don't move under
   a finger.
 - Checked on the Android emulator, with a local build of Forms carrying its fixes: download Recital's

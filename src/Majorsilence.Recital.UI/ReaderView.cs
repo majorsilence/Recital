@@ -208,6 +208,21 @@ namespace Majorsilence.Recital.UI
         public event EventHandler<Uri>? ExternalLinkRequested;
         public event EventHandler<ReaderPreferences>? PreferencesChanged;
 
+        /// <summary>Reading aloud started (true, paused or not) or ended (false): a phone keeps it going in the background.</summary>
+        public event EventHandler<bool>? ListeningChanged;
+
+        private bool listening;
+
+        // The bar's play state, and the listening state the host follows.
+        private void ShowListening (bool playing, bool paused)
+        {
+            tts_bar.ShowState (playing, paused);
+            if (playing == listening)
+                return;
+            listening = playing;
+            ListeningChanged?.Invoke (this, playing);
+        }
+
         /// <summary>Opens the book at the newest saved position from any device.</summary>
         public async Task OpenAsync (CancellationToken ct = default)
         {
@@ -256,6 +271,7 @@ namespace Majorsilence.Recital.UI
                 await player.DisposeAsync ();
                 player = null;
             }
+            ShowListening (false, false);
             if (session is null)
                 return;
             await SaveProgressAsync (CancellationToken.None);
@@ -555,7 +571,7 @@ namespace Majorsilence.Recital.UI
                 return;
             tts_bar.StatusText = "";
             await player.StartAsync (session.SpineIndex, start.Value, TtsSettingsFor (preferences));
-            tts_bar.ShowState (true, false);
+            ShowListening (true, false);
         }
 
         public async Task StopListeningAsync ()
@@ -563,7 +579,7 @@ namespace Majorsilence.Recital.UI
             if (player is not null)
                 await player.StopAsync ();
             PageView.Spoken = [];
-            tts_bar.ShowState (false, false);
+            ShowListening (false, false);
         }
 
         private async Task TtsCommandAsync (TtsCommand command)
@@ -574,7 +590,7 @@ namespace Majorsilence.Recital.UI
                     player.Unpause ();
                 else
                     player.Pause ();
-                tts_bar.ShowState (true, player.IsPaused);
+                ShowListening (true, player.IsPaused);
                 break;
             case TtsCommand.PlayPause:
                 await StartListeningAsync ();
@@ -622,7 +638,7 @@ namespace Majorsilence.Recital.UI
             if (wasPlaying)
                 await StartListeningAsync ();
             else
-                tts_bar.ShowState (false, false);
+                ShowListening (false, false);
         }
 
         private TtsSettings TtsSettingsFor (ReaderPreferences prefs)
@@ -682,7 +698,7 @@ namespace Majorsilence.Recital.UI
         private void OnTtsStopped (TtsStoppedEventArgs e)
         {
             PageView.Spoken = [];
-            tts_bar.ShowState (false, false);
+            ShowListening (false, false);
             tts_bar.StatusText = e.Reason switch {
                 TtsStopReason.EndOfBook => "The end",
                 TtsStopReason.SleepTimer => "Sleep timer stopped reading",

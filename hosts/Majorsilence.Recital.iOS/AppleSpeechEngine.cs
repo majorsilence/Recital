@@ -58,7 +58,8 @@ namespace Majorsilence.Recital.iOS
         }
 
         // Spoken audio: plays with the silent switch on and, with the audio background mode, with the screen locked.
-        private static void PrepareSession ()
+        // Shared with AppleAudioOutput, which plays Recital's own voices and the cloud voices.
+        internal static void PrepareSession ()
         {
             if (session_ready)
                 return;
