@@ -52,10 +52,13 @@ namespace Majorsilence.Recital.UI
                     flow.Controls.Add (region);
                 }
             }
-            flow.Controls.Add (new Label { Text = "Piper (offline voices): the piper program, if not on the PATH", AutoSize = true, MaximumSize = new System.Drawing.Size (380, 0), Padding = new Padding (0, 12, 0, 0) });
-            flow.Controls.Add (piper);
-            flow.Controls.Add (new Label { Text = "Folder of Piper voices (.onnx with .onnx.json)", AutoSize = true, Padding = new Padding (0, 6, 0, 0) });
-            flow.Controls.Add (voices);
+            // Piper is a program Recital runs: a phone or tablet cannot run one, so it is not offered there.
+            if (!OperatingSystem.IsAndroid () && !OperatingSystem.IsIOS ()) {
+                flow.Controls.Add (new Label { Text = "Piper (offline voices): the piper program, if not on the PATH", AutoSize = true, MaximumSize = new System.Drawing.Size (380, 0), Padding = new Padding (0, 12, 0, 0) });
+                flow.Controls.Add (piper);
+                flow.Controls.Add (new Label { Text = "Folder of Piper voices (.onnx with .onnx.json)", AutoSize = true, Padding = new Padding (0, 6, 0, 0) });
+                flow.Controls.Add (voices);
+            }
 
             var buttons = new FlowLayoutPanel { AutoSize = true, FlowDirection = FlowDirection.LeftToRight, WrapContents = false, Padding = new Padding (0, 12, 0, 0) };
             var save = new Button { Text = "Save", AutoSize = true };

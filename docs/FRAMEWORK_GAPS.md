@@ -28,6 +28,7 @@ Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps. Phase 
 | GAP-014 | The browser head starts but draws nothing in headless Firefox; a start-up call blocks the main thread over 10 s | Avalonia Browser | Low: headless Firefox only | Drawing checked by hand in Brave on 2026-10-18 (it draws, imports and reads); the slow start-up call is still to measure |
 | GAP-015 | Tool strip drop-down menus never appear on Android (single-view host) | Avalonia single-view (Android, iOS; browsers above a pixel ratio of 1) | major (Theme, Engine, Voice and speed menus on phones) | Fixed by [Forms PR #509](https://github.com/majorsilence/Majorsilence.Forms/pull/509); Recital takes it with the next Forms release (pinned 26.11.6 until then) |
 | GAP-016 | Tool strip captions wrap their last letter at fractional scales ("Bookmar" over "k") | All Avalonia heads at a fractional scale (phones at 2.625) | minor (looks broken on phones) | Fixed by [Forms PR #510](https://github.com/majorsilence/Majorsilence.Forms/pull/510); with the next Forms release |
+| GAP-017 | A tool strip drop-down reopened on Android can come out only as wide as its button, cutting its items off | Avalonia Android (single view) | minor (labels cut, items still work) | Open; seen in Recital's reading-aloud bar on the emulator, not reproduced in the Gallery or headless |
 
 ---
 
@@ -288,4 +289,17 @@ Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps. Phase 
   laid-out box is narrower than its text, and `DrawText` wraps.
 - **Fix:** [Forms PR #510](https://github.com/majorsilence/Majorsilence.Forms/pull/510) rounds measured
   sizes up, with a test at 2.625, 1.75 and 1.25. It reaches Recital with the next Forms release.
+
+## GAP-017: A reopened drop-down on Android can be only as wide as its button
+
+- **Found:** 2026-10-19, Recital on the Android 16 emulator with a local build of Forms carrying PRs #509
+  and #510.
+- **Expected:** the reading-aloud bar's Engine menu is as wide as its widest item every time it opens.
+- **Actual:** the first time it opens it is wide enough. Opened again, after an item was chosen or its items
+  were refilled, it can be exactly as wide as the Engine button, and labels are cut ("Recital voices (offl",
+  "Voice settin"). Items still work.
+- **Not reproduced:** the Gallery's MenuStrip on the same emulator, reopened after choosing an item or
+  tapping outside; or headless, refilling a closed drop-down at scales 1 and 2.625, opening down or up.
+- **Next:** log `MenuDropDown` width and `LayoutItems`' visible item count on the device, from Recital
+  with a local package.
 
