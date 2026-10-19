@@ -21,7 +21,7 @@ namespace Majorsilence.Recital.UI
     {
         public static readonly double[] Speeds = [0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5];
 
-        private readonly ToolStripButton play = new ("Play");
+        private readonly ToolStripButton play = new PlayPauseButton ();
         private readonly ToolStripDropDownButton speed = new ();
         private readonly ToolStripDropDownButton engine = new ("Engine");
         private readonly ToolStripDropDownButton voice = new ("Voice");
@@ -150,5 +150,18 @@ namespace Majorsilence.Recital.UI
         }
 
         private static string SpeedText (double value) => value.ToString ("0.##", CultureInfo.CurrentCulture) + "×";
+
+        /// <summary>As wide as "Pause" whichever it says, so the buttons after it never move under a finger.</summary>
+        private sealed class PlayPauseButton () : ToolStripButton ("Play")
+        {
+            public override System.Drawing.Size GetPreferredSize (System.Drawing.Size proposedSize)
+            {
+                var size = base.GetPreferredSize (proposedSize);
+                if (Owner is not { } strip)
+                    return size;
+                var extra = TextRenderer.MeasureText ("Pause", strip).Width - TextRenderer.MeasureText (Text, strip).Width;
+                return extra > 0 ? size with { Width = size.Width + extra } : size;
+            }
+        }
     }
 }

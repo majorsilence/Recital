@@ -76,6 +76,26 @@ namespace Majorsilence.Recital.UI.Tests
             UiTest.WaitIdle (form);
         }
 
+        // Play and Pause take the same room, so the buttons after it do not move under a finger.
+        [Fact]
+        public void PlayAndPauseAreTheSameWidth ()
+        {
+            using var ui = new UiTest ();
+            var bar = new TtsBar ();
+            using var form = new Majorsilence.Forms.Form { Width = 900, Height = 200 };
+            form.Controls.Add (bar);
+            bar.Visible = true;
+            form.Show ();
+
+            var play = bar.Items[1];
+            bar.ShowState (playing: false, paused: false);
+            Assert.Equal ("Play", play.Text);
+            var asPlay = play.GetPreferredSize (System.Drawing.Size.Empty).Width;
+            bar.ShowState (playing: true, paused: false);
+            Assert.Equal ("Pause", play.Text);
+            Assert.Equal (asPlay, play.GetPreferredSize (System.Drawing.Size.Empty).Width);
+        }
+
         [Fact]
         public void TtsPreferencesRoundTripAndDoNotRelayOut ()
         {

@@ -572,11 +572,16 @@ download on request over bundling 115 MB into every mobile app.
   - This is the only download the app makes by itself, and only after a yes. It sends only the request.
 - **Accelerator:**
   - iOS runs CoreML with `ModelFormat = MLProgram` (fp16 on the Neural Engine) and `MLComputeUnits = ALL`.
-  - Android runs NNAPI with `NNAPI_FLAG_CPU_DISABLED`: NNAPI's own CPU fallback is a slow reference
-    implementation since Android 15, so ONNX Runtime's CPU kernels take what the accelerator cannot.
+  - Android stays on the CPU settings from D-031. NNAPI was tried first (with `NNAPI_FLAG_CPU_DISABLED`).
+    On the Android 16 emulator, ONNX Runtime reported it took 203 of the model's 2,401 operations, in three
+    partitions. The sine source, STFT and transposed convolutions of Kokoro's vocoder are not NNAPI operations.
+    So nearly all the work stayed on the CPU, with copies at every partition edge, and NNAPI is deprecated
+    since Android 15. A vendor driver might take a few more operations, but not the vocoder.
   - If the provider is missing or rejects the model, the CPU settings from D-031 are used.
     `KokoroSynthesizer.Accelerator` says which one is in use.
-  - Not yet measured on hardware. The x86 emulator has no NNAPI accelerator.
+  - Checked on the emulator: downloaded from Voice settings, chosen in the Engine menu, and read aloud
+    through `AndroidAudioOutput` with word highlighting. Speed and battery are not yet measured on a real
+    phone, and CoreML is not yet tried on an iPhone.
 - **Audio out:** phones get an `IAudioOutput` from their host through `MainForm.HostAudioOutput`:
   - Android: `AudioTrack` in streaming mode, with the play head as the position;
   - iOS: `AVAudioEngine` and a player node, with buffers played back plus the clock inside the current

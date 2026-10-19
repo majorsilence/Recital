@@ -34,6 +34,11 @@
   and kept in the app's no-backup folder. On iOS they go in the Keychain, for this device only, with no
   iCloud sync. The Android store was checked on the emulator.
 - On a phone or tablet one tap opens a book in the library; a desktop keeps double-click.
+- The reading-aloud bar's Play button keeps Pause's width, so the buttons after it don't move under
+  a finger.
+- Checked on the Android emulator, with a local build of Forms carrying its fixes: download Recital's
+  voices from Voice settings, choose them in the Engine menu, and listen with word highlighting.
+  Android runs them on the CPU: NNAPI took only 203 of the model's 2,401 operations (D-033).
 - Found and fixed in Majorsilence.Forms (taken with its next release): menus and drop-downs were drawn
   off screen on phones (GAP-015, PR #509), and toolbar captions wrapped their last letter at fractional
   scales (GAP-016, PR #510).

@@ -233,14 +233,14 @@ namespace Majorsilence.Recital.Tts.Kokoro
             return values;
         }
 
-        /// <summary>Where the model runs once loaded: "CPU", or the phone's accelerator ("CoreML", "NNAPI").</summary>
+        /// <summary>Where the model runs once loaded: "CPU", or the Neural Engine and GPU through "CoreML" (iOS).</summary>
         public string Accelerator { get; private set; } = "CPU";
 
         /// <summary>
-        /// On a phone or tablet, the parts of the model its accelerator can run go there (D-033): the Neural Engine or
-        /// GPU through CoreML on iOS, a vendor accelerator through NNAPI on Android, both far lighter on the battery
-        /// than the CPU. What they cannot run stays on the CPU. NNAPI's own CPU fallback is turned off: since Android
-        /// 15 it is a slow reference implementation, slower than ONNX Runtime's.
+        /// On an iPhone or iPad, the parts of the model CoreML can run go to the Neural Engine or GPU, far lighter on
+        /// the battery than the CPU; the rest stays on the CPU (D-033). Android stays on the CPU settings above: NNAPI
+        /// took only 203 of the model's 2401 operations, in three pieces, so nearly all of it ran on the CPU anyway,
+        /// with copies between them -- and NNAPI is deprecated since Android 15.
         /// </summary>
         private static string UseAccelerator (SessionOptions options)
         {
@@ -251,10 +251,6 @@ namespace Majorsilence.Recital.Tts.Kokoro
                         ["MLComputeUnits"] = "ALL",
                     });
                     return "CoreML";
-                }
-                if (OperatingSystem.IsAndroid ()) {
-                    options.AppendExecutionProvider_Nnapi (NnapiFlags.NNAPI_FLAG_CPU_DISABLED);
-                    return "NNAPI";
                 }
             } catch (OnnxRuntimeException) {
                 // This build or device has no such provider: the CPU it is.
