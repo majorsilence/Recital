@@ -23,6 +23,12 @@
   AVSpeechSynthesizer. They work offline, start at once and use little battery, with word-by-word
   highlighting. Android offers only voices installed on the device; iOS also keeps speaking with the
   silent switch on and the screen locked (D-032).
+- Recital's own voices on phones and tablets, as an opt-in: Voice settings offers a one-time download
+  (about 115 MB, the same pinned, hash-checked files the desktop bundles), asking first. On the device
+  the model uses the Neural Engine or GPU through CoreML on iOS, or an NNAPI accelerator on Android,
+  and falls back to the CPU. Its audio is cached there, so listening again costs no battery. Android
+  and iOS audio outputs (AudioTrack, AVAudioEngine) also let the cloud voices play on phones (D-033).
+- The reading-aloud bar's menus open upwards, as the bar sits at the bottom of the reader.
 - Fixed: Next or Back while paused started speaking again while the button still showed Play. Now it
   stays paused and highlights the sentence Play will start from.
 

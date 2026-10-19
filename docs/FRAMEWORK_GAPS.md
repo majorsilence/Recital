@@ -26,6 +26,7 @@ Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps. Phase 
 | GAP-012 | `SaveFileDialog` returns a path only; mobile and browser save pickers give nothing writable | Avalonia Android, iOS, Browser | major (export on mobile/browser) | Open; Recital offers Copy as Markdown everywhere and file export on the desktop |
 | GAP-013 | No streaming audio output on the desktop backends (gapless PCM with a play position) | Avalonia desktop | scope (major for reading aloud) | Open; Recital has an `IAudioOutput` per OS |
 | GAP-014 | The browser head starts but draws nothing in headless Firefox; a start-up call blocks the main thread over 10 s | Avalonia Browser | Low: headless Firefox only | Drawing checked by hand in Brave on 2026-10-18 (it draws, imports and reads); the slow start-up call is still to measure |
+| GAP-015 | Tool strip drop-down menus never appear on Android (single-view host) | Avalonia Android (iOS and browser likely) | major (Theme, Engine, Voice and speed menus on phones) | Open; under investigation in a Forms worktree (branch `android-popup-menus`) |
 
 ---
 
@@ -252,4 +253,22 @@ Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps. Phase 
 - **Severity:** unknown until someone opens the published build in a normal browser.
 - **Measured:** the bundle is 38.3 MB, 11.5 MB with brotli. The largest parts are
   `Majorsilence.Forms.Drawing.Common.wasm` and `dotnet.native.wasm`.
+
+## GAP-015: Tool strip drop-down menus never appear on Android
+
+- **Found:** 2026-10-19, running the Android head on an Android 16 emulator (Pixel 7 image).
+- **Expected:** tapping a `ToolStripDropDownButton` (the reader's Theme, or the reading-aloud bar's Engine,
+  Voice and speed buttons) opens its menu, as on the desktop.
+- **Actual:** the button shows as pressed and no menu is drawn, whether it opens downwards (Theme, in the
+  top bar) or upwards (the reading-aloud bar, which now sets `DefaultDropDownDirection = AboveRight`). A
+  comment in `AvaloniaPlatformBackend` already says the single-view host "never showed" the small combo
+  box drop-down (#438), which was worked around with a native picker for `ComboBox` only.
+- **Suspects, not yet confirmed:** the popup is added to the single-view canvas but closed by the same
+  tap (pointer up lands outside it), or it is sized or placed in device rather than logical units.
+- **Repro:** Recital's Android head, open a book, tap the centre to show the bars, tap Theme.
+- **Severity:** major on phones: voice, engine, speed and theme cannot be changed there, including the
+  Voice settings item that offers the download of Recital's voices (D-033).
+- **Next:** run Majorsilence.Forms' `samples/Gallery.Android` on the emulator to see whether its menus
+  show. That decides between a framework fix (a Forms PR) and something in Recital.
+- **Code:** none yet (no `FRAMEWORK-GAP: GAP-015` marker until there is a workaround).
 

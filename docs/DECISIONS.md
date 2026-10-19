@@ -558,3 +558,32 @@ for speech, work offline and need no account.
 - **Next:** Kokoro on phones as an opt-in, on the Neural Engine (CoreML) or NNAPI where they can run it,
   and cached audio there so listening again costs nothing.
 
+## D-033: Recital's voices on phones: download on opt-in, accelerator first, audio cached (2026-10-19)
+
+The user asked for Kokoro (D-031) on phones and tablets as an opt-in, light on the battery. They chose a
+download on request over bundling 115 MB into every mobile app.
+
+- **Download:** `KokoroFiles` lists the pinned files and their SHA-256. A test checks it matches
+  `build/Kokoro.targets`, so desktop and phone use the same files.
+  - Voice settings shows "Download Recital voices" only where they are missing and audio can play.
+  - MainForm asks once more, giving the size and the site (huggingface.co), then downloads into
+    `<app data>/kokoro/<revision>`.
+  - Each file is written to `.part`, checked, then moved, so a failed or altered file is never kept.
+  - This is the only download the app makes by itself, and only after a yes. It sends only the request.
+- **Accelerator:**
+  - iOS runs CoreML with `ModelFormat = MLProgram` (fp16 on the Neural Engine) and `MLComputeUnits = ALL`.
+  - Android runs NNAPI with `NNAPI_FLAG_CPU_DISABLED`: NNAPI's own CPU fallback is a slow reference
+    implementation since Android 15, so ONNX Runtime's CPU kernels take what the accelerator cannot.
+  - If the provider is missing or rejects the model, the CPU settings from D-031 are used.
+    `KokoroSynthesizer.Accelerator` says which one is in use.
+  - Not yet measured on hardware. The x86 emulator has no NNAPI accelerator.
+- **Audio out:** phones get an `IAudioOutput` from their host through `MainForm.HostAudioOutput`:
+  - Android: `AudioTrack` in streaming mode, with the play head as the position;
+  - iOS: `AVAudioEngine` and a player node, with buffers played back plus the clock inside the current
+    one. The position stands still while paused or out of audio.
+
+  This also lets the cloud voices play on phones.
+- **Cache:** on Android and iOS, Kokoro's audio goes into the existing audio cache (512 MB, oldest
+  dropped first), so listening again costs no battery. Desktop still makes it again, which is cheap there.
+- **Default:** the device voices stay first (D-032). Recital's voices are chosen in the Engine menu.
+

@@ -29,6 +29,7 @@
   <ItemGroup Condition="'$(EnableAndroidHead)' != 'true'">
     <Compile Remove="App.cs" />
     <Compile Remove="AndroidSpeechEngine.cs" />
+    <Compile Remove="AndroidAudioOutput.cs" />
     <Compile Remove="MainActivity.cs" />
     <None Remove="AndroidManifest.xml" />
   </ItemGroup>

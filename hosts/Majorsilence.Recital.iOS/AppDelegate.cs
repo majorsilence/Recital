@@ -20,7 +20,10 @@ namespace Majorsilence.Recital.iOS
         {
             if (ApplicationLifetime is ISingleViewApplicationLifetime)
                 // The device's own voices first: offline, instant, and light on the battery.
-                MSForms.Application.RunIOS (() => new MainForm { HostTtsEngines = [new AppleSpeechEngine ()] });
+                MSForms.Application.RunIOS (() => new MainForm {
+                    HostTtsEngines = [new AppleSpeechEngine ()],
+                    HostAudioOutput = () => new AppleAudioOutput (),
+                });
 
             base.OnFrameworkInitializationCompleted ();
         }

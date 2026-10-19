@@ -233,7 +233,36 @@ namespace Majorsilence.Recital.Tts.Kokoro
             return values;
         }
 
-        private (InferenceSession, EnglishPhonemizer, Dictionary<string, long>) Load ()
+        /// <summary>Where the model runs once loaded: "CPU", or the phone's accelerator ("CoreML", "NNAPI").</summary>
+        public string Accelerator { get; private set; } = "CPU";
+
+        /// <summary>
+        /// On a phone or tablet, the parts of the model its accelerator can run go there (D-033): the Neural Engine or
+        /// GPU through CoreML on iOS, a vendor accelerator through NNAPI on Android, both far lighter on the battery
+        /// than the CPU. What they cannot run stays on the CPU. NNAPI's own CPU fallback is turned off: since Android
+        /// 15 it is a slow reference implementation, slower than ONNX Runtime's.
+        /// </summary>
+        private static string UseAccelerator (SessionOptions options)
+        {
+            try {
+                if (OperatingSystem.IsIOS () || OperatingSystem.IsMacCatalyst ()) {
+                    options.AppendExecutionProvider ("CoreML", new Dictionary<string, string> {
+                        ["ModelFormat"] = "MLProgram",   // runs fp16 natively on the Neural Engine
+                        ["MLComputeUnits"] = "ALL",
+                    });
+                    return "CoreML";
+                }
+                if (OperatingSystem.IsAndroid ()) {
+                    options.AppendExecutionProvider_Nnapi (NnapiFlags.NNAPI_FLAG_CPU_DISABLED);
+                    return "NNAPI";
+                }
+            } catch (OnnxRuntimeException) {
+                // This build or device has no such provider: the CPU it is.
+            }
+            return "CPU";
+        }
+
+        private InferenceSession Open (string model, bool accelerate)
         {
             // A few threads, and no spinning: by default ONNX Runtime takes every core and busy-waits between steps,
             // burning about 4 s of CPU per second of speech. Three threads without spinning measured as fast or
@@ -243,7 +272,20 @@ namespace Majorsilence.Recital.Tts.Kokoro
                 IntraOpNumThreads = Math.Clamp (Environment.ProcessorCount / 4, 2, 4),
             };
             options.AddSessionConfigEntry ("session.intra_op.allow_spinning", "0");
-            var session = new InferenceSession (Path.Combine (folder, "model.onnx"), options);
+            Accelerator = accelerate ? UseAccelerator (options) : "CPU";
+            return new InferenceSession (model, options);
+        }
+
+        private (InferenceSession, EnglishPhonemizer, Dictionary<string, long>) Load ()
+        {
+            var model = Path.Combine (folder, "model.onnx");
+            InferenceSession session;
+            try {
+                session = Open (model, accelerate: true);
+            } catch (OnnxRuntimeException) when (Accelerator != "CPU") {
+                // The accelerator would not take the model: the CPU will.
+                session = Open (model, accelerate: false);
+            }
             using var vocabStream = typeof (KokoroSynthesizer).Assembly.GetManifestResourceStream ("Majorsilence.Recital.Tts.Kokoro.Data.kokoro_vocab.json")
                 ?? throw new InvalidOperationException ("Missing resource kokoro_vocab.json.");
             // Read by hand, not with the serializer: the browser head trims, and reflection would not survive it.

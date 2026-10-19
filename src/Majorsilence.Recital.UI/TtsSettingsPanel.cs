@@ -19,6 +19,9 @@ namespace Majorsilence.Recital.UI
         private readonly TextBox region = new () { Width = 360, PlaceholderText = "westeurope" };
         private readonly TextBox piper = new () { Width = 360 };
         private readonly TextBox voices = new () { Width = 360 };
+        private readonly FlowLayoutPanel recital = new () { AutoSize = true, FlowDirection = FlowDirection.TopDown, WrapContents = false, Visible = false, Padding = new Padding (0, 0, 0, 8) };
+        private readonly Button download = new () { Text = "Download Recital voices", AutoSize = true };
+        private readonly Label download_status = new () { AutoSize = true, MaximumSize = new System.Drawing.Size (380, 0), Visible = false };
 
         public TtsSettingsPanel (IReadOnlyList<(string Id, string Name)> services)
         {
@@ -26,6 +29,15 @@ namespace Majorsilence.Recital.UI
             BorderStyle = BorderStyle.FixedSingle;
             var flow = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new Padding (16) };
             flow.Controls.Add (new Label { Text = "Voices", AutoSize = true, Font = new Majorsilence.Forms.Drawing.Font (Font.FontFamily, Font.Size * 1.2f) });
+            // Recital's own voices, where the app does not carry them (phones and tablets): asked for, never assumed.
+            recital.Controls.Add (new Label {
+                Text = "Recital voices: natural voices that run on this device, offline. A one-time download; nothing about you or your books is sent.",
+                AutoSize = true, MaximumSize = new System.Drawing.Size (380, 0), Padding = new Padding (0, 4, 0, 4),
+            });
+            download.Click += (_, _) => DownloadRequested?.Invoke (this, EventArgs.Empty);
+            recital.Controls.Add (download);
+            recital.Controls.Add (download_status);
+            flow.Controls.Add (recital);
             flow.Controls.Add (new Label {
                 Text = "Cloud voices sound most natural, with your own key from the service. While you listen with one, the text being read is sent to that service; nothing is sent otherwise. Keys stay in this device's secure store.",
                 AutoSize = true, MaximumSize = new System.Drawing.Size (380, 0), Padding = new Padding (0, 4, 0, 8),
@@ -60,6 +72,22 @@ namespace Majorsilence.Recital.UI
         }
 
         public event EventHandler<TtsSettingsInput>? Saved;
+
+        /// <summary>The user asked to download Recital's voices (the host asks once more, saying the size).</summary>
+        public event EventHandler? DownloadRequested;
+
+        public Button DownloadButton => download;
+        public string? DownloadStatus => download_status.Visible ? download_status.Text : null;
+
+        /// <param name="offer">Offer the download (the voices are not on this device).</param>
+        /// <param name="status">A line about the download in progress, done or failed.</param>
+        public void ShowRecitalVoices (bool offer, string? status)
+        {
+            recital.Visible = offer || status is not null;
+            download.Visible = offer;
+            download_status.Text = status ?? "";
+            download_status.Visible = status is not null;
+        }
 
         public TextBox KeyBox (string service) => keys[service];
         public TextBox AzureRegion => region;

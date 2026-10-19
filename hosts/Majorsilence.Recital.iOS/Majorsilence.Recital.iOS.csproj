@@ -31,6 +31,7 @@
   <ItemGroup Condition="'$(EnableIOSHead)' != 'true'">
     <Compile Remove="AppDelegate.cs" />
     <Compile Remove="AppleSpeechEngine.cs" />
+    <Compile Remove="AppleAudioOutput.cs" />
     <Compile Remove="Main.cs" />
     <None Remove="Info.plist" />
   </ItemGroup>

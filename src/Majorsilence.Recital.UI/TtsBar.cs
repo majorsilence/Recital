@@ -34,6 +34,9 @@ namespace Majorsilence.Recital.UI
             Dock = DockStyle.None;
             Visible = false;
             GripStyle = ToolStripGripStyle.Hidden;
+            // The bar sits at the bottom of the reader: its menus open upwards, or on a phone they would open
+            // off the screen.
+            DefaultDropDownDirection = ToolStripDropDownDirection.AboveRight;
 
             var back = new ToolStripButton ("‹ Back") { ToolTipText = "Back a sentence" };
             var forward = new ToolStripButton ("Next ›") { ToolTipText = "Forward a sentence" };

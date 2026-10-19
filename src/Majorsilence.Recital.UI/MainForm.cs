@@ -70,8 +70,9 @@ namespace Majorsilence.Recital.UI
             services_factory = servicesFactory;
             // The OS voices until InitializeAsync has found the rest (Piper, cloud keys).
             TtsEngines = () => tts_engines ??= [.. HostTtsEngines, .. Tts.Platform.TtsEngines.ForCurrentPlatform (
-                Services?.DataDirectory is { } data ? Path.Combine (data, "tts-cache") : null)];
+                Services?.DataDirectory is { } data ? Path.Combine (data, "tts-cache") : null, Services?.DataDirectory, HostAudioOutput)];
             tts_settings.Saved += (_, input) => Operations.Run (() => SaveVoiceSettingsAsync (input));
+            tts_settings.DownloadRequested += (_, _) => Operations.Run (DownloadRecitalVoicesAsync);
             Text = "Recital";
             ClientSize = new Size (1000, 700);
 
@@ -104,6 +105,9 @@ namespace Majorsilence.Recital.UI
         /// <summary>Engines the host supplies itself, offered first (the browser's own voices in the browser head).</summary>
         public IReadOnlyList<Tts.ITtsEngine> HostTtsEngines { get; init; } = [];
 
+        /// <summary>The host's audio output, where the OS has none Recital knows (phones and tablets), for engines that make audio.</summary>
+        public Func<Tts.IAudioOutput>? HostAudioOutput { get; init; }
+
         public TtsSettingsPanel VoiceSettings => tts_settings;
         public LibraryView? Library { get; private set; }
         public ReaderView? Reader { get; private set; }
@@ -124,7 +128,7 @@ namespace Majorsilence.Recital.UI
             var services = await services_factory (CancellationToken.None);
             Services = services;
             if (!custom_tts_engines)
-                tts_engines = [.. HostTtsEngines, .. await Tts.Platform.TtsEngines.AvailableAsync (services.DataDirectory, services.Platform.Secrets)];
+                tts_engines = [.. HostTtsEngines, .. await Tts.Platform.TtsEngines.AvailableAsync (services.DataDirectory, services.Platform.Secrets, output: HostAudioOutput)];
             Preferences = await services.Library.LoadPreferencesAsync ();
             ApplyTheme ();
 
@@ -288,6 +292,45 @@ namespace Majorsilence.Recital.UI
             var settings = await Tts.Platform.TtsEngineSettings.LoadAsync (services.DataDirectory);
             tts_settings.SetBounds (Math.Max (0, (ClientSize.Width - 440) / 2), 40, Math.Min (ClientSize.Width, 440), Math.Max (240, ClientSize.Height - 80));
             tts_settings.Open (saved, settings.AzureRegion, settings.PiperProgram, settings.PiperVoices);
+            tts_settings.ShowRecitalVoices (OfferRecitalVoices (), null);
+        }
+
+        // Offered where the app does not carry them and they are not yet downloaded, if there is a way to play them.
+        private bool OfferRecitalVoices ()
+            => Services?.DataDirectory is { } data && Tts.Platform.TtsEngines.FindRecitalVoices (data) is null
+               && (HostAudioOutput ?? Tts.Platform.TtsEngines.AudioOutputFactory ()) is not null;
+
+        /// <summary>
+        /// Asks, saying the size and where from, then downloads Recital's voices into app data and offers them in the
+        /// Engine menu (D-033).
+        /// </summary>
+        public async Task DownloadRecitalVoicesAsync ()
+        {
+            if (Services is not { DataDirectory: { } data } services)
+                return;
+            var megabytes = Tts.Platform.TtsEngines.RecitalVoicesSize / 1_000_000;
+            if (await MessageBox.ShowAsync (
+                    $"Download Recital's voices?\n\nAbout {megabytes} MB, once, from huggingface.co (the Kokoro voice model). Nothing about you or your books is sent, and afterwards they work offline.",
+                    "Recital voices", MessageBoxButtons.OKCancel) != DialogResult.OK)
+                return;
+            var shown = -1L;
+            var progress = new Progress<long> (bytes => {
+                var percent = bytes * 100 / Math.Max (1, Tts.Platform.TtsEngines.RecitalVoicesSize);
+                if (percent != shown)
+                    tts_settings.ShowRecitalVoices (false, $"Downloading... {shown = percent}%");
+            });
+            tts_settings.ShowRecitalVoices (false, "Downloading...");
+            try {
+                await Tts.Platform.TtsEngines.DownloadRecitalVoicesAsync (data, progress);
+            } catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidDataException or TaskCanceledException) {
+                tts_settings.ShowRecitalVoices (true, $"The download did not finish: {ex.Message}");
+                return;
+            }
+            tts_settings.ShowRecitalVoices (false, "Recital voices are ready: choose them in the Engine menu while listening.");
+            if (!custom_tts_engines)
+                tts_engines = [.. HostTtsEngines, .. await Tts.Platform.TtsEngines.AvailableAsync (data, services.Platform.Secrets, output: HostAudioOutput)];
+            if (Reader is { } reader)
+                await reader.SwitchEngineAsync ();
         }
 
         /// <summary>Keys into the secure store, the rest into local app data; then the engines are found again.</summary>
@@ -302,7 +345,7 @@ namespace Majorsilence.Recital.UI
                 await new Tts.Platform.TtsEngineSettings (input.PiperProgram, input.PiperVoices, input.AzureRegion).SaveAsync (data);
             tts_settings.Visible = false;
             if (!custom_tts_engines)
-                tts_engines = [.. HostTtsEngines, .. await Tts.Platform.TtsEngines.AvailableAsync (services.DataDirectory, services.Platform.Secrets)];
+                tts_engines = [.. HostTtsEngines, .. await Tts.Platform.TtsEngines.AvailableAsync (services.DataDirectory, services.Platform.Secrets, output: HostAudioOutput)];
             if (Reader is { } reader)
                 await reader.SwitchEngineAsync ();
         }

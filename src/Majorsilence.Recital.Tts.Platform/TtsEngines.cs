@@ -59,15 +59,41 @@ namespace Majorsilence.Recital.Tts.Platform
         /// <summary>Where a cloud service's key is kept in the secure store.</summary>
         public static string KeyFor (string service) => "tts:" + service;
 
+        /// <summary>Where Recital's voices go when downloaded (phones and tablets, D-033): one folder per pinned revision.</summary>
+        public static string RecitalVoicesFolder (string dataDirectory) => Path.Combine (dataDirectory, "kokoro", Kokoro.KokoroFiles.Revision);
+
+        /// <summary>The size of Recital's voices, to say before downloading them.</summary>
+        public static long RecitalVoicesSize => Kokoro.KokoroFiles.TotalSize;
+
+        /// <summary>Recital's voices on this device: bundled beside the app (desktop), or downloaded to app data.</summary>
+        public static string? FindRecitalVoices (string? dataDirectory)
+            => Kokoro.KokoroSynthesizer.FindFolder ()
+               ?? (dataDirectory is not null && Kokoro.KokoroSynthesizer.IsVoiceFolder (RecitalVoicesFolder (dataDirectory)) ? RecitalVoicesFolder (dataDirectory) : null);
+
+        /// <summary>
+        /// Fetches Recital's voices (about 115 MB, pinned and checked by hash) into app data. Only when the user has
+        /// asked: it is the one download the app makes on its own, and it sends nothing but the request.
+        /// </summary>
+        public static async Task DownloadRecitalVoicesAsync (string dataDirectory, IProgress<long>? progress = null, CancellationToken ct = default)
+        {
+            using var http = new HttpClient (new SocketsHttpHandler ()) { Timeout = Timeout.InfiniteTimeSpan };
+            await Kokoro.KokoroFiles.DownloadAsync (http, RecitalVoicesFolder (dataDirectory), progress, ct).ConfigureAwait (false);
+        }
+
         /// <summary>The OS voices only (no Piper, no cloud), for when settings and secrets are not to hand.</summary>
-        public static IReadOnlyList<ITtsEngine> ForCurrentPlatform (string? cacheDirectory)
+        /// <param name="output">The host's audio output (phones and tablets), else this OS's own.</param>
+        public static IReadOnlyList<ITtsEngine> ForCurrentPlatform (string? cacheDirectory, string? dataDirectory = null, Func<IAudioOutput>? output = null)
         {
             var cache = cacheDirectory is null ? null : new AudioCache (cacheDirectory);
             var engines = new List<ITtsEngine> ();
-            // Recital's own voices first, when this build carries them: they need nothing installed and stay on
-            // the device. Their audio is quick to make again, so it is not cached.
-            if (Kokoro.KokoroSynthesizer.FindFolder () is { } kokoro && AudioOutputFactory () is { } output)
-                engines.Add (new AudioTtsEngine (new Kokoro.KokoroSynthesizer (kokoro), output));
+            output ??= AudioOutputFactory ();
+            // Recital's own voices first, when present: they need nothing installed and stay on the device. On a
+            // desktop their audio is quick to make again, so it is not cached; on a phone or tablet the cache means
+            // listening again costs no battery.
+            if (FindRecitalVoices (dataDirectory) is { } kokoro && output is not null) {
+                var mobile = OperatingSystem.IsAndroid () || OperatingSystem.IsIOS ();
+                engines.Add (new AudioTtsEngine (new Kokoro.KokoroSynthesizer (kokoro), output, mobile ? cache : null));
+            }
             if (OperatingSystem.IsWindows ())
                 engines.Add (new AudioTtsEngine (new SapiSynthesizer (), WindowsOutput, cache));
             else if (OperatingSystem.IsMacOS () && File.Exists ("/usr/bin/say") && AfplayAudioOutput.IsAvailable ())
@@ -79,12 +105,14 @@ namespace Majorsilence.Recital.Tts.Platform
 
         /// <summary>Every engine this device can use, in the order offered: the OS voices, Piper, then the cloud services.</summary>
         /// <param name="handler">The HTTP stack for the cloud services (tests pass fakes); null for the default.</param>
-        public static async Task<IReadOnlyList<ITtsEngine>> AvailableAsync (string? dataDirectory, ISecretStore secrets, HttpMessageHandler? handler = null, CancellationToken ct = default)
+        /// <param name="output">The host's audio output (phones and tablets), else this OS's own.</param>
+        public static async Task<IReadOnlyList<ITtsEngine>> AvailableAsync (string? dataDirectory, ISecretStore secrets, HttpMessageHandler? handler = null,
+            Func<IAudioOutput>? output = null, CancellationToken ct = default)
         {
             var cacheDirectory = dataDirectory is null ? null : Path.Combine (dataDirectory, "tts-cache");
             var cache = cacheDirectory is null ? null : new AudioCache (cacheDirectory);
-            var engines = new List<ITtsEngine> (ForCurrentPlatform (cacheDirectory));
-            var output = AudioOutputFactory ();
+            output ??= AudioOutputFactory ();
+            var engines = new List<ITtsEngine> (ForCurrentPlatform (cacheDirectory, dataDirectory, output));
             if (output is null)
                 return engines;
 
