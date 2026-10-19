@@ -60,7 +60,9 @@ namespace Majorsilence.Recital.Tts.Tests
                 var sentenceLength = perChar * (sentence.End - sentence.Start);
                 // A chunk's last words can come up to the channel's 15 ms end tolerance early.
                 Assert.True (at >= expected - TimeSpan.FromMilliseconds (16), $"Reported '{chunk.Text[ch..Math.Min (chunk.Text.Length, ch + 10)]}' {(expected - at).TotalMilliseconds} ms early");
-                Assert.True (at - expected < sentenceLength + TimeSpan.FromMilliseconds (120), $"Reported {(at - expected).TotalMilliseconds} ms late, a sentence lasts {sentenceLength.TotalMilliseconds}");
+                // Late by at most a sentence and a quarter second: on a loaded 3-core CI runner the monitor's 40 ms
+                // tick has been seen ~200 ms behind, still within the plan's 300 ms budget for a gap.
+                Assert.True (at - expected < sentenceLength + TimeSpan.FromMilliseconds (250), $"Reported {(at - expected).TotalMilliseconds} ms late, a sentence lasts {sentenceLength.TotalMilliseconds}");
             }
             // Every sentence of every chunk was reported.
             foreach (var chunk in played)

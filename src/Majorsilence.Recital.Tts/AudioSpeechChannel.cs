@@ -47,6 +47,7 @@ namespace Majorsilence.Recital.Tts
         private readonly List<Entry> entries = [];
         private CancellationTokenSource stop = new ();
         private Task? feeder;
+        private Task? producer;
         private Task? monitor;
         private PcmFormat? format;
         private long written;
@@ -56,6 +57,10 @@ namespace Majorsilence.Recital.Tts
         // Set and cleared under gate, so a chunk enqueued as a loop finds the queue empty always gets a loop.
         private bool feeding;
         private bool monitoring;
+        // A streaming synthesizer (one model on this device) makes chunks one at a time, in the order enqueued,
+        // from a single loop: chunks started side by side raced for the model, and a later paragraph could take it
+        // first while the listener waited for the first one.
+        private bool producing;
 
         private sealed class Entry (SpeechChunk chunk)
         {
@@ -71,6 +76,7 @@ namespace Majorsilence.Recital.Tts
             // Audio made for this chunk, and how much of it has gone to the output.
             public TimeSpan Made;
             public TimeSpan Fed;
+            public bool Producing;   // taken by the producer loop (streaming synthesizers)
         }
 
         public AudioSpeechChannel (ISpeechSynthesizer synthesizer, IAudioOutput output, TtsSettings settings, string? language, AudioCache? cache = null, TimeProvider? time = null)
@@ -105,7 +111,14 @@ namespace Majorsilence.Recital.Tts
                 entries.Add (entry);
                 // Start synthesizing now: by the time it is needed, it is ready.
                 var token = stop.Token;
-                _ = Task.Run (() => SynthesizeAsync (entry, token), CancellationToken.None);
+                if (synthesizer is IStreamingSpeechSynthesizer) {
+                    if (!producing) {
+                        producing = true;
+                        producer = Task.Run (() => ProduceAsync (token), CancellationToken.None);
+                    }
+                } else {
+                    _ = Task.Run (() => SynthesizeAsync (entry, token), CancellationToken.None);
+                }
                 if (!feeding) {
                     feeding = true;
                     var feedToken = stop.Token;
@@ -140,7 +153,7 @@ namespace Majorsilence.Recital.Tts
                 entries.Clear ();
             }
             await old.CancelAsync ().ConfigureAwait (false);
-            foreach (var task in new[] { feeder, monitor })
+            foreach (var task in new[] { feeder, monitor, producer })
                 if (task is not null)
                     try {
                         await task.ConfigureAwait (false);
@@ -151,8 +164,8 @@ namespace Majorsilence.Recital.Tts
             lock (gate) {
                 started = false;
                 written = 0;
-                feeder = monitor = null;
-                feeding = monitoring = false;
+                feeder = monitor = producer = null;
+                feeding = monitoring = producing = false;
             }
             paused = false;
         }
@@ -163,6 +176,29 @@ namespace Majorsilence.Recital.Tts
             lock (gate)
                 disposed = true;
             await output.DisposeAsync ().ConfigureAwait (false);
+        }
+
+        // Makes each enqueued chunk in turn, the earliest first, until none is left to make.
+        private async Task ProduceAsync (CancellationToken ct)
+        {
+            try {
+                while (!ct.IsCancellationRequested) {
+                    Entry? next;
+                    lock (gate) {
+                        next = entries.FirstOrDefault (e => !e.Producing);
+                        if (next is null) {
+                            producing = false;
+                            return;
+                        }
+                        next.Producing = true;
+                    }
+                    await SynthesizeAsync (next, ct).ConfigureAwait (false);
+                }
+            } finally {
+                lock (gate)
+                    if (ct.IsCancellationRequested)
+                        producing = false;
+            }
         }
 
         // What the output still has to play, plus what is made but not yet given to it, up to and including this chunk.
