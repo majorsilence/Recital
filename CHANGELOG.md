@@ -19,6 +19,12 @@
   opens, the first clause plays while the rest of the paragraph is still being made, and paragraphs are
   made in reading order, using about a fifth of the CPU (no busy-waiting threads).
 - The browser head reads aloud with the browser's own voices (Web Speech API).
+- Phones and tablets read aloud with the device's own voices by default: Android TextToSpeech and iOS
+  AVSpeechSynthesizer. They work offline, start at once and use little battery, with word-by-word
+  highlighting. Android offers only voices installed on the device; iOS also keeps speaking with the
+  silent switch on and the screen locked (D-032).
+- Fixed: Next or Back while paused started speaking again while the button still showed Play. Now it
+  stays paused and highlights the sentence Play will start from.
 
 ## Phase 9: Expressive voices (2026-10-18)
 

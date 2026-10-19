@@ -530,3 +530,31 @@ keys optional. They chose Kokoro over a Piper voice and bundling over a download
   - British voices still use the American dictionary; misaki has a British one too.
   - Only English.
   - Android/iOS packaging (the model has to reach a file path, or be loaded from bytes).
+
+## D-032: Phones and tablets read with the device's own voices (2026-10-19)
+
+The user wants reading aloud on a phone to be fast and to use little battery. Kokoro (D-031) runs a model
+with about 82 million weights for every second of speech. On a phone's processor that keeps the chip busy
+while listening, so it is not the default there. The system voices run on hardware and software built
+for speech, work offline and need no account.
+
+- **Android:** `AndroidSpeechEngine` in the Android head (TextToSpeech).
+  - Only installed voices are offered (not `IsNetworkConnectionRequired`, not `notInstalled`), and one
+    is always set explicitly, so the book's text never goes to a speech server the user did not choose.
+  - Words come from `onRangeStart` (API 26 and later).
+  - Android cannot pause, so Pause stops speaking and Resume speaks the chunk again from the last word
+    heard. A generation number in each utterance id drops callbacks from speech that has been stopped.
+  - Checked on an Android 16 emulator with Google's speech service: an on-device voice
+    (`en-us-x-tpf-local`), word highlighting, and pause and resume.
+- **iOS:** `AppleSpeechEngine` in the iOS head (AVSpeechSynthesizer).
+  - Words come from `willSpeakRangeOfSpeechString`.
+  - Pause waits for the end of the word.
+  - The voice list includes the Enhanced and Premium voices from Settings, and the best installed voice
+    for the book's language is the default.
+  - The audio session is Playback / SpokenAudio, and `UIBackgroundModes` includes `audio`, so speech
+    goes on with the silent switch on and the screen locked.
+  - Built in CI only; it has not run on a device.
+- Both are handed to `MainForm.HostTtsEngines`, so they are listed first, as the browser's voices are.
+- **Next:** Kokoro on phones as an opt-in, on the Neural Engine (CoreML) or NNAPI where they can run it,
+  and cached audio there so listening again costs nothing.
+

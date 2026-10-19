@@ -25,7 +25,8 @@ namespace Majorsilence.Recital.Android
             // ISingleViewApplicationLifetime.MainView; hand that back to the Activity.
             if (ApplicationLifetime is IActivityApplicationLifetime activityLifetime) {
                 activityLifetime.MainViewFactory = () => {
-                    MSForms.Application.RunAndroid (() => new MainForm ());
+                    // The device's own voices first: offline, instant, and light on the battery.
+                    MSForms.Application.RunAndroid (() => new MainForm { HostTtsEngines = [new AndroidSpeechEngine (global::Android.App.Application.Context)] });
                     return ((ISingleViewApplicationLifetime) ApplicationLifetime!).MainView!;
                 };
             }

@@ -81,6 +81,22 @@ namespace Majorsilence.Recital.Tts.Tests
             await player.SkipAsync (-2, Ct);
             await WaitFor (() => spoken.Count (r => r.SentenceStart == paragraph.PositionAt (second.Start)) > 1);
 
+            // Skipping while paused stays paused, shows the next sentence, and Play starts there.
+            player.Pause ();
+            await Task.Delay (100, Ct);   // words already on their way
+            var at = Array.FindIndex ([.. paragraph.Sentences], x => paragraph.PositionAt (x.Start) == spoken[^1].SentenceStart);
+            Assert.InRange (at, 0, paragraph.Sentences.Count - 2);
+            var nextSentence = paragraph.PositionAt (paragraph.Sentences[at + 1].Start);
+            await player.SkipAsync (1, Ct);
+            Assert.True (player.IsPaused);
+            Assert.Equal (nextSentence, spoken[^1].SentenceStart);
+            var heard = spoken.Count;
+            await Task.Delay (200, Ct);
+            Assert.Equal (heard, spoken.Count);
+            player.Unpause ();
+            await WaitFor (() => spoken.Count > heard + 1);
+            Assert.Equal (nextSentence, spoken[heard].SentenceStart);
+
             // A new speed restarts the sentence with the new settings.
             await player.ChangeSettingsAsync (new TtsSettings (Rate: 1.5), Ct);
             Assert.Equal (1.5, engine.Opened[^1].Rate);

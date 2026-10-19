@@ -19,7 +19,8 @@ namespace Majorsilence.Recital.iOS
         public override void OnFrameworkInitializationCompleted ()
         {
             if (ApplicationLifetime is ISingleViewApplicationLifetime)
-                MSForms.Application.RunIOS (() => new MainForm ());
+                // The device's own voices first: offline, instant, and light on the battery.
+                MSForms.Application.RunIOS (() => new MainForm { HostTtsEngines = [new AppleSpeechEngine ()] });
 
             base.OnFrameworkInitializationCompleted ();
         }

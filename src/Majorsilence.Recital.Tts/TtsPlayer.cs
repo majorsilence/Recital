@@ -134,8 +134,15 @@ namespace Majorsilence.Recital.Tts
                         (chunk, sentence) = (chunk - 1, plan[chunk - 1].Sentences.Count - 1);
                     steps++;
                 }
+                // Skipping while paused stays paused, and shows the sentence Play will start from.
+                var paused = IsPaused;
                 await StopCoreAsync ().ConfigureAwait (false);
                 await BeginAsync (spine, chunk, sentence, ct).ConfigureAwait (false);
+                if (paused) {
+                    channel?.Pause ();
+                    if (chunk < plan.Count && plan[chunk].Sentences.Count > 0)
+                        OnProgress (generation, plan[chunk], plan[chunk].Sentences[Math.Clamp (sentence, 0, plan[chunk].Sentences.Count - 1)].Start);
+                }
             } finally {
                 gate.Release ();
             }
