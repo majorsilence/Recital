@@ -76,10 +76,13 @@ namespace Majorsilence.Recital.Tts.Tests
             Assert.Equal (paragraph.PositionAt (second.Start), spoken[0].SentenceStart);
             Assert.Equal (paragraph.PositionAt (second.Start), spoken[0].WordStart);
 
+            // Each skip is judged by what is spoken after it.
+            var seen = spoken.Count;
             await player.SkipAsync (1, Ct);
-            await WaitFor (() => spoken.Any (r => r.SentenceStart == paragraph.PositionAt (paragraph.Sentences[2].Start)));
+            await WaitFor (() => { lock (spoken) return spoken.Skip (seen).Any (r => r.SentenceStart == paragraph.PositionAt (paragraph.Sentences[2].Start)); });
+            seen = spoken.Count;
             await player.SkipAsync (-2, Ct);
-            await WaitFor (() => spoken.Count (r => r.SentenceStart == paragraph.PositionAt (second.Start)) > 1);
+            await WaitFor (() => { lock (spoken) return spoken.Skip (seen).Any (r => r.SentenceStart == paragraph.PositionAt (second.Start)); });
 
             // Skipping while paused stays paused, shows the next sentence, and Play starts there.
             player.Pause ();

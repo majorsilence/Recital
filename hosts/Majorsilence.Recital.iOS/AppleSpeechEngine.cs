@@ -64,7 +64,7 @@ namespace Majorsilence.Recital.iOS
                 return;
             var session = AVAudioSession.SharedInstance ();
             session.SetCategory (AVAudioSessionCategory.Playback);
-            session.SetMode (AVAudioSession.ModeSpokenAudio, out _);
+            session.SetMode (AVAudioSessionMode.SpokenAudio.GetConstant ()!, out _);
             session.SetActive (true, out _);
             session_ready = true;
         }
@@ -80,6 +80,8 @@ namespace Majorsilence.Recital.iOS
             private readonly string? language;
             private readonly object gate = new ();
             private readonly List<(AVSpeechUtterance Utterance, SpeechChunk Chunk)> queued = [];
+            // Queued while paused with nothing speaking: the synthesizer ignores a pause then, so they wait here.
+            private readonly List<AVSpeechUtterance> held = [];
             private bool stopped;
             private bool paused;
 
@@ -115,6 +117,10 @@ namespace Majorsilence.Recital.iOS
                     if (stopped)
                         return;
                     queued.Add ((utterance, chunk));
+                    if (paused && !synthesizer.Speaking) {
+                        held.Add (utterance);
+                        return;
+                    }
                 }
                 // The synthesizer queues utterances itself and speaks them back to back.
                 synthesizer.SpeakUtterance (utterance);
@@ -154,14 +160,24 @@ namespace Majorsilence.Recital.iOS
 
             public void Pause ()
             {
-                paused = true;
-                synthesizer.PauseSpeaking (AVSpeechBoundary.Word);
+                lock (gate)
+                    paused = true;
+                if (synthesizer.Speaking)
+                    synthesizer.PauseSpeaking (AVSpeechBoundary.Word);
             }
 
             public void Unpause ()
             {
-                paused = false;
-                synthesizer.ContinueSpeaking ();
+                List<AVSpeechUtterance> waiting;
+                lock (gate) {
+                    paused = false;
+                    waiting = [.. held];
+                    held.Clear ();
+                }
+                if (synthesizer.Paused)
+                    synthesizer.ContinueSpeaking ();
+                foreach (var utterance in waiting)
+                    synthesizer.SpeakUtterance (utterance);
             }
 
             public Task StopAsync ()
@@ -171,6 +187,7 @@ namespace Majorsilence.Recital.iOS
                         return Task.CompletedTask;
                     stopped = true;
                     queued.Clear ();
+                    held.Clear ();
                 }
                 synthesizer.StopSpeaking (AVSpeechBoundary.Immediate);
                 return Task.CompletedTask;

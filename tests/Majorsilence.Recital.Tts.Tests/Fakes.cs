@@ -184,6 +184,11 @@ namespace Majorsilence.Recital.Tts.Tests
                         if (!queue.TryPeek (out chunk!))
                             return;
                     }
+                    // Like a real engine, nothing starts while paused.
+                    while (paused && !stop.IsCancellationRequested)
+                        await Task.Delay (5);
+                    if (stop.IsCancellationRequested)
+                        return;
                     lock (engine.Spoken)
                         engine.Spoken.Add (chunk);
                     ChunkStarted?.Invoke (this, chunk);

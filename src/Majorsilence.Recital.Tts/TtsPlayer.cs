@@ -137,9 +137,8 @@ namespace Majorsilence.Recital.Tts
                 // Skipping while paused stays paused, and shows the sentence Play will start from.
                 var paused = IsPaused;
                 await StopCoreAsync ().ConfigureAwait (false);
-                await BeginAsync (spine, chunk, sentence, ct).ConfigureAwait (false);
+                await BeginAsync (spine, chunk, sentence, ct, paused).ConfigureAwait (false);
                 if (paused) {
-                    channel?.Pause ();
                     if (chunk < plan.Count && plan[chunk].Sentences.Count > 0)
                         OnProgress (generation, plan[chunk], plan[chunk].Sentences[Math.Clamp (sentence, 0, plan[chunk].Sentences.Count - 1)].Start);
                 }
@@ -158,9 +157,7 @@ namespace Majorsilence.Recital.Tts
                     return;
                 var paused = IsPaused;
                 await StopCoreAsync ().ConfigureAwait (false);
-                await BeginAsync (spine, chunk, sentence, ct).ConfigureAwait (false);
-                if (paused)
-                    channel?.Pause ();
+                await BeginAsync (spine, chunk, sentence, ct, paused).ConfigureAwait (false);
             } finally {
                 gate.Release ();
             }
@@ -218,10 +215,13 @@ namespace Majorsilence.Recital.Tts
         }
 
         /// <summary>Opens a channel and starts at a sentence; callers hold <see cref="gate"/> and have stopped any channel.</summary>
-        private async Task BeginAsync (int spine, int chunk, int sentence, CancellationToken ct)
+        /// <param name="paused">Opens the channel paused, before anything is queued, so not a word is spoken.</param>
+        private async Task BeginAsync (int spine, int chunk, int sentence, CancellationToken ct, bool paused = false)
         {
             var plan = await PlanAsync (spine, ct).ConfigureAwait (false);
             var current = engine.OpenChannel (Settings, language);
+            if (paused)
+                current.Pause ();
             var mine = Interlocked.Increment (ref generation);
             current.ChunkStarted += (_, c) => OnProgress (mine, c, 0);
             current.Progress += (_, p) => OnProgress (mine, p.Chunk, p.CharIndex);
