@@ -6,6 +6,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="./app.css" />
+    <!-- Installable, and starts offline once visited (sw.js). -->
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icons/icon-192.png" />
+    <meta name="theme-color" content="#2e4057" />
 </head>
 
 <body style="margin: 0; overflow: hidden">
@@ -15,6 +19,17 @@
     </div>
 </div>
 <script type='module' src="./main.js"></script>
+<script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Recital: no offline start', err));
+        // Once started, hand the worker everything this start loaded from here, so the next one works offline.
+        addEventListener('load', () => setTimeout(async () => {
+            const worker = (await navigator.serviceWorker.ready).active;
+            const urls = [location.href, ...performance.getEntriesByType('resource').map(e => e.name)];
+            worker?.postMessage({ cache: urls.filter(u => new URL(u).origin === location.origin) });
+        }, 5000));
+    }
+</script>
 </body>
 
 </html>

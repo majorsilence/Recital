@@ -38,6 +38,9 @@
   `/recital`, loaded before .NET starts and saved every two seconds and when the page is hidden. This
   was checked in headless Brave: a second visit started with the first visit's device identity and
   library. Secrets still stay in memory there.
+- The browser head can be installed as an app (a web manifest with icons) and starts offline once
+  visited. Its service worker caches only this site's files, and the page passes it what the first start
+  loaded. This was checked in headless Brave: with the server stopped, the second visit still started.
 - The British voices (Emma, George) have British pronunciations: misaki's British dictionaries and
   endings, and its British network for names. For example, "tomato" is təmˈɑːtQ, not təmˈAɾO. They load
   only when a British voice is used.
