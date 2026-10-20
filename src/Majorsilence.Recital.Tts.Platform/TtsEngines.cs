@@ -63,11 +63,14 @@ namespace Majorsilence.Recital.Tts.Platform
         public static string RecitalVoicesFolder (string dataDirectory) => Path.Combine (dataDirectory, "kokoro", Kokoro.KokoroFiles.Revision);
 
         /// <summary>The size of Recital's voices, to say before downloading them.</summary>
-        public static long RecitalVoicesSize => Kokoro.KokoroFiles.TotalSize;
+        // Every use of Kokoro is behind OperatingSystem.IsBrowser (), which the trimmer takes as a constant in the
+        // browser head: Kokoro cannot run there (no ONNX Runtime), and so its 9 MB of dictionaries are left out.
+        public static long RecitalVoicesSize => OperatingSystem.IsBrowser () ? 0 : Kokoro.KokoroFiles.TotalSize;
 
         /// <summary>Recital's voices on this device: bundled beside the app (desktop), or downloaded to app data.</summary>
         public static string? FindRecitalVoices (string? dataDirectory)
-            => Kokoro.KokoroSynthesizer.FindFolder ()
+            => OperatingSystem.IsBrowser () ? null
+               : Kokoro.KokoroSynthesizer.FindFolder ()
                ?? (dataDirectory is not null && Kokoro.KokoroSynthesizer.IsVoiceFolder (RecitalVoicesFolder (dataDirectory)) ? RecitalVoicesFolder (dataDirectory) : null);
 
         /// <summary>
@@ -77,6 +80,8 @@ namespace Majorsilence.Recital.Tts.Platform
         public static async Task DownloadRecitalVoicesAsync (string dataDirectory, IProgress<long>? progress = null, CancellationToken ct = default)
         {
             using var http = new HttpClient (new SocketsHttpHandler ()) { Timeout = Timeout.InfiniteTimeSpan };
+            if (OperatingSystem.IsBrowser ())
+                throw new PlatformNotSupportedException ("Recital's voices do not run in a browser.");
             await Kokoro.KokoroFiles.DownloadAsync (http, RecitalVoicesFolder (dataDirectory), progress, ct).ConfigureAwait (false);
         }
 
@@ -90,7 +95,7 @@ namespace Majorsilence.Recital.Tts.Platform
             // Recital's own voices first, when present: they need nothing installed and stay on the device. On a
             // desktop their audio is quick to make again, so it is not cached; on a phone or tablet the cache means
             // listening again costs no battery.
-            if (FindRecitalVoices (dataDirectory) is { } kokoro && output is not null) {
+            if (!OperatingSystem.IsBrowser () && FindRecitalVoices (dataDirectory) is { } kokoro && output is not null) {
                 var mobile = OperatingSystem.IsAndroid () || OperatingSystem.IsIOS ();
                 engines.Add (new AudioTtsEngine (new Kokoro.KokoroSynthesizer (kokoro), output, mobile ? cache : null));
             }

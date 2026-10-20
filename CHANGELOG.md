@@ -50,6 +50,10 @@
   through the content resolver. On iOS an EPUB document type is declared and Avalonia's file activation
   is handled. Both Android paths were checked on the emulator: opening from the Files app on a cold start,
   and sharing from it into the running app. The Android app also has its book icon now.
+- The browser head no longer carries Recital's offline voices (about 9 MB of dictionaries it cannot use,
+  because there is no ONNX Runtime there). Every use of them is behind `OperatingSystem.IsBrowser`, so
+  the trimmer drops them. The bundle is 38.1 MB, 11.6 MB with Brotli. It starts in about 1.3 s in
+  headless Brave from a local server (GAP-014).
 - The browser head can be installed as an app (a web manifest with icons) and starts offline once
   visited. Its service worker caches only this site's files, and the page passes it what the first start
   loaded. This was checked in headless Brave: with the server stopped, the second visit still started.

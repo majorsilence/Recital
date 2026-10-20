@@ -25,7 +25,7 @@ Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps. Phase 
 | GAP-011 | `Application.SetDefaultFont` does not change the typeface controls draw with | all | minor | Fixed in 26.11.6 by [Forms PR #483](https://github.com/majorsilence/Majorsilence.Forms/pull/483); Recital's workaround removed |
 | GAP-012 | `SaveFileDialog` returns a path only; mobile and browser save pickers give nothing writable | Avalonia Android, iOS, Browser | major (export on mobile/browser) | Open; Recital offers Copy as Markdown everywhere and file export on the desktop |
 | GAP-013 | No streaming audio output on the desktop backends (gapless PCM with a play position) | Avalonia desktop | scope (major for reading aloud) | Open; Recital has an `IAudioOutput` per OS |
-| GAP-014 | The browser head starts but draws nothing in headless Firefox; a start-up call blocks the main thread over 10 s | Avalonia Browser | Low: headless Firefox only | Drawing checked by hand in Brave on 2026-10-18 (it draws, imports and reads); the slow start-up call is still to measure |
+| GAP-014 | The browser head starts but draws nothing in headless Firefox; a start-up call blocks the main thread over 10 s | Avalonia Browser | Low: headless Firefox only | Resolved: it draws in Brave (checked by hand 2026-10-18), and headless Brave starts it in about 1.3 s (2026-10-20); the 10 s call was headless Firefox's |
 | GAP-015 | Tool strip drop-down menus never appear on Android (single-view host) | Avalonia single-view (Android, iOS; browsers above a pixel ratio of 1) | major (Theme, Engine, Voice and speed menus on phones) | Fixed by [Forms PR #509](https://github.com/majorsilence/Majorsilence.Forms/pull/509); Recital takes it with the next Forms release (pinned 26.11.6 until then) |
 | GAP-016 | Tool strip captions wrap their last letter at fractional scales ("Bookmar" over "k") | All Avalonia heads at a fractional scale (phones at 2.625) | minor (looks broken on phones) | Fixed by [Forms PR #510](https://github.com/majorsilence/Majorsilence.Forms/pull/510); with the next Forms release |
 | GAP-017 | A tool strip drop-down reopened on Android can come out only as wide as its button, cutting its items off | Avalonia Android (single view) | minor (labels cut, items still work) | Open; seen in Recital's reading-aloud bar on the emulator, not reproduced in the Gallery or headless |
@@ -302,4 +302,16 @@ Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps. Phase 
   tapping outside; or headless, refilling a closed drop-down at scales 1 and 2.625, opening down or up.
 - **Next:** log `MenuDropDown` width and `LayoutItems`' visible item count on the device, from Recital
   with a local package.
+
+### GAP-014 follow-up (2026-10-20)
+
+Headless Brave (Chromium) runs the browser head and logs its console (`--headless=new --enable-logging=stderr`).
+Three cold visits to a local server, each with an empty profile:
+- .NET's `Main` began after 533 to 669 ms;
+- `runMain` returned, with the app started, after 1203 to 1397 ms.
+
+The slow start-up call seen in headless Firefox does not happen there.
+
+Bundle: 38.1 MB uncompressed, 11.6 MB as served with Brotli. Kokoro is left out of the browser head, which
+saves about 9 MB.
 
