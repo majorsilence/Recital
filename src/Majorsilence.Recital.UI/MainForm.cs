@@ -272,6 +272,33 @@ namespace Majorsilence.Recital.UI
         }
 
         /// <summary>
+        /// Books handed to the app from outside ("Open with", the share sheet): imported, and one book opened at
+        /// once, whether new or already in the library. A file that is not a book is reported, not thrown.
+        /// </summary>
+        public async Task OpenFilesAsync (IReadOnlyList<Majorsilence.Forms.Backends.PickedFile> files)
+        {
+            await InitializeAsync ();
+            if (Services is not { } services || files.Count == 0)
+                return;
+            Core.Library.LibraryBook? opened = null;
+            var problems = new List<string> ();
+            foreach (var file in files) {
+                try {
+                    await using var stream = await file.OpenReadAsync ();
+                    opened = (await services.Library.ImportAsync (stream, file.Name)).Book;
+                } catch (Exception ex) when (ex is Core.Library.BookImportException or IOException or UnauthorizedAccessException) {
+                    problems.Add (ex is Core.Library.BookImportException ? ex.Message : $"Could not read {file.Name}: {ex.Message}");
+                }
+            }
+            if (problems.Count > 0)
+                ShowError (new IOException (string.Join (" ", problems)));
+            if (files.Count == 1 && opened is not null)
+                await OpenBookAsync (opened);
+            else if (Library is { } library && Reader is null)
+                await library.RefreshAsync ();
+        }
+
+        /// <summary>
         /// Asks before opening a book's web link in the system browser: the reader never touches the network itself,
         /// and an address in a book is the book's content, so the reader sees it first.
         /// </summary>

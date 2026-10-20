@@ -45,6 +45,7 @@ namespace Majorsilence.Recital.Android
                             else
                                 ReadingAloudService.Stop (context);
                         };
+                        OpenedBooks.Attach (form);
                         return form;
                     });
                     return ((ISingleViewApplicationLifetime) ApplicationLifetime!).MainView!;
@@ -52,6 +53,30 @@ namespace Majorsilence.Recital.Android
             }
 
             base.OnFrameworkInitializationCompleted ();
+        }
+    }
+
+    /// <summary>Books opened from another app, held until the form exists and then handed to it.</summary>
+    internal static class OpenedBooks
+    {
+        private static MainForm? form;
+        private static List<Majorsilence.Forms.Backends.PickedFile>? pending;
+
+        public static void Attach (MainForm created)
+        {
+            form = created;
+            if (pending is { } waiting) {
+                pending = null;
+                created.Operations.Run (() => created.OpenFilesAsync (waiting));
+            }
+        }
+
+        public static void Deliver (List<Majorsilence.Forms.Backends.PickedFile> files)
+        {
+            if (form is { } ready)
+                ready.Operations.Run (() => ready.OpenFilesAsync (files));
+            else
+                (pending ??= []).AddRange (files);
         }
     }
 }

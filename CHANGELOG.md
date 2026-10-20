@@ -38,6 +38,11 @@
   `/recital`, loaded before .NET starts and saved every two seconds and when the page is hidden. This
   was checked in headless Brave: a second visit started with the first visit's device identity and
   library. Secrets still stay in memory there.
+- Books open from other apps: "Open with Recital" and the share sheet, for one or several EPUBs. The
+  book is imported (or found already in the library) and opened. Android uses intent filters, read
+  through the content resolver. On iOS an EPUB document type is declared and Avalonia's file activation
+  is handled. Both Android paths were checked on the emulator: opening from the Files app on a cold start,
+  and sharing from it into the running app. The Android app also has its book icon now.
 - The browser head can be installed as an app (a web manifest with icons) and starts offline once
   visited. Its service worker caches only this site's files, and the page passes it what the first start
   loaded. This was checked in headless Brave: with the server stopped, the second visit still started.
