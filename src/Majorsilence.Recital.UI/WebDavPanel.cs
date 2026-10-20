@@ -33,6 +33,12 @@ namespace Majorsilence.Recital.UI
                     ShowMessage ("The address starts with https://");
                     return;
                 }
+                // Android sends nothing unencrypted (a WebDAV password goes with every request), but for the
+                // emulator's own name for the development machine (the app's network security config).
+                if (OperatingSystem.IsAndroid () && uri.Scheme == "http" && uri.Host != "10.0.2.2") {
+                    ShowMessage ("On Android the address must start with https://, so your password is not sent unencrypted.");
+                    return;
+                }
                 ConnectRequested?.Invoke (this, new WebDavCredentials (uri, user.Text?.Trim () ?? "", password.Text ?? ""));
             };
             cancel.Click += (_, _) => Cancelled?.Invoke (this, EventArgs.Empty);

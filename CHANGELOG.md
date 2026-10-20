@@ -38,6 +38,13 @@
   `/recital`, loaded before .NET starts and saved every two seconds and when the page is hidden. This
   was checked in headless Brave: a second visit started with the first visit's device identity and
   library. Secrets still stay in memory there.
+- Phase 10's acceptance check passes between desktop and Android. A desktop-side program imported
+  Pride and Prejudice, read to Chapter III and synced to WebDAV (`tests/webdav/run.sh`). The Android
+  emulator connected through Sync > WebDAV, synced, and opened the book at Chapter III. Pages turned on
+  Android then synced back: the desktop side got the newer position and the two books imported on Android.
+- On Android a WebDAV address must use https://, and the dialog says so before connecting, because the
+  password is sent with every request. The one exception is 10.0.2.2, the emulator's name for the
+  development machine, so sync can be tried against a local server.
 - Books open from other apps: "Open with Recital" and the share sheet, for one or several EPUBs. The
   book is imported (or found already in the library) and opened. Android uses intent filters, read
   through the content resolver. On iOS an EPUB document type is declared and Avalonia's file activation

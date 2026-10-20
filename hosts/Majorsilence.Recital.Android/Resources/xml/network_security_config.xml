@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android's default stays: https only. The one exception is 10.0.2.2, the emulator's name for the
+     development machine, so sync can be tried against a local WebDAV server (tests/webdav/run.sh). On a phone it
+     is just an unused private address. -->
+<network-security-config>
+  <domain-config cleartextTrafficPermitted="true">
+    <domain includeSubdomains="false">10.0.2.2</domain>
+  </domain-config>
+</network-security-config>
