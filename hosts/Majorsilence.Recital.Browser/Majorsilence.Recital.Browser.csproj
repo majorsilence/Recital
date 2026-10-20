@@ -8,6 +8,9 @@
     <OutputType>Exe</OutputType>
     <!-- JSImport/JSExport (WebSpeechEngine) generate unsafe marshalling code. -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- The library persists in the browser: Emscripten's IndexedDB file system, mounted at /recital by
+         wwwroot/main.js (publish relinks the runtime anyway, for Skia). -->
+    <EmccExtraLDFlags>-lidbfs.js</EmccExtraLDFlags>
   </PropertyGroup>
 
   <ItemGroup>

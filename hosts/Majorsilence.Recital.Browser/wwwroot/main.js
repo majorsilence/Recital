@@ -6,6 +6,38 @@ const dotnetRuntime = await dotnet
 
 const config = dotnetRuntime.getConfig();
 
+// The library lasts between visits: Emscripten's IndexedDB file system at /recital (linked in by
+// EmccExtraLDFlags), read in before .NET starts, which then keeps its library there (AppServices). Changes go
+// back to IndexedDB every two seconds -- syncfs writes only files that changed -- and when the page is hidden
+// or closed. Secrets never go here: in the browser they stay in memory (plan 0.3).
+const fs = dotnetRuntime.Module?.FS;
+let persist = () => {};
+if (fs?.filesystems?.IDBFS) {
+    try {
+        fs.mkdir('/recital');
+        fs.mount(fs.filesystems.IDBFS, {}, '/recital');
+        await new Promise(resolve => fs.syncfs(true, err => {
+            if (err) console.warn('Recital: could not read the saved library', err);
+            resolve();
+        }));
+        let busy = false, again = false;
+        persist = () => {
+            if (busy) { again = true; return; }
+            busy = true;
+            fs.syncfs(false, err => {
+                busy = false;
+                if (err) console.warn('Recital: could not save the library', err);
+                if (again) { again = false; persist(); }
+            });
+        };
+        setInterval(persist, 2000);
+        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') persist(); });
+        globalThis.addEventListener('pagehide', persist);
+    } catch (err) {
+        console.warn('Recital: the library will not be kept after this visit', err);
+    }
+}
+
 // Reading aloud with the browser's own voices (WebSpeechEngine.cs). Utterances are kept referenced until
 // they end: some browsers otherwise collect them and never fire their events.
 const synth = globalThis.speechSynthesis;

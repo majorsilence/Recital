@@ -95,8 +95,9 @@ namespace Majorsilence.Recital.Core
         /// </summary>
         public static string? DefaultDataDirectory ()
         {
+            // The browser head mounts IndexedDB at /recital (wwwroot/main.js); without it, memory only.
             if (OperatingSystem.IsBrowser ())
-                return null;
+                return Directory.Exists ("/recital") ? "/recital" : null;
             var baseDirectory = Environment.GetFolderPath (Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.Create);
             return string.IsNullOrEmpty (baseDirectory) ? null : Path.Combine (baseDirectory, "Recital");
         }

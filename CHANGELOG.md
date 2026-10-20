@@ -34,6 +34,10 @@
   and kept in the app's no-backup folder. On iOS they go in the Keychain, for this device only, with no
   iCloud sync. The Android store was checked on the emulator.
 - On a phone or tablet one tap opens a book in the library; a desktop keeps double-click.
+- The browser head keeps its library between visits. It uses Emscripten's IndexedDB file system at
+  `/recital`, loaded before .NET starts and saved every two seconds and when the page is hidden. This
+  was checked in headless Brave: a second visit started with the first visit's device identity and
+  library. Secrets still stay in memory there.
 - The British voices (Emma, George) have British pronunciations: misaki's British dictionaries and
   endings, and its British network for names. For example, "tomato" is təmˈɑːtQ, not təmˈAɾO. They load
   only when a British voice is used.
