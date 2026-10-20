@@ -171,7 +171,9 @@ namespace Majorsilence.Recital.Tts.Tests
             {
                 lock (queue) {
                     queue.Enqueue (chunk);
-                    if (speaker is null || speaker.IsCompleted)
+                    // The speaker clears this as it finds the queue empty, under the same lock, so a chunk enqueued
+                    // as it stops always gets a new one (checking IsCompleted left a window where neither ran it).
+                    if (speaker is null)
                         speaker = Task.Run (SpeakAsync);
                 }
             }
@@ -181,8 +183,10 @@ namespace Majorsilence.Recital.Tts.Tests
                 while (!stop.IsCancellationRequested) {
                     SpeechChunk chunk;
                     lock (queue) {
-                        if (!queue.TryPeek (out chunk!))
+                        if (!queue.TryPeek (out chunk!)) {
+                            speaker = null;
                             return;
+                        }
                     }
                     // Like a real engine, nothing starts while paused.
                     while (paused && !stop.IsCancellationRequested)
