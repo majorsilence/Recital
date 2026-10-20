@@ -24,7 +24,7 @@ heads, **Headless** = offscreen Skia (UI tests).
 | `UserControl`, `Panel`, `Label`, `Dock`, `SetBounds`, `BringToFront`, re-parenting via `Controls.Add` | — | — | — | — | ✅ | |
 | Ambient `BackColor` / `ForeColor` from the form | — | — | — | — | ✅ (inputs and toolbars are not ambient, as in WinForms) | |
 | `ToolStrip`, `ToolStripButton` (`Checked`), `ToolStripLabel`, `ToolStripSeparator`, `ToolStripTextBox`, item `ForeColor`, `Alignment = Right` | — | ⚠️ captions wrap at 2.625 on 26.11.6 | — | ✅ Brave | ✅ | [GAP-009](FRAMEWORK_GAPS.md#gap-009-toolbar-item-text-ignores-forecolor) (fixed), [GAP-016](FRAMEWORK_GAPS.md#gap-016-tool-strip-captions-wrap-their-last-letter-at-fractional-scales) (Forms PR #510) |
-| `ToolStripDropDownButton` + `ToolStripMenuItem` (`Checked`, `Enabled`), `DefaultDropDownDirection` | — | ❌ on 26.11.6: no drop-down is seen (off screen); ✅ with Forms PRs #509/#510 built locally, ⚠️ a reopened one can be cut short | — | ✅ Brave | ✅ | [GAP-008](FRAMEWORK_GAPS.md#gap-008-toolstripdropdownbutton-text-wraps-onto-two-lines) (fixed), [GAP-015](FRAMEWORK_GAPS.md#gap-015-tool-strip-drop-down-menus-never-appear-on-android) (Forms PR #509), [GAP-017](FRAMEWORK_GAPS.md#gap-017-a-reopened-drop-down-on-android-can-be-only-as-wide-as-its-button) |
+| `ToolStripDropDownButton` + `ToolStripMenuItem` (`Checked`, `Enabled`), `DefaultDropDownDirection` | — | ❌ on 26.11.6: no drop-down is seen (off screen); ✅ with Forms PRs #509/#510 built locally, ⚠️ a reopened one can be cut short | — | ✅ Brave | ✅ | [GAP-008](FRAMEWORK_GAPS.md#gap-008-toolstripdropdownbutton-text-wraps-onto-two-lines) (fixed), [GAP-015](FRAMEWORK_GAPS.md#gap-015-tool-strip-drop-down-menus-never-appear-on-android) (Forms PR #509), [GAP-017](FRAMEWORK_GAPS.md#gap-017-a-reopened-drop-down-on-android-can-be-only-as-wide-as-its-button) (Forms PR #511) |
 | `ToolBar.DefaultItemHoverStyle` (themed hover/checked background) | — | — | — | — | ✅ | |
 | `StatusStrip`, `ToolStripStatusLabel` (`Spring`, `TextAlign`) | — | ✅ emulator | — | ✅ Brave | ✅ | |
 | `ListView`: `LargeIcon` with `OwnerDraw`/`DrawItem` (device pixels), `TileSize`, `Details` columns, `ItemActivate` (double-click; `Activation = OneClick` on phones), `ContextMenuStrip`, `GetItemRect` | — | ✅ emulator (one tap opens a book) | — | ✅ Brave | ✅ | |
@@ -104,8 +104,8 @@ and headless Brave for logs and timings). iOS still only builds in CI.
   PRs #509 and #510 fix these. With both built into local packages, the menus, the confirmation dialog and
   the captions were all checked on the emulator. Recital takes them with the next Forms release (it pins
   26.11.6).
-- **Open:** GAP-017, a reopened drop-down cut short to its button's width, seen only in Recital on the
-  emulator.
+- **GAP-017** (a menu rebuilt from its own item's Click came out too narrow) was traced to the same
+  framework and fixed there too (PR #511).
 - **Not used:** the framework's notifications. Reading aloud in the background uses an Android foreground
   service of Recital's own, since Forms has no service or media session API.
 

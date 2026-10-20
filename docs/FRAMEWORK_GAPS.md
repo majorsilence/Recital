@@ -28,7 +28,7 @@ Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps. Phase 
 | GAP-014 | The browser head starts but draws nothing in headless Firefox; a start-up call blocks the main thread over 10 s | Avalonia Browser | Low: headless Firefox only | Resolved: it draws in Brave (checked by hand 2026-10-18), and headless Brave starts it in about 1.3 s (2026-10-20); the 10 s call was headless Firefox's |
 | GAP-015 | Tool strip drop-down menus never appear on Android (single-view host) | Avalonia single-view (Android, iOS; browsers above a pixel ratio of 1) | major (Theme, Engine, Voice and speed menus on phones) | Fixed by [Forms PR #509](https://github.com/majorsilence/Majorsilence.Forms/pull/509); Recital takes it with the next Forms release (pinned 26.11.6 until then) |
 | GAP-016 | Tool strip captions wrap their last letter at fractional scales ("Bookmar" over "k") | All Avalonia heads at a fractional scale (phones at 2.625) | minor (looks broken on phones) | Fixed by [Forms PR #510](https://github.com/majorsilence/Majorsilence.Forms/pull/510); with the next Forms release |
-| GAP-017 | A tool strip drop-down reopened on Android can come out only as wide as its button, cutting its items off | Avalonia Android (single view) | minor (labels cut, items still work) | Open; seen in Recital's reading-aloud bar on the emulator, not reproduced in the Gallery or headless |
+| GAP-017 | A tool strip drop-down reopened on Android can come out only as wide as its button, cutting its items off | Avalonia Android (single view) | minor (labels cut, items still work) | Fixed by [Forms PR #511](https://github.com/majorsilence/Majorsilence.Forms/pull/511); with the next Forms release |
 
 ---
 
@@ -300,8 +300,12 @@ Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps. Phase 
   "Voice settin"). Items still work.
 - **Not reproduced:** the Gallery's MenuStrip on the same emulator, reopened after choosing an item or
   tapping outside; or headless, refilling a closed drop-down at scales 1 and 2.625, opening down or up.
-- **Next:** log `MenuDropDown` width and `LayoutItems`' visible item count on the device, from Recital
-  with a local package.
+- **Cause (confirmed):** `MenuDropDown` sets each item's `ParentControl` only in its constructor, and the
+  drop-down is kept once made. Items added later have none, so they are measured as items of the strip
+  (logged on the device: widths [90, 143, 8, 103] in place of [184, 237, 236, 197]; the 8 is a toolbar
+  separator). Recital rebuilds the Engine menu when an engine is chosen, from that item's Click.
+- **Fix:** [Forms PR #511](https://github.com/majorsilence/Majorsilence.Forms/pull/511) adopts the items
+  in `LayoutItems`. `DropDownRefillTests` reproduces the bug headless: 240 wide, then 146 without the fix.
 
 ### GAP-014 follow-up (2026-10-20)
 
