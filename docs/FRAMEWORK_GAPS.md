@@ -23,12 +23,12 @@ Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps. Phase 
 | GAP-009 | Toolbar item text ignores `ToolStripItem.ForeColor` and `ToolStrip.ForeColor` | all | major (dark themes) | Fixed in 26.11.6 by [Forms PR #481](https://github.com/majorsilence/Majorsilence.Forms/pull/481); Recital's workaround removed |
 | GAP-010 | `SplitContainer.Panel1Collapsed` leaves the splitter bar showing | all | minor | Fixed in 26.11.6 by [Forms PR #482](https://github.com/majorsilence/Majorsilence.Forms/pull/482); Recital's workaround removed |
 | GAP-011 | `Application.SetDefaultFont` does not change the typeface controls draw with | all | minor | Fixed in 26.11.6 by [Forms PR #483](https://github.com/majorsilence/Majorsilence.Forms/pull/483); Recital's workaround removed |
-| GAP-012 | `SaveFileDialog` returns a path only; mobile and browser save pickers give nothing writable | Avalonia Android, iOS, Browser | major (export on mobile/browser) | Fixed by [Forms PR #512](https://github.com/majorsilence/Majorsilence.Forms/pull/512) (`SaveFileDialog.OpenFileAsync`); with the next Forms release Recital turns on file export on phones and in the browser. Until then: Copy as Markdown everywhere, file export on the desktop |
+| GAP-012 | `SaveFileDialog` returns a path only; mobile and browser save pickers give nothing writable | Avalonia Android, iOS, Browser | major (export on mobile/browser) | Fixed in 26.11.14 by [Forms PR #512](https://github.com/majorsilence/Majorsilence.Forms/pull/512) (`SaveFileDialog.OpenFileAsync`); Recital pins 26.11.14 and exports to file everywhere |
 | GAP-013 | No streaming audio output on the desktop backends (gapless PCM with a play position) | Avalonia desktop | scope (major for reading aloud) | Open; Recital has an `IAudioOutput` per OS |
 | GAP-014 | The browser head starts but draws nothing in headless Firefox; a start-up call blocks the main thread over 10 s | Avalonia Browser | Low: headless Firefox only | Resolved: it draws in Brave (checked by hand 2026-10-18), and headless Brave starts it in about 1.3 s (2026-10-20); the 10 s call was headless Firefox's |
-| GAP-015 | Tool strip drop-down menus never appear on Android (single-view host) | Avalonia single-view (Android, iOS; browsers above a pixel ratio of 1) | major (Theme, Engine, Voice and speed menus on phones) | Fixed by [Forms PR #509](https://github.com/majorsilence/Majorsilence.Forms/pull/509); Recital takes it with the next Forms release (pinned 26.11.6 until then) |
-| GAP-016 | Tool strip captions wrap their last letter at fractional scales ("Bookmar" over "k") | All Avalonia heads at a fractional scale (phones at 2.625) | minor (looks broken on phones) | Fixed by [Forms PR #510](https://github.com/majorsilence/Majorsilence.Forms/pull/510); with the next Forms release |
-| GAP-017 | A tool strip drop-down reopened on Android can come out only as wide as its button, cutting its items off | Avalonia Android (single view) | minor (labels cut, items still work) | Fixed by [Forms PR #511](https://github.com/majorsilence/Majorsilence.Forms/pull/511); with the next Forms release |
+| GAP-015 | Tool strip drop-down menus never appear on Android (single-view host) | Avalonia single-view (Android, iOS; browsers above a pixel ratio of 1) | major (Theme, Engine, Voice and speed menus on phones) | Fixed in 26.11.14 by [Forms PR #509](https://github.com/majorsilence/Majorsilence.Forms/pull/509); Recital pins 26.11.14 |
+| GAP-016 | Tool strip captions wrap their last letter at fractional scales ("Bookmar" over "k") | All Avalonia heads at a fractional scale (phones at 2.625) | minor (looks broken on phones) | Fixed in 26.11.14 by [Forms PR #510](https://github.com/majorsilence/Majorsilence.Forms/pull/510); Recital pins 26.11.14 |
+| GAP-017 | A tool strip drop-down reopened on Android can come out only as wide as its button, cutting its items off | Avalonia Android (single view) | minor (labels cut, items still work) | Fixed in 26.11.14 by [Forms PR #511](https://github.com/majorsilence/Majorsilence.Forms/pull/511); Recital pins 26.11.14 |
 
 ---
 
@@ -210,11 +210,13 @@ Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps. Phase 
   `File.Create (FileName)`. Avalonia's save picker returns an `IStorageFile` with `OpenWriteAsync`, which
   the backend reduces to a local path.
 - **Severity:** major for exporting on phones and in the browser; none on desktop.
-- **Workaround:** the Notes panel shows Export… (save as a file) only on the desktop, and Copy all
-  (Markdown to the clipboard) everywhere. Marked `FRAMEWORK-GAP: GAP-012` in `ReaderView`.
-- **Proposed fix:** mirror GAP-005: an optional `IPickedSaveFileBackend` returning a `PickedSaveFile`
-  (name, path when there is one, `OpenWriteAsync`), `SaveFileDialog.SelectedFile` and `SaveFileAsync`,
-  and a Headless `SaveFilePickResponse`.
+- **Workaround (removed):** the Notes panel showed Export… (save as a file) only on the desktop, and
+  Copy all (Markdown to the clipboard) everywhere. Was marked `FRAMEWORK-GAP: GAP-012` in `ReaderView`.
+- **Fix:** [Forms PR #512](https://github.com/majorsilence/Majorsilence.Forms/pull/512) adds `SavedFile`
+  and `ISavedFileBackend.ShowSaveFilePicker`, mirroring GAP-005's open side; `SaveFileDialog` gets
+  `OpenFileAsync`, writing through the platform when it gives no path.
+- **Resolved:** Recital pins 26.11.14; `ExportToFileAsync` writes through `SaveFileDialog.OpenFileAsync`,
+  and `AnnotationsPanel.CanExportToFile` (and the OS check gating it) are gone — Export… shows everywhere.
 
 ## GAP-013: No streaming audio output on the desktop backends
 
@@ -277,7 +279,8 @@ Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps. Phase 
 - **Repro:** Recital's Android head, open a book, tap the centre to show the bars, tap Theme.
 - **Severity:** major on phones: voice, engine, speed and theme cannot be changed there, including the
   Voice settings item that offers the download of Recital's voices (D-033).
-- **Code:** none yet (no `FRAMEWORK-GAP: GAP-015` marker until there is a workaround).
+- **Code:** none (no workaround was possible; the placement was inside the framework).
+- **Resolved:** Recital pins 26.11.14.
 
 ## GAP-016: Tool strip captions wrap their last letter at fractional scales
 
@@ -288,7 +291,8 @@ Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps. Phase 
   rounding to the nearest unit. That loses up to half a unit (1.3 device pixels at 2.625), so the
   laid-out box is narrower than its text, and `DrawText` wraps.
 - **Fix:** [Forms PR #510](https://github.com/majorsilence/Majorsilence.Forms/pull/510) rounds measured
-  sizes up, with a test at 2.625, 1.75 and 1.25. It reaches Recital with the next Forms release.
+  sizes up, with a test at 2.625, 1.75 and 1.25.
+- **Resolved:** Recital pins 26.11.14.
 
 ## GAP-017: A reopened drop-down on Android can be only as wide as its button
 
@@ -306,6 +310,7 @@ Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps. Phase 
   separator). Recital rebuilds the Engine menu when an engine is chosen, from that item's Click.
 - **Fix:** [Forms PR #511](https://github.com/majorsilence/Majorsilence.Forms/pull/511) adopts the items
   in `LayoutItems`. `DropDownRefillTests` reproduces the bug headless: 240 wide, then 146 without the fix.
+- **Resolved:** Recital pins 26.11.14.
 
 ### GAP-014 follow-up (2026-10-20)
 

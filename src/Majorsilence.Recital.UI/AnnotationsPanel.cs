@@ -67,12 +67,6 @@ namespace Majorsilence.Recital.UI
 
         public TreeView Tree => tree;
 
-        /// <summary>Whether saving to a file is offered (the desktop); Copy all works everywhere.</summary>
-        public bool CanExportToFile {
-            get => export.Visible;
-            set => export.Visible = value;
-        }
-
         public event EventHandler<Annotation>? OpenRequested;
         public event EventHandler<Annotation>? EditNoteRequested;
         public event EventHandler<Annotation>? DeleteRequested;

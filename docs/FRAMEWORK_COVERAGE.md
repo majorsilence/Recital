@@ -23,8 +23,8 @@ heads, **Headless** = offscreen Skia (UI tests).
 | `Control.BeginInvoke` from a worker thread (sync rounds) | — | — | — | — | ✅ | |
 | `UserControl`, `Panel`, `Label`, `Dock`, `SetBounds`, `BringToFront`, re-parenting via `Controls.Add` | — | — | — | — | ✅ | |
 | Ambient `BackColor` / `ForeColor` from the form | — | — | — | — | ✅ (inputs and toolbars are not ambient, as in WinForms) | |
-| `ToolStrip`, `ToolStripButton` (`Checked`), `ToolStripLabel`, `ToolStripSeparator`, `ToolStripTextBox`, item `ForeColor`, `Alignment = Right` | — | ⚠️ captions wrap at 2.625 on 26.11.6 | — | ✅ Brave | ✅ | [GAP-009](FRAMEWORK_GAPS.md#gap-009-toolbar-item-text-ignores-forecolor) (fixed), [GAP-016](FRAMEWORK_GAPS.md#gap-016-tool-strip-captions-wrap-their-last-letter-at-fractional-scales) (Forms PR #510) |
-| `ToolStripDropDownButton` + `ToolStripMenuItem` (`Checked`, `Enabled`), `DefaultDropDownDirection` | — | ❌ on 26.11.6: no drop-down is seen (off screen); ✅ with Forms PRs #509/#510 built locally, ⚠️ a reopened one can be cut short | — | ✅ Brave | ✅ | [GAP-008](FRAMEWORK_GAPS.md#gap-008-toolstripdropdownbutton-text-wraps-onto-two-lines) (fixed), [GAP-015](FRAMEWORK_GAPS.md#gap-015-tool-strip-drop-down-menus-never-appear-on-android) (Forms PR #509), [GAP-017](FRAMEWORK_GAPS.md#gap-017-a-reopened-drop-down-on-android-can-be-only-as-wide-as-its-button) (Forms PR #511) |
+| `ToolStrip`, `ToolStripButton` (`Checked`), `ToolStripLabel`, `ToolStripSeparator`, `ToolStripTextBox`, item `ForeColor`, `Alignment = Right` | — | ✅ fixed in 26.11.14 (not yet re-checked on device) | — | ✅ Brave | ✅ | [GAP-009](FRAMEWORK_GAPS.md#gap-009-toolbar-item-text-ignores-forecolor) (fixed), [GAP-016](FRAMEWORK_GAPS.md#gap-016-tool-strip-captions-wrap-their-last-letter-at-fractional-scales) (fixed in 26.11.14) |
+| `ToolStripDropDownButton` + `ToolStripMenuItem` (`Checked`, `Enabled`), `DefaultDropDownDirection` | — | ✅ fixed in 26.11.14 (not yet re-checked on device) | — | ✅ Brave | ✅ | [GAP-008](FRAMEWORK_GAPS.md#gap-008-toolstripdropdownbutton-text-wraps-onto-two-lines) (fixed), [GAP-015](FRAMEWORK_GAPS.md#gap-015-tool-strip-drop-down-menus-never-appear-on-android) (fixed in 26.11.14), [GAP-017](FRAMEWORK_GAPS.md#gap-017-a-reopened-drop-down-on-android-can-be-only-as-wide-as-its-button) (fixed in 26.11.14) |
 | `ToolBar.DefaultItemHoverStyle` (themed hover/checked background) | — | — | — | — | ✅ | |
 | `StatusStrip`, `ToolStripStatusLabel` (`Spring`, `TextAlign`) | — | ✅ emulator | — | ✅ Brave | ✅ | |
 | `ListView`: `LargeIcon` with `OwnerDraw`/`DrawItem` (device pixels), `TileSize`, `Details` columns, `ItemActivate` (double-click; `Activation = OneClick` on phones), `ContextMenuStrip`, `GetItemRect` | — | ✅ emulator (one tap opens a book) | — | ✅ Brave | ✅ | |
@@ -35,7 +35,7 @@ heads, **Headless** = offscreen Skia (UI tests).
 | `OpenFileDialog.ShowDialogAsync` (Multiselect, Filter), `SelectedFiles`, `PickedFile.OpenReadAsync`, `new PickedFile (name, path, open)` | — | ✅ emulator (system picker; files from other apps) | — | ✅ Brave | ✅ | [GAP-005](FRAMEWORK_GAPS.md#gap-005-file-dialogs-return-paths-only) (fixed) |
 | `FolderBrowserDialog.ShowDialogAsync` (`Description`, `ShowNewFolderButton`, `SelectedPath`) | — | | | | ✅ | |
 | `Control.OnMouseMove` (drag selection), `OnLongPress` | — | — | — | — | ✅ | |
-| `SaveFileDialog.ShowDialogAsync` (`Filter`, `DefaultExt`, `FileName`) | — | | | | ✅ (Headless `SaveFileResponse`) | [GAP-012](FRAMEWORK_GAPS.md#gap-012-savefiledialog-returns-a-path-only) |
+| `SaveFileDialog.ShowDialogAsync` (`Filter`, `DefaultExt`, `FileName`), `OpenFileAsync` | — | | | | ✅ (Headless `SaveFileResponse`) | [GAP-012](FRAMEWORK_GAPS.md#gap-012-savefiledialog-returns-a-path-only) (fixed in 26.11.14; not yet re-checked on device) |
 | `Clipboard.SetTextAsync` | — | — | — | — | — (called, not checked) | |
 | `TextBox` (`Multiline`, `AcceptsReturn`, `WordWrap`, `PlaceholderText`), `Button` | — | — | — | — | ✅ | |
 | `TreeNode.ToolTipText`, `TreeView.ContextMenuStrip` | — | — | — | — | — (built, not opened in a test) | |
@@ -46,8 +46,8 @@ heads, **Headless** = offscreen Skia (UI tests).
 | `Majorsilence.Forms.Media.AudioPlayer` / `SoundPlayer` | not used | | | | | [GAP-013](FRAMEWORK_GAPS.md#gap-013-no-streaming-audio-output-on-the-desktop-backends) |
 | Drag-and-drop file import (`AllowDrop`, `DragEnter`, `DragDrop`, `DataFormats.FileDrop`) | — | — | — | — | — | |
 | `Majorsilence.Forms.Timer` (progress-save debounce) | — | — | — | — | ✅ (implicitly: saves happen) | |
-| `MessageBox.ShowAsync` (OK/Cancel confirmations: links, the voice download) | — | ❌ on 26.11.6: at the top left and off the right edge; ✅ with Forms PR #509 built locally | — | — | ✅ | [GAP-015](FRAMEWORK_GAPS.md#gap-015-tool-strip-drop-down-menus-never-appear-on-android) (same PR) |
-| `Screen.FromControl` / `AllScreens` on a single view | | ❌ on 26.11.6: no screen; ✅ with Forms PR #509 | — | — | | |
+| `MessageBox.ShowAsync` (OK/Cancel confirmations: links, the voice download) | — | ✅ fixed in 26.11.14, same PR #509 (not yet re-checked on device) | — | — | ✅ | [GAP-015](FRAMEWORK_GAPS.md#gap-015-tool-strip-drop-down-menus-never-appear-on-android) (same PR) |
+| `Screen.FromControl` / `AllScreens` on a single view | | ✅ fixed in 26.11.14 by Forms PR #509 (not yet re-checked on device) | — | — | | |
 | `Application.UiScale` / device scaling of measured text | ✅ | ⚠️ 2.625: GAP-016 | — | ✅ at 1 | ✅ | [GAP-016](FRAMEWORK_GAPS.md#gap-016-tool-strip-captions-wrap-their-last-letter-at-fractional-scales) |
 | `Graphics` in owner draw: `FillRectangle`, `DrawImage`, `DrawString` with `StringFormat`, `Bitmap (Stream)` | — | — | — | — | ✅ | |
 
@@ -74,7 +74,7 @@ No new gaps.
 Phase 6: selection gestures (`OnMouseMove` after a hold, `OnLongPress`), the floating highlight bar
 (a `ToolStrip` placed over the page), the note editor (multiline `TextBox`), the Notes panel
 (`TreeView`), `SaveFileDialog` for Markdown export and `Clipboard.SetTextAsync`. One new gap: GAP-012,
-saves on phones and in the browser.
+saves on phones and in the browser (fixed in Forms 26.11.14; Recital pins it and exports everywhere).
 
 Phase 7: the Sync menu grew one item per kind of sync home. The WebDAV form (password `TextBox`) and
 the import browser (`ListView` with multi-select) are in-window panels; Headless tests drive both. No
@@ -95,17 +95,19 @@ and headless Brave for logs and timings). iOS still only builds in CI.
   - the on-screen keyboard in forms;
   - books opened from other apps through `new PickedFile (name, path, open)`;
   - reading aloud, with the framework's bars and panels around it.
-- **What failed on the pinned 26.11.6, and was fixed in Majorsilence.Forms:**
+- **What failed on the then-pinned 26.11.6, and was fixed in Majorsilence.Forms:**
   - every drop-down and dialog was placed in device pixels as if they were layout units, so it was drawn
     off the screen;
   - a single view reported no screen, so dialogs could neither centre nor fit;
   - measured captions lost a pixel at 2.625 and wrapped.
 
   PRs #509 and #510 fix these. With both built into local packages, the menus, the confirmation dialog and
-  the captions were all checked on the emulator. Recital takes them with the next Forms release (it pins
-  26.11.6).
+  the captions were all checked on the emulator. Both shipped in Forms 26.11.8; Recital now pins 26.11.14.
 - **GAP-017** (a menu rebuilt from its own item's Click came out too narrow) was traced to the same
-  framework and fixed there too (PR #511).
+  framework and fixed there too (PR #511, also in 26.11.8).
+- These three (GAP-015, GAP-016, GAP-017) and GAP-012 (`SaveFileDialog` on phones and in the browser,
+  PR #512) are code-complete with the 26.11.14 pin; none has been re-checked on the emulator or in a
+  browser since the bump, only against the Headless and Linux desktop test suites.
 - **Not used:** the framework's notifications. Reading aloud in the background uses an Android foreground
   service of Recital's own, since Forms has no service or media session API.
 

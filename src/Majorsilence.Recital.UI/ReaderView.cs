@@ -143,8 +143,6 @@ namespace Majorsilence.Recital.UI
             notes.DeleteRequested += (_, a) => operations.Run (() => DeleteAnnotationAsync (a));
             notes.ExportRequested += (_, _) => operations.Run (ExportToFileAsync);
             notes.CopyRequested += (_, _) => operations.Run (() => Clipboard.SetTextAsync (ExportMarkdown ()));
-            // FRAMEWORK-GAP: GAP-012: SaveFileDialog gives a path only, which phones and the browser cannot write to.
-            notes.CanExportToFile = OperatingSystem.IsWindows () || OperatingSystem.IsMacOS () || (OperatingSystem.IsLinux () && !OperatingSystem.IsAndroid ());
 
             contents.NodeMouseClick += (_, e) => {
                 if (e.Node?.Tag is TocEntry entry)
@@ -791,7 +789,9 @@ namespace Majorsilence.Recital.UI
             };
             if (await dialog.ShowDialogAsync () != DialogResult.OK || string.IsNullOrEmpty (dialog.FileName))
                 return;
-            await File.WriteAllTextAsync (dialog.FileName, ExportMarkdown ());
+            using var stream = await dialog.OpenFileAsync ();
+            using var writer = new StreamWriter (stream);
+            await writer.WriteAsync (ExportMarkdown ());
         }
 
         private static string SafeFileName (string name)

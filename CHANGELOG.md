@@ -2,6 +2,15 @@
 
 ## Unreleased: Phase 10 started
 
+- Majorsilence.Forms 26.11.6 → 26.11.14: takes GAP-012 (`SaveFileDialog.OpenFileAsync` writes through
+  the platform where there is no local path), GAP-015 (Android drop-downs and dialogs placed on
+  screen), GAP-016 (toolbar captions no longer wrap at fractional scales) and GAP-017 (a reopened
+  drop-down keeps its full width). `ReaderView.ExportToFileAsync` now writes through `OpenFileAsync`
+  and `AnnotationsPanel.CanExportToFile` is gone — Export… shows on every platform, not just the
+  desktop. Avalonia stays pinned at 12.1.1 (unchanged by this Forms range). Linux UI test baselines
+  redrawn for the Forms range's WinForms-upstream-parity changes (tree node glyphs, tool/status strip
+  sizing). None of GAP-012/015/016/017 has been re-checked on the Android emulator or in a browser yet.
+
 - `tools/browser-smoke/run.sh` publishes the browser head and loads it in headless Firefox, reporting
   the bundle size (38.3 MB, 11.5 MB with brotli), the start-up time and a screenshot. Avalonia starts
   and creates its canvas in about 0.6 s, but nothing is drawn in headless Firefox, and a start-up call
