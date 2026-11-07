@@ -935,14 +935,14 @@ namespace Majorsilence.Recital.UI
                     .ToList ();
             }
             foreach (var entry in entries)
-                contents.Nodes.Add (Node (entry));
+                contents.Nodes.Add (Node (entry, contents.ForeColor));
             contents.ExpandAll ();
 
-            static TreeNode Node (TocEntry entry)
+            static TreeNode Node (TocEntry entry, Color foreColor)
             {
-                var node = new TreeNode (entry.Title) { Tag = entry };
+                var node = new TreeNode (entry.Title) { Tag = entry, ForeColor = foreColor };
                 foreach (var child in entry.Children)
-                    node.Nodes.Add (Node (child));
+                    node.Nodes.Add (Node (child, foreColor));
                 return node;
             }
         }

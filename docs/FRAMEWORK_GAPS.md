@@ -29,6 +29,7 @@ Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps. Phase 
 | GAP-015 | Tool strip drop-down menus never appear on Android (single-view host) | Avalonia single-view (Android, iOS; browsers above a pixel ratio of 1) | major (Theme, Engine, Voice and speed menus on phones) | Fixed in 26.11.14 by [Forms PR #509](https://github.com/majorsilence/Majorsilence.Forms/pull/509); Recital pins 26.11.14 |
 | GAP-016 | Tool strip captions wrap their last letter at fractional scales ("Bookmar" over "k") | All Avalonia heads at a fractional scale (phones at 2.625) | minor (looks broken on phones) | Fixed in 26.11.14 by [Forms PR #510](https://github.com/majorsilence/Majorsilence.Forms/pull/510); Recital pins 26.11.14 |
 | GAP-017 | A tool strip drop-down reopened on Android can come out only as wide as its button, cutting its items off | Avalonia Android (single view) | minor (labels cut, items still work) | Fixed in 26.11.14 by [Forms PR #511](https://github.com/majorsilence/Majorsilence.Forms/pull/511); Recital pins 26.11.14 |
+| GAP-018 | An unselected `TreeView` node or `ListView` item/sub-item with no colour of its own draws in a fixed framework default, not the control's own `ForeColor` | all | major (Black theme: Contents, Notes and the library's Details view go unreadable) | Open; Recital sets every node's and item's `ForeColor` explicitly, both when the theme changes (`ThemePainter`) and when it creates them (`ReaderView.FillContents`, `AnnotationsPanel.Show`, `LibraryView.ShowBooks`) |
 
 ---
 
@@ -311,6 +312,30 @@ Phase 5 (sync engine, sync folder menu, folder picker) found no new gaps. Phase 
 - **Fix:** [Forms PR #511](https://github.com/majorsilence/Majorsilence.Forms/pull/511) adopts the items
   in `LayoutItems`. `DropDownRefillTests` reproduces the bug headless: 240 wide, then 146 without the fix.
 - **Resolved:** Recital pins 26.11.14.
+
+## GAP-018: `TreeView`/`ListView` item text ignores the control's own `ForeColor`
+
+- **Found:** 2026-11-07, running the Linux desktop head by hand after the toolbar icon pass: Contents
+  showed only its selected row; every other chapter was blank.
+- **Expected:** a node's or item's label, when it has no colour of its own, draws in the `TreeView`'s or
+  `ListView`'s own `ForeColor` — the ambient colour `ThemePainter` sets per `ReaderTheme`, the same way
+  a `TextBox` or `ComboBox` already does.
+- **Actual:** `TreeViewRenderer.RenderItem`'s `foreground_color` and `ListViewRenderer`'s equivalent
+  both check the node's/item's own `ForeColor`, several selection- and hot-tracking-specific colours,
+  and `NodeLayout`'s colour (null for a plain tree) — and only then fall back to the single process-wide
+  `Majorsilence.Forms.Theme.ForegroundColor`, never to `control.ForeColor`. That default is a dark
+  colour meant for a light background: against `ReaderTheme.Dark`'s page colour (`#202124`) the
+  contrast is low but just legible; against `ReaderTheme.Black`'s true black (`#000000`) it is zero.
+- **Severity:** major for Black theme: the reader's Contents and Notes panels, and the library's Details
+  (list) view, all go unreadable outside the one selected row.
+- **Workaround:** `ThemePainter` sets every existing node's (recursively) and every item's and
+  sub-item's `ForeColor` explicitly whenever the theme changes, and `ReaderView.FillContents`,
+  `AnnotationsPanel.Show` and `LibraryView.ShowBooks` set it on each node/item they create, from the
+  owning control's own `ForeColor` — so newly added content is correct before the next theme change
+  revisits it. Marked `FRAMEWORK-GAP: GAP-018` in `ThemePainter`.
+- **Proposed fix:** `TreeViewRenderer`/`ListViewRenderer`'s foreground fallback should read
+  `control.ForeColor` (when not empty) before `Theme.ForegroundColor`, as the equivalent `BackColor`
+  logic already does for the control's own background fill.
 
 ### GAP-014 follow-up (2026-10-20)
 

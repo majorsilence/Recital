@@ -1,3 +1,4 @@
+using System.Drawing;
 using Majorsilence.Forms;
 using Majorsilence.Recital.Core.Reading;
 
@@ -66,11 +67,31 @@ namespace Majorsilence.Recital.UI
                     case TextBoxBase or ComboBox or NumericUpDown or ListView or TreeView or ListBox:
                         control.BackColor = inputBack;
                         control.ForeColor = inputText;
+                        // FRAMEWORK-GAP: GAP-018: an unselected TreeView node or ListView item/sub-item
+                        // with no ForeColor of its own draws in a fixed framework default, not the
+                        // control's ambient ForeColor just set above — invisible against a page colour
+                        // dark enough to collide with that default (Black theme). Set explicitly instead.
+                        if (control is TreeView tree)
+                            SetNodeForeColor (tree.Nodes, inputText);
+                        else if (control is ListView list)
+                            foreach (ListViewItem item in list.Items) {
+                                item.ForeColor = inputText;
+                                foreach (ListViewItem.ListViewSubItem sub in item.SubItems)
+                                    sub.ForeColor = inputText;
+                            }
                         break;
                 }
 
                 foreach (Control child in control.Controls)
                     Walk (child);
+            }
+
+            static void SetNodeForeColor (IEnumerable<TreeNode> nodes, Color color)
+            {
+                foreach (var node in nodes) {
+                    node.ForeColor = color;
+                    SetNodeForeColor (node.Nodes, color);
+                }
             }
         }
     }

@@ -2,6 +2,13 @@
 
 ## Unreleased: Phase 10 started
 
+- GAP-018: an unselected `TreeView` node or `ListView` item/sub-item with no colour of its own draws in
+  a fixed Majorsilence.Forms default, not the control's own `ForeColor` — invisible in the Black theme,
+  where the page colour is true black and that default collides with it exactly (found running the
+  Linux desktop head by hand: the Contents panel showed only its selected chapter). `ThemePainter` now
+  sets every node's and item's `ForeColor` explicitly when the theme changes, and `ReaderView.FillContents`,
+  `AnnotationsPanel.Show` and `LibraryView.ShowBooks` set it on each node/item they create.
+
 - Toolbar and chrome polish: every toolbar button (Library, Contents, Notes, Bookmark, Listen, Theme,
   Import, Sort, grid/list, and the reading-aloud bar's back/play-pause/forward/stop/close) now carries a
   small monochrome icon, drawn in code at a 24x24 view box rather than shipped as image assets

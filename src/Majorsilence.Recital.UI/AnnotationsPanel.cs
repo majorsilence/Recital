@@ -83,12 +83,13 @@ namespace Majorsilence.Recital.UI
             foreach (var annotation in annotations) {
                 var title = chapterOf (annotation) ?? "Untitled section";
                 if (chapterNode is null || title != chapter) {
-                    chapterNode = new TreeNode (title);
+                    chapterNode = new TreeNode (title) { ForeColor = tree.ForeColor };
                     tree.Nodes.Add (chapterNode);
                     chapter = title;
                 }
                 chapterNode.Nodes.Add (new TreeNode (Label (annotation)) {
                     Tag = annotation,
+                    ForeColor = tree.ForeColor,
                     ToolTipText = (annotation.HasNote ? annotation.Note : annotation.Text) ?? "",
                 });
             }

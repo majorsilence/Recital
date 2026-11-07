@@ -351,10 +351,12 @@ namespace Majorsilence.Recital.UI
             list.BeginUpdate ();
             list.Items.Clear ();
             foreach (var book in shown) {
-                var item = new ListViewItem (book.Title) { Tag = book };
+                var item = new ListViewItem (book.Title) { Tag = book, ForeColor = list.ForeColor };
                 item.SubItems.Add (book.Authors);
                 item.SubItems.Add (book.Progress is null ? "" : book.Percent.ToString ("P0", CultureInfo.CurrentCulture));
                 item.SubItems.Add (book.Meta.AddedAt.ToLocalTime ().ToString ("d", CultureInfo.CurrentCulture));
+                foreach (ListViewItem.ListViewSubItem sub in item.SubItems)
+                    sub.ForeColor = list.ForeColor;
                 list.Items.Add (item);
                 if (book.Id == selected)
                     item.Selected = true;
