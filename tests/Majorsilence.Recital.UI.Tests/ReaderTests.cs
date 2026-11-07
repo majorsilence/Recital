@@ -212,7 +212,7 @@ namespace Majorsilence.Recital.UI.Tests
             }
             var locator = Session (form).Locator;
 
-            UiTest.ClickItem (form, Toolbar (form), ToolbarItem (form, "‹ Library"));
+            UiTest.ClickItem (form, Toolbar (form), ToolbarItem (form, "Library"));
             UiTest.WaitIdle (form);
             Assert.Null (form.Reader);
             Assert.True (form.Library!.Books[0].Percent > 0);

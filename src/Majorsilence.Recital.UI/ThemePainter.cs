@@ -15,6 +15,7 @@ namespace Majorsilence.Recital.UI
         {
             var chromeBack = Colors.FromArgb (theme.ChromeBackground);
             var chromeText = Colors.FromArgb (theme.ChromeText);
+            var accent = Colors.FromArgb (theme.Accent);
             // Inputs and lists sit on the page colour, which reads as "content" against the chrome.
             var inputBack = Colors.FromArgb (theme.PageBackground);
             var inputText = Colors.FromArgb (theme.PageText);
@@ -23,6 +24,18 @@ namespace Majorsilence.Recital.UI
             // default: unreadable under light text on a dark strip. The app shows one theme at a time.
             var hover = Colors.Mix (chromeBack, chromeText, 0.22f);
             ToolBar.DefaultItemHoverStyle.BackgroundColor = new SkiaSharp.SKColor (hover.R, hover.G, hover.B, hover.A);
+
+            // RecitalToolStripRenderer paints a hovered item's pill in this subtler tint, and a
+            // checked/open one in the theme's own accent — the same colour the bookmark ribbon and
+            // highlights use, so "this panel is open" reads as the one consistent signal across the
+            // app. Set on ToolStripManager (process-wide, like the rest of Majorsilence.Forms'
+            // ToolStrip state — see the UI test assembly's DisableTestParallelization) so every strip,
+            // including the pop-up menus a ToolStripDropDownButton opens, picks it up without being
+            // wired one by one.
+            ToolStripManager.Renderer = new RecitalToolStripRenderer {
+                HoverColor = Colors.Mix (chromeBack, chromeText, 0.10f),
+                PressedColor = Colors.Mix (chromeBack, accent, 0.30f),
+            };
 
             Walk (root);
 
@@ -40,6 +53,11 @@ namespace Majorsilence.Recital.UI
                                 hosted.BackColor = inputBack;
                                 hosted.ForeColor = inputText;
                             }
+                            // Toolbar buttons tagged with an icon (set once, at construction, except the
+                            // reading-aloud bar's Play/Pause button, which retags itself as it toggles)
+                            // get it redrawn in the chrome's own text colour.
+                            if (item.Tag is ToolbarIcons.Kind icon)
+                                item.Image = ToolbarIcons.Draw (icon, chromeText);
                         }
                         break;
                     case SplitContainer split:

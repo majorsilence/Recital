@@ -38,10 +38,11 @@ namespace Majorsilence.Recital.UI
             // off the screen.
             DefaultDropDownDirection = ToolStripDropDownDirection.AboveRight;
 
-            var back = new ToolStripButton ("‹ Back") { ToolTipText = "Back a sentence" };
-            var forward = new ToolStripButton ("Next ›") { ToolTipText = "Forward a sentence" };
-            var stop = new ToolStripButton ("Stop");
-            var close = new ToolStripButton ("✕") { ToolTipText = "Stop and close", AccessibleName = "Close" };
+            var back = new ToolStripButton ("Back") { ToolTipText = "Back a sentence", Tag = ToolbarIcons.Kind.SkipBack };
+            var forward = new ToolStripButton ("Next") { ToolTipText = "Forward a sentence", Tag = ToolbarIcons.Kind.SkipForward };
+            var stop = new ToolStripButton ("Stop") { Tag = ToolbarIcons.Kind.Stop };
+            var close = new ToolStripButton ("✕") { ToolTipText = "Stop and close", AccessibleName = "Close", Tag = ToolbarIcons.Kind.Close };
+            play.Tag = ToolbarIcons.Kind.Play;
             back.Click += (_, _) => Command?.Invoke (this, TtsCommand.Back);
             play.Click += (_, _) => Command?.Invoke (this, TtsCommand.PlayPause);
             forward.Click += (_, _) => Command?.Invoke (this, TtsCommand.Forward);
@@ -97,7 +98,14 @@ namespace Majorsilence.Recital.UI
 
         /// <summary>Shows play or pause, as the state is.</summary>
         public void ShowState (bool playing, bool paused)
-            => play.Text = playing && !paused ? "Pause" : "Play";
+        {
+            var kind = playing && !paused ? ToolbarIcons.Kind.Pause : ToolbarIcons.Kind.Play;
+            play.Text = kind == ToolbarIcons.Kind.Pause ? "Pause" : "Play";
+            play.Tag = kind;
+            // ThemePainter redraws every tagged icon in the chrome colour whenever the theme changes;
+            // this keeps the icon in step with the state in between, from whichever colour it last drew.
+            play.Image = ToolbarIcons.Draw (kind, play.ForeColor.IsEmpty ? System.Drawing.Color.Black : play.ForeColor);
+        }
 
         /// <summary>Lists the engines, ticking the one in use, and the way to voice settings.</summary>
         public void ShowEngines (IReadOnlyList<ITtsEngine> engines, string? selected)

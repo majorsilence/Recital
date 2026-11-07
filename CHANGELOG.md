@@ -2,6 +2,17 @@
 
 ## Unreleased: Phase 10 started
 
+- Toolbar and chrome polish: every toolbar button (Library, Contents, Notes, Bookmark, Listen, Theme,
+  Import, Sort, grid/list, and the reading-aloud bar's back/play-pause/forward/stop/close) now carries a
+  small monochrome icon, drawn in code at a 24x24 view box rather than shipped as image assets
+  (`ToolbarIcons`), so it is tinted to the active `ReaderTheme`'s chrome colour everywhere, on every
+  host. `RecitalToolStripRenderer` (`ToolStripManager.Renderer`, set whenever the theme is applied)
+  draws a hovered item in a subtle tint and a checked or open one — Contents, Notes, Typography, Theme,
+  Bookmark, Listen, drop-down menu items — as a rounded pill in the theme's own accent colour, the same
+  one the bookmark ribbon and highlights use, so "this is open" reads as one consistent signal. The
+  redundant "‹ "/" ›" in button text (now carried by the chevron icons) is gone. Linux UI test baselines
+  and the README's screenshots redrawn.
+
 - Majorsilence.Forms 26.11.6 → 26.11.14: takes GAP-012 (`SaveFileDialog.OpenFileAsync` writes through
   the platform where there is no local path), GAP-015 (Android drop-downs and dialogs placed on
   screen), GAP-016 (toolbar captions no longer wrap at fractional scales) and GAP-017 (a reopened

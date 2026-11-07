@@ -37,7 +37,7 @@ namespace Majorsilence.Recital.UI
         private readonly ToolStripButton notes_button = new ("Notes") { ToolTipText = "Highlights, notes and bookmarks" };
         private readonly ToolStripButton bookmark_button = new ("Bookmark") { ToolTipText = "Bookmark this page" };
         private readonly ToolStripButton listen_button = new ("Listen") { ToolTipText = "Read aloud from this page" };
-        private readonly ToolStripButton return_button = new ("‹ Back") { ToolTipText = "Back to where you were before following a link", Visible = false };
+        private readonly ToolStripButton return_button = new ("Back") { ToolTipText = "Back to where you were before following a link", Visible = false };
         private readonly TtsBar tts_bar = new ();
         private ITtsEngine? tts_engine;
         private TtsPlayer? player;
@@ -80,7 +80,7 @@ namespace Majorsilence.Recital.UI
 
             PageView = new BookPageView { Dock = DockStyle.Fill };
 
-            var back = new ToolStripButton ("‹ Library");
+            var back = new ToolStripButton ("Library");
             back.Click += (_, _) => CloseRequested?.Invoke (this, EventArgs.Empty);
             contents_button.Click += (_, _) => ToggleSide (contents);
             typography_button.Click += (_, _) => ToggleSide (typography);
@@ -95,7 +95,14 @@ namespace Majorsilence.Recital.UI
             tts_bar.SettingsRequested += (_, _) => VoiceSettingsRequested?.Invoke (this, EventArgs.Empty);
             title_label.Text = book.Title;
 
-            var themes = new ToolStripDropDownButton ("Theme");
+            back.Tag = ToolbarIcons.Kind.NavBack;
+            return_button.Tag = ToolbarIcons.Kind.NavBack;
+            contents_button.Tag = ToolbarIcons.Kind.Contents;
+            notes_button.Tag = ToolbarIcons.Kind.Notes;
+            bookmark_button.Tag = ToolbarIcons.Kind.Bookmark;
+            listen_button.Tag = ToolbarIcons.Kind.Listen;
+
+            var themes = new ToolStripDropDownButton ("Theme") { Tag = ToolbarIcons.Kind.Theme };
             foreach (var theme in ReaderTheme.All) {
                 var item = new ToolStripMenuItem (theme.Name);
                 item.Click += (_, _) => ChangePreferences (this.preferences with { Theme = theme.Kind });

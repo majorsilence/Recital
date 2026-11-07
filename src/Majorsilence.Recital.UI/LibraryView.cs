@@ -60,8 +60,10 @@ namespace Majorsilence.Recital.UI
             this.library = library;
             this.operations = operations;
 
-            var import = new ToolStripButton ("Import…");
+            var import = new ToolStripButton ("Import…") { Tag = ToolbarIcons.Kind.Import };
             import.Click += (_, _) => operations.Run (ImportFromPickerAsync);
+            sort_button.Tag = ToolbarIcons.Kind.Sort;
+            SetViewButton ();
             search.TextChanged += (_, _) => ShowBooks ();
             foreach (var option in Enum.GetValues<LibrarySort> ()) {
                 var item = new ToolStripMenuItem (SortName (option)) { Tag = option };
@@ -369,7 +371,17 @@ namespace Majorsilence.Recital.UI
         private void ToggleView ()
         {
             list.View = list.View == View.LargeIcon ? View.Details : View.LargeIcon;
-            view_button.Text = list.View == View.LargeIcon ? "List" : "Covers";
+            SetViewButton ();
+        }
+
+        /// <summary>Labels and icons <see cref="view_button"/> with the view a click switches TO.</summary>
+        private void SetViewButton ()
+        {
+            var toList = list.View == View.LargeIcon;
+            view_button.Text = toList ? "List" : "Covers";
+            var kind = toList ? ToolbarIcons.Kind.List : ToolbarIcons.Kind.Grid;
+            view_button.Tag = kind;
+            view_button.Image = ToolbarIcons.Draw (kind, view_button.ForeColor.IsEmpty ? Color.Black : view_button.ForeColor);
         }
 
         private void UpdateSortLabel ()
