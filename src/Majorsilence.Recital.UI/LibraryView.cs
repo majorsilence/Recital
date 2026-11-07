@@ -6,6 +6,7 @@ using Majorsilence.Forms.Drawing;
 using Majorsilence.Recital.Core.Library;
 using Majorsilence.Recital.Core.Sync;
 using Majorsilence.Recital.Storage;
+using Majorsilence.Recital.UI.Localization;
 
 using Font = Majorsilence.Forms.Drawing.Font;
 
@@ -30,23 +31,25 @@ namespace Majorsilence.Recital.UI
             TileSize = new Size (CoverSize.Width + 24, CoverSize.Height + 64),
         };
         private readonly ToolStrip tool_strip = new () { Dock = DockStyle.Top };
-        private readonly ToolStripTextBox search = new () { ToolTipText = "Search titles and authors" };
-        private readonly ToolStripDropDownButton sort_button = new ();
-        private readonly ToolStripButton view_button = new ("List");
+        private readonly ToolStripTextBox search = new ();
+        private readonly ToolStripLabel search_label = new ();
+        private readonly ToolStripButton import = new () { Tag = ToolbarIcons.Kind.Import };
+        private readonly ToolStripDropDownButton sort_button = new () { Tag = ToolbarIcons.Kind.Sort };
+        private readonly ToolStripButton view_button = new ();
         private readonly StatusStrip status_strip = new () { Dock = DockStyle.Bottom, SizingGrip = false };
         private readonly ToolStripStatusLabel status = new () { Spring = true, TextAlign = ContentAlignment.MiddleLeft };
         private readonly ToolStripStatusLabel sync_status = new () { TextAlign = ContentAlignment.MiddleRight };
-        private readonly ToolStripDropDownButton sync_button = new ("Sync") { Visible = false, Alignment = ToolStripItemAlignment.Right };
-        private readonly ToolStripMenuItem sync_now = new ("Sync now");
-        private readonly ToolStripMenuItem stop_syncing = new ("Stop syncing");
+        private readonly ToolStripDropDownButton sync_button = new () { Visible = false, Alignment = ToolStripItemAlignment.Right };
+        private readonly ToolStripMenuItem sync_now = new ();
+        private readonly ToolStripMenuItem stop_syncing = new ();
         private readonly Dictionary<SyncHomeKind, ToolStripMenuItem> home_items = [];
-        private readonly ToolStripButton import_remote = new ("Import from…") { Visible = false };
+        private readonly ToolStripButton import_remote = new () { Visible = false };
         private readonly WebDavPanel webdav = new ();
         private readonly RemoteBrowserPanel browser = new ();
         private IStorageProvider? remote;
         private string remote_name = "";
+        private SyncMenu last_sync_menu = SyncMenu.Hidden;
         private readonly Label empty = new () {
-            Text = "Your library is empty.\nImport an EPUB, or drop one here, to start reading.",
             TextAlign = ContentAlignment.MiddleCenter,
             Dock = DockStyle.Fill,
             Visible = false,
@@ -54,19 +57,21 @@ namespace Majorsilence.Recital.UI
         private readonly Dictionary<string, Bitmap?> covers = new (StringComparer.Ordinal);
         private IReadOnlyList<LibraryBook> books = [];
         private LibrarySort sort = LibrarySort.Recent;
+        private readonly ToolStripMenuItem open_item = new ();
+        private ColumnHeader title_column = null!;
+        private ColumnHeader author_column = null!;
+        private ColumnHeader progress_column = null!;
+        private ColumnHeader added_column = null!;
 
         public LibraryView (LibraryService library, UiOperations operations)
         {
             this.library = library;
             this.operations = operations;
 
-            var import = new ToolStripButton ("Import…") { Tag = ToolbarIcons.Kind.Import };
             import.Click += (_, _) => operations.Run (ImportFromPickerAsync);
-            sort_button.Tag = ToolbarIcons.Kind.Sort;
-            SetViewButton ();
             search.TextChanged += (_, _) => ShowBooks ();
             foreach (var option in Enum.GetValues<LibrarySort> ()) {
-                var item = new ToolStripMenuItem (SortName (option)) { Tag = option };
+                var item = new ToolStripMenuItem { Tag = option };
                 item.Click += (_, _) => {
                     sort = option;
                     ShowBooks ();
@@ -75,10 +80,8 @@ namespace Majorsilence.Recital.UI
             }
             view_button.Click += (_, _) => ToggleView ();
 
-            foreach (var (kind, text) in new[] {
-                (SyncHomeKind.LocalFolder, "Local folder…"), (SyncHomeKind.WebDav, "WebDAV…"),
-                (SyncHomeKind.GoogleDrive, "Google Drive"), (SyncHomeKind.Dropbox, "Dropbox"), (SyncHomeKind.OneDrive, "OneDrive") }) {
-                var item = new ToolStripMenuItem (text) { Tag = kind };
+            foreach (var kind in new[] { SyncHomeKind.LocalFolder, SyncHomeKind.WebDav, SyncHomeKind.GoogleDrive, SyncHomeKind.Dropbox, SyncHomeKind.OneDrive }) {
+                var item = new ToolStripMenuItem { Tag = kind };
                 item.Click += (_, _) => ChooseHome (kind);
                 home_items[kind] = item;
                 sync_button.DropDownItems.Add (item);
@@ -93,14 +96,14 @@ namespace Majorsilence.Recital.UI
             browser.NavigateRequested += (_, path) => operations.Run (() => browser.ShowFolderAsync (path));
             browser.ImportRequested += (_, _) => operations.Run (() => ImportFilesAsync (browser.PickedBooks ()));
 
-            tool_strip.Items.AddRange ([import, import_remote, new ToolStripSeparator (), new ToolStripLabel ("Search"), search, sort_button, view_button, sync_button]);
+            tool_strip.Items.AddRange ([import, import_remote, new ToolStripSeparator (), search_label, search, sort_button, view_button, sync_button]);
             status_strip.Items.Add (status);
             status_strip.Items.Add (sync_status);
 
-            list.Columns.Add ("Title", 320);
-            list.Columns.Add ("Author", 200);
-            list.Columns.Add ("Progress", 90, HorizontalAlignment.Right);
-            list.Columns.Add ("Added", 120);
+            title_column = list.Columns.Add ("", 320);
+            author_column = list.Columns.Add ("", 200);
+            progress_column = list.Columns.Add ("", 90, HorizontalAlignment.Right);
+            added_column = list.Columns.Add ("", 120);
             list.DrawItem += DrawTile;
             // On a touch screen a tap opens the book; a desktop keeps double-click (a click selects).
             if (OperatingSystem.IsAndroid () || OperatingSystem.IsIOS ())
@@ -111,12 +114,11 @@ namespace Majorsilence.Recital.UI
             };
 
             var menu = new ContextMenuStrip ();
-            var open = new ToolStripMenuItem ("Open");
-            open.Click += (_, _) => {
+            open_item.Click += (_, _) => {
                 if (list.SelectedItems.Count == 1 && list.SelectedItems[0].Tag is LibraryBook book)
                     OpenRequested?.Invoke (this, book);
             };
-            menu.Items.Add (open);
+            menu.Items.Add (open_item);
             list.ContextMenuStrip = menu;
 
             AllowDrop = true;
@@ -135,7 +137,42 @@ namespace Majorsilence.Recital.UI
             Controls.Add (empty);
             Controls.Add (tool_strip);
             Controls.Add (status_strip);
+            ApplyLanguage ();
+        }
+
+        /// <summary>Re-reads every piece of chrome text from <see cref="Strings"/>, including its own
+        /// panels (<see cref="WebDavPanel"/>, <see cref="RemoteBrowserPanel"/>). Called once at
+        /// construction and again, for the same keys, whenever <c>ReaderPreferences.Language</c> changes
+        /// (via <see cref="MainForm"/>, the only place a book is not open to run
+        /// <see cref="ReaderView.ApplyLanguage"/> from).</summary>
+        public void ApplyLanguage ()
+        {
+            import.Text = Strings.Get ("Import");
+            search_label.Text = Strings.Get ("Search");
+            search.ToolTipText = Strings.Get ("SearchTooltip");
+            open_item.Text = Strings.Get ("Open");
+            empty.Text = Strings.Get ("LibraryEmpty");
+            title_column.Text = Strings.Get ("ColumnTitle");
+            author_column.Text = Strings.Get ("ColumnAuthor");
+            progress_column.Text = Strings.Get ("ColumnProgress");
+            added_column.Text = Strings.Get ("ColumnAdded");
+
+            SetViewButton ();
             UpdateSortLabel ();
+            foreach (ToolStripMenuItem item in sort_button.DropDownItems)
+                item.Text = SortName ((LibrarySort)item.Tag!);
+
+            sync_button.Text = Strings.Get ("Sync");
+            sync_now.Text = Strings.Get ("SyncNow");
+            stop_syncing.Text = Strings.Get ("StopSyncing");
+            foreach (var (kind, key) in new[] {
+                (SyncHomeKind.LocalFolder, "SyncHomeLocalFolder"), (SyncHomeKind.WebDav, "SyncHomeWebDav"),
+                (SyncHomeKind.GoogleDrive, "SyncHomeGoogleDrive"), (SyncHomeKind.Dropbox, "SyncHomeDropbox"), (SyncHomeKind.OneDrive, "SyncHomeOneDrive") })
+                home_items[kind].Text = Strings.Get (key);
+            ShowSync (last_sync_menu);
+
+            webdav.ApplyLanguage ();
+            browser.ApplyLanguage ();
         }
 
         public ListView List => list;
@@ -190,23 +227,26 @@ namespace Majorsilence.Recital.UI
         /// </summary>
         public void ShowSync (SyncMenu menu)
         {
+            last_sync_menu = menu;
             sync_button.Visible = menu.Available;
             foreach (var (kind, item) in home_items) {
                 var possible = menu.CanConnect (kind);
                 item.Visible = kind != SyncHomeKind.LocalFolder || possible;
                 item.Enabled = possible;
-                item.ToolTipText = possible ? "" : "Not set up in this build of Recital";
+                item.ToolTipText = possible ? "" : Strings.Get ("NotSetUpInThisBuild");
                 item.Checked = menu.Home?.EffectiveKind == kind;
             }
             var syncing = menu.Home is not null;
             sync_now.Enabled = stop_syncing.Enabled = syncing;
-            sync_button.ToolTipText = syncing ? "Syncing with " + menu.Home!.DisplayName : "Keep this library in step with your other devices";
+            sync_button.ToolTipText = syncing
+                ? string.Format (CultureInfo.CurrentCulture, Strings.Get ("SyncingWith"), menu.Home!.DisplayName)
+                : Strings.Get ("SyncTooltip");
             sync_status.Text = SyncText (menu.Home?.DisplayName, menu.Status);
 
             remote = menu.Remote is { } r && r.Capabilities.HasFlag (StorageCapabilities.Browse) && menu.Home?.EffectiveKind != SyncHomeKind.LocalFolder ? r : null;
             remote_name = menu.Home is { } home ? SyncHome.Label (home.EffectiveKind) : "";
             import_remote.Visible = remote is not null;
-            import_remote.Text = "Import from " + remote_name + "…";
+            import_remote.Text = string.Format (CultureInfo.CurrentCulture, Strings.Get ("ImportFrom"), remote_name);
         }
 
         /// <summary>Opens the WebDAV form over the library (Sync > WebDAV…).</summary>
@@ -229,14 +269,14 @@ namespace Majorsilence.Recital.UI
         {
             if (home is null || sync is null)
                 return string.Empty;
-            var waiting = sync.Pending > 0 ? $" ({sync.Pending} waiting)" : "";
+            var waiting = sync.Pending > 0 ? string.Format (CultureInfo.CurrentCulture, Strings.Get ("SyncWaiting"), sync.Pending) : "";
             return sync.State switch {
-                SyncState.Syncing => "Syncing…",
-                SyncState.Offline => "Can't reach " + home + ", retrying" + waiting,
-                SyncState.SignInNeeded => "Sign in again to sync (Sync menu)" + waiting,
-                SyncState.NewerFormat => "The sync folder needs a newer Recital",
-                _ when sync.LastSuccess is { } last => "Synced " + last.ToLocalTime ().ToString ("t", CultureInfo.CurrentCulture) + waiting,
-                _ => "Not synced yet" + waiting,
+                SyncState.Syncing => Strings.Get ("Syncing"),
+                SyncState.Offline => string.Format (CultureInfo.CurrentCulture, Strings.Get ("SyncCantReach"), home) + waiting,
+                SyncState.SignInNeeded => Strings.Get ("SyncSignInAgain") + waiting,
+                SyncState.NewerFormat => Strings.Get ("SyncNeedsNewerRecital"),
+                _ when sync.LastSuccess is { } last => string.Format (CultureInfo.CurrentCulture, Strings.Get ("SyncedAt"), last.ToLocalTime ().ToString ("t", CultureInfo.CurrentCulture)) + waiting,
+                _ => Strings.Get ("SyncNotYet") + waiting,
             };
         }
 
@@ -292,16 +332,16 @@ namespace Majorsilence.Recital.UI
                     await using var stream = await file.OpenReadAsync (ct);
                     var result = await library.ImportAsync (stream, file.Name, ct);
                     if (result.AlreadyInLibrary)
-                        messages.Add ($"{result.Book.Title} is already in your library.");
+                        messages.Add (string.Format (CultureInfo.CurrentCulture, Strings.Get ("AlreadyInLibrary"), result.Book.Title));
                     else
                         added++;
                 } catch (Exception ex) when (ex is BookImportException or IOException or UnauthorizedAccessException) {
-                    messages.Add (ex is BookImportException ? ex.Message : $"Could not read {file.Name}: {ex.Message}");
+                    messages.Add (ex is BookImportException ? ex.Message : string.Format (CultureInfo.CurrentCulture, Strings.Get ("CouldNotRead"), file.Name, ex.Message));
                 }
             }
 
             if (added > 0)
-                messages.Insert (0, added == 1 ? "Added 1 book." : $"Added {added} books.");
+                messages.Insert (0, added == 1 ? Strings.Get ("Added1Book") : string.Format (CultureInfo.CurrentCulture, Strings.Get ("AddedNBooks"), added));
             status.Text = string.Join (" ", messages);
             await RefreshAsync (ct);
         }
@@ -309,8 +349,8 @@ namespace Majorsilence.Recital.UI
         private async Task ImportFromPickerAsync ()
         {
             using var dialog = new OpenFileDialog {
-                Title = "Import books",
-                Filter = "EPUB books (*.epub)|*.epub",
+                Title = Strings.Get ("ImportBooks"),
+                Filter = $"{Strings.Get ("FilterEpubBooks")} (*.epub)|*.epub",
                 Multiselect = true,
             };
             if (await dialog.ShowDialogAsync () != DialogResult.OK)
@@ -322,7 +362,7 @@ namespace Majorsilence.Recital.UI
         public async Task ChooseSyncFolderAsync ()
         {
             using var dialog = new FolderBrowserDialog {
-                Description = "Choose a folder your other devices can see too: a Dropbox, Google Drive, OneDrive or iCloud Drive folder, or a network share. Recital keeps your library in a Recital folder inside it.",
+                Description = Strings.Get ("ChooseSyncFolderDescription"),
                 UseDescriptionForTitle = false,
                 ShowNewFolderButton = true,
             };
@@ -366,7 +406,7 @@ namespace Majorsilence.Recital.UI
             empty.Visible = books.Count == 0;
             list.Visible = books.Count > 0;
             if (books.Count > 0 && shown.Count == 0)
-                status.Text = $"No books match \"{SearchText}\".";
+                status.Text = string.Format (CultureInfo.CurrentCulture, Strings.Get ("NoBooksMatch"), SearchText);
             UpdateSortLabel ();
         }
 
@@ -380,7 +420,7 @@ namespace Majorsilence.Recital.UI
         private void SetViewButton ()
         {
             var toList = list.View == View.LargeIcon;
-            view_button.Text = toList ? "List" : "Covers";
+            view_button.Text = Strings.Get (toList ? "List" : "Covers");
             var kind = toList ? ToolbarIcons.Kind.List : ToolbarIcons.Kind.Grid;
             view_button.Tag = kind;
             view_button.Image = ToolbarIcons.Draw (kind, view_button.ForeColor.IsEmpty ? Color.Black : view_button.ForeColor);
@@ -388,16 +428,16 @@ namespace Majorsilence.Recital.UI
 
         private void UpdateSortLabel ()
         {
-            sort_button.Text = "Sort: " + SortName (sort);
+            sort_button.Text = string.Format (CultureInfo.CurrentCulture, Strings.Get ("SortColon"), SortName (sort));
             foreach (ToolStripMenuItem item in sort_button.DropDownItems)
                 item.Checked = (LibrarySort)item.Tag! == sort;
         }
 
         private static string SortName (LibrarySort sort) => sort switch {
-            LibrarySort.Recent => "Recent",
-            LibrarySort.Title => "Title",
-            LibrarySort.Author => "Author",
-            _ => "Progress",
+            LibrarySort.Recent => Strings.Get ("SortRecent"),
+            LibrarySort.Title => Strings.Get ("ColumnTitle"),
+            LibrarySort.Author => Strings.Get ("ColumnAuthor"),
+            _ => Strings.Get ("ColumnProgress"),
         };
 
         /// <summary>

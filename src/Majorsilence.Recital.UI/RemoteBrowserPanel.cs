@@ -2,6 +2,7 @@ using System.Globalization;
 using Majorsilence.Forms;
 using Majorsilence.Forms.Backends;
 using Majorsilence.Recital.Storage;
+using Majorsilence.Recital.UI.Localization;
 
 namespace Majorsilence.Recital.UI
 {
@@ -13,12 +14,16 @@ namespace Majorsilence.Recital.UI
     {
         private readonly Label title = new () { Dock = DockStyle.Top, Height = 30, AutoSize = false, TextAlign = ContentAlignment.MiddleLeft, Padding = new Padding (8, 0, 8, 0) };
         private readonly ToolStrip bar = new () { Dock = DockStyle.Top, GripStyle = ToolStripGripStyle.Hidden };
-        private readonly ToolStripButton up = new ("↑ Up");
+        private readonly ToolStripButton up = new ();
         private readonly ToolStripLabel location = new ();
         private readonly ListView list = new () { Dock = DockStyle.Fill, View = View.Details, FullRowSelect = true, MultiSelect = true };
-        private readonly Button import = new () { Text = "Import", AutoSize = true, Enabled = false };
+        private readonly Button import = new () { AutoSize = true, Enabled = false };
+        private readonly Button cancel = new () { AutoSize = true };
+        private readonly ColumnHeader name_column;
+        private readonly ColumnHeader size_column;
         private IStorageProvider? provider;
         private string folder = "";
+        private string open_name = "";
 
         public RemoteBrowserPanel ()
         {
@@ -26,8 +31,8 @@ namespace Majorsilence.Recital.UI
             BorderStyle = BorderStyle.FixedSingle;
             up.Click += (_, _) => NavigateRequested?.Invoke (this, StoragePath.Parent (folder));
             bar.Items.AddRange ([up, new ToolStripSeparator (), location]);
-            list.Columns.Add ("Name", 360);
-            list.Columns.Add ("Size", 90, HorizontalAlignment.Right);
+            name_column = list.Columns.Add ("", 360);
+            size_column = list.Columns.Add ("", 90, HorizontalAlignment.Right);
             list.ItemActivate += (_, _) => {
                 if (list.SelectedItems.Count == 1 && list.SelectedItems[0].Tag is StorageEntry { IsFolder: true } entry)
                     NavigateRequested?.Invoke (this, entry.Path);
@@ -37,7 +42,6 @@ namespace Majorsilence.Recital.UI
             list.SelectedIndexChanged += (_, _) => import.Enabled = SelectedBooks.Count > 0;
 
             var buttons = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 44, FlowDirection = FlowDirection.RightToLeft, WrapContents = false, Padding = new Padding (8) };
-            var cancel = new Button { Text = "Close", AutoSize = true };
             import.Click += (_, _) => ImportRequested?.Invoke (this, EventArgs.Empty);
             cancel.Click += (_, _) => Visible = false;
             buttons.Controls.Add (cancel);
@@ -47,6 +51,19 @@ namespace Majorsilence.Recital.UI
             Controls.Add (bar);
             Controls.Add (title);
             Controls.Add (buttons);
+            ApplyLanguage ();
+        }
+
+        /// <summary>Re-reads this panel's own chrome text; <see cref="LibraryView.ApplyLanguage"/> calls it.</summary>
+        public void ApplyLanguage ()
+        {
+            up.Text = Strings.Get ("UpArrow");
+            import.Text = Strings.Get ("ImportButton");
+            cancel.Text = Strings.Get ("Close");
+            name_column.Text = Strings.Get ("ColumnName");
+            size_column.Text = Strings.Get ("ColumnSize");
+            if (open_name.Length > 0)
+                title.Text = string.Format (CultureInfo.CurrentCulture, Strings.Get ("ImportFromTitle"), open_name);
         }
 
         public ListView List => list;
@@ -63,7 +80,8 @@ namespace Majorsilence.Recital.UI
         public void Open (IStorageProvider storage, string name)
         {
             provider = storage;
-            title.Text = "Import from " + name;
+            open_name = name;
+            title.Text = string.Format (CultureInfo.CurrentCulture, Strings.Get ("ImportFromTitle"), name);
             Visible = true;
             BringToFront ();
         }

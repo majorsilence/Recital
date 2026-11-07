@@ -1,5 +1,6 @@
 using Majorsilence.Forms;
 using Majorsilence.Recital.Core.Annotations;
+using Majorsilence.Recital.UI.Localization;
 
 namespace Majorsilence.Recital.UI
 {
@@ -26,7 +27,10 @@ namespace Majorsilence.Recital.UI
     /// </summary>
     public class HighlightBar : ToolStrip
     {
-        private readonly ToolStripButton delete = new ("Delete");
+        private readonly ToolStripButton delete = new ();
+        private readonly ToolStripButton note = new ();
+        private readonly ToolStripButton copy = new ();
+        private readonly ToolStripButton close = new ("✕");
 
         public HighlightBar ()
         {
@@ -34,11 +38,9 @@ namespace Majorsilence.Recital.UI
             Visible = false;
             GripStyle = ToolStripGripStyle.Hidden;
 
-            foreach (var (name, label, argb) in HighlightColors.All) {
+            foreach (var (name, _, argb) in HighlightColors.All) {
                 var button = new ToolStripButton ("●") {
                     Name = "color-" + name,
-                    ToolTipText = label,
-                    AccessibleName = label + " highlight",
                     // Opaque, so the swatch reads on any theme.
                     ForeColor = Colors.FromArgb (argb | 0xFF000000),
                     Tag = name,
@@ -47,14 +49,29 @@ namespace Majorsilence.Recital.UI
                 Items.Add (button);
             }
 
-            var note = new ToolStripButton ("Note…");
             note.Click += (_, _) => Raise (HighlightAction.Note);
-            var copy = new ToolStripButton ("Copy");
             copy.Click += (_, _) => Raise (HighlightAction.Copy);
             delete.Click += (_, _) => Raise (HighlightAction.Delete);
-            var close = new ToolStripButton ("✕") { ToolTipText = "Close", AccessibleName = "Close" };
             close.Click += (_, _) => Raise (HighlightAction.Dismiss);
             Items.AddRange ([new ToolStripSeparator (), note, copy, delete, close]);
+            ApplyLanguage ();
+        }
+
+        /// <summary>Re-reads this bar's own chrome text; <see cref="ReaderView.ApplyLanguage"/> calls it.</summary>
+        public void ApplyLanguage ()
+        {
+            foreach (var button in Items.OfType<ToolStripButton> ()) {
+                if (button.Tag is not string color)
+                    continue;
+                var label = Strings.Get ("Color" + AnnotationsPanel.Capitalize (color));
+                button.ToolTipText = label;
+                button.AccessibleName = string.Format (System.Globalization.CultureInfo.CurrentCulture, Strings.Get ("ColorHighlightAccessibleName"), label);
+            }
+            note.Text = Strings.Get ("NoteEllipsis");
+            copy.Text = Strings.Get ("Copy");
+            delete.Text = Strings.Get ("Delete");
+            close.ToolTipText = Strings.Get ("Close");
+            close.AccessibleName = Strings.Get ("Close");
         }
 
         /// <summary>The size of the visible buttons (a strip's own preferred width stretches to its parent).</summary>

@@ -14,7 +14,7 @@ namespace Majorsilence.Recital.UI
         public enum Kind
         {
             NavBack, Contents, Notes, Bookmark, Listen, Theme, Import, Sort, Grid, List,
-            Play, Pause, SkipBack, SkipForward, Stop, Close,
+            Play, Pause, SkipBack, SkipForward, Stop, Close, Language,
         }
 
         private const float ViewBox = 24f;
@@ -65,6 +65,13 @@ namespace Majorsilence.Recital.UI
                         half.CloseFigure ();
                         g.FillPath (fill, half);
                     }
+                    break;
+
+                case Kind.Language:
+                    g.DrawEllipse (stroke, 4, 4, 16, 16);
+                    g.DrawEllipse (stroke, 8, 4, 8, 16);
+                    g.DrawLine (stroke, 5, 9, 19, 9);
+                    g.DrawLine (stroke, 5, 15, 19, 15);
                     break;
 
                 case Kind.Import:

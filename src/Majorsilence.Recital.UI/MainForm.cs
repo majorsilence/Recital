@@ -6,6 +6,7 @@ using Majorsilence.Recital.Core.Reading;
 using Majorsilence.Recital.Core.Sync;
 using Majorsilence.Recital.Platform;
 using Majorsilence.Recital.Storage;
+using Majorsilence.Recital.UI.Localization;
 
 namespace Majorsilence.Recital.UI
 {
@@ -167,7 +168,7 @@ namespace Majorsilence.Recital.UI
         /// <summary>Signs in to Google Drive, Dropbox or OneDrive in the browser, then syncs with it.</summary>
         public async Task ConnectCloudAsync (SyncHomeKind kind)
         {
-            var services = Services ?? throw new InvalidOperationException ("The library is not open yet.");
+            var services = Services ?? throw new InvalidOperationException (Strings.Get ("LibraryNotOpenYet"));
             var settings = await SyncHome.ConnectCloudAsync (kind, services.Platform);
             await ChangeSyncHomeAsync (settings);
         }
@@ -175,13 +176,13 @@ namespace Majorsilence.Recital.UI
         /// <summary>Checks the WebDAV folder and credentials, then syncs with it; a refusal is shown in the form.</summary>
         public async Task ConnectWebDavAsync (WebDavCredentials credentials)
         {
-            var services = Services ?? throw new InvalidOperationException ("The library is not open yet.");
+            var services = Services ?? throw new InvalidOperationException (Strings.Get ("LibraryNotOpenYet"));
             Library?.WebDav.ShowBusy (true);
             SyncHomeSettings settings;
             try {
                 settings = await SyncHome.ConnectWebDavAsync (credentials.Address, credentials.UserName, credentials.Password, services.Platform);
             } catch (Exception ex) when (ex is IOException or ArgumentException) {
-                Library?.ShowWebDavError (ex is StorageAuthenticationException ? "The server refused the user name or password." : ex.Message);
+                Library?.ShowWebDavError (ex is StorageAuthenticationException ? Strings.Get ("WebDavAuthRefused") : ex.Message);
                 return;
             }
             await ChangeSyncHomeAsync (settings);
@@ -194,7 +195,7 @@ namespace Majorsilence.Recital.UI
         public async Task ChangeSyncHomeAsync (SyncHomeSettings? settings)
         {
             if (Services?.DataDirectory is not { } dataDirectory)
-                throw new InvalidOperationException ("This device has no local app data to keep a sync setting in.");
+                throw new InvalidOperationException (Strings.Get ("NoLocalAppData"));
 
             var old = Services;
             await AppServices.SetSyncHomeAsync (dataDirectory, settings);
@@ -250,7 +251,7 @@ namespace Majorsilence.Recital.UI
         public async Task OpenBookAsync (LibraryBook book)
         {
             if (Services is null)
-                throw new InvalidOperationException ("The library is not open yet.");
+                throw new InvalidOperationException (Strings.Get ("LibraryNotOpenYet"));
             if (Reader is not null)
                 await CloseBookAsync ();
 
@@ -287,7 +288,7 @@ namespace Majorsilence.Recital.UI
                     await using var stream = await file.OpenReadAsync ();
                     opened = (await services.Library.ImportAsync (stream, file.Name)).Book;
                 } catch (Exception ex) when (ex is Core.Library.BookImportException or IOException or UnauthorizedAccessException) {
-                    problems.Add (ex is Core.Library.BookImportException ? ex.Message : $"Could not read {file.Name}: {ex.Message}");
+                    problems.Add (ex is Core.Library.BookImportException ? ex.Message : string.Format (System.Globalization.CultureInfo.CurrentCulture, Strings.Get ("CouldNotRead"), file.Name, ex.Message));
                 }
             }
             if (problems.Count > 0)
@@ -305,13 +306,13 @@ namespace Majorsilence.Recital.UI
         public async Task OpenExternalLinkAsync (Uri uri)
         {
             if (!SystemBrowser.CanOpen (uri)) {
-                await MessageBox.ShowAsync ($"This link can't be opened from Recital:\n{uri}", "Link");
+                await MessageBox.ShowAsync (string.Format (System.Globalization.CultureInfo.CurrentCulture, Strings.Get ("LinkCannotBeOpened"), uri), Strings.Get ("LinkTitle"));
                 return;
             }
-            if (await MessageBox.ShowAsync ($"Open this link in your browser?\n\n{uri}", "Open link", MessageBoxButtons.OKCancel) != DialogResult.OK)
+            if (await MessageBox.ShowAsync (string.Format (System.Globalization.CultureInfo.CurrentCulture, Strings.Get ("OpenLinkInBrowser"), uri), Strings.Get ("OpenLinkTitle"), MessageBoxButtons.OKCancel) != DialogResult.OK)
                 return;
             if (!SystemBrowser.Open (uri))
-                await MessageBox.ShowAsync ($"Recital couldn't open your browser. The address is:\n{uri}", "Open link");
+                await MessageBox.ShowAsync (string.Format (System.Globalization.CultureInfo.CurrentCulture, Strings.Get ("CouldNotOpenBrowser"), uri), Strings.Get ("OpenLinkTitle"));
         }
 
         /// <summary>Opens the voice settings over the window, showing which cloud keys are saved.</summary>
@@ -344,23 +345,23 @@ namespace Majorsilence.Recital.UI
                 return;
             var megabytes = Tts.Platform.TtsEngines.RecitalVoicesSize / 1_000_000;
             if (await MessageBox.ShowAsync (
-                    $"Download Recital's voices?\n\nAbout {megabytes} MB, once, from huggingface.co (the Kokoro voice model). Nothing about you or your books is sent, and afterwards they work offline.",
-                    "Recital voices", MessageBoxButtons.OKCancel) != DialogResult.OK)
+                    string.Format (System.Globalization.CultureInfo.CurrentCulture, Strings.Get ("DownloadRecitalVoices"), megabytes),
+                    Strings.Get ("RecitalVoicesTitle"), MessageBoxButtons.OKCancel) != DialogResult.OK)
                 return;
             var shown = -1L;
             var progress = new Progress<long> (bytes => {
                 var percent = bytes * 100 / Math.Max (1, Tts.Platform.TtsEngines.RecitalVoicesSize);
                 if (percent != shown)
-                    tts_settings.ShowRecitalVoices (false, $"Downloading... {shown = percent}%");
+                    tts_settings.ShowRecitalVoices (false, string.Format (System.Globalization.CultureInfo.CurrentCulture, Strings.Get ("DownloadingPercent"), shown = percent));
             });
-            tts_settings.ShowRecitalVoices (false, "Downloading...");
+            tts_settings.ShowRecitalVoices (false, Strings.Get ("Downloading"));
             try {
                 await Tts.Platform.TtsEngines.DownloadRecitalVoicesAsync (data, progress);
             } catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidDataException or TaskCanceledException) {
-                tts_settings.ShowRecitalVoices (true, $"The download did not finish: {ex.Message}");
+                tts_settings.ShowRecitalVoices (true, string.Format (System.Globalization.CultureInfo.CurrentCulture, Strings.Get ("DownloadDidNotFinish"), ex.Message));
                 return;
             }
-            tts_settings.ShowRecitalVoices (false, "Recital voices are ready: choose them in the Engine menu while listening.");
+            tts_settings.ShowRecitalVoices (false, Strings.Get ("RecitalVoicesReady"));
             if (!custom_tts_engines)
                 tts_engines = [.. HostTtsEngines, .. await Tts.Platform.TtsEngines.AvailableAsync (data, services.Platform.Secrets, output: HostAudioOutput)];
             if (Reader is { } reader)
@@ -454,6 +455,14 @@ namespace Majorsilence.Recital.UI
                 ThemePainter.Apply (Reader.Typography, theme);
                 ThemePainter.Apply (Reader.Notes, theme);
             }
+
+            // Runs from the same lifecycle points as the theme (both are preferences), so the UI's own
+            // text picks up a language change as soon as it reaches here. The reader applies its own
+            // language internally (ReaderView.ApplyLanguage, from its own copy of Preferences), since it
+            // is the only place the Language menu lives; this covers everything else.
+            Strings.CurrentLanguage = Preferences.Language;
+            tts_settings.ApplyLanguage ();
+            Library?.ApplyLanguage ();
         }
 
         private void ShowError (Exception ex)

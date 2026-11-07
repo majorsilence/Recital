@@ -1,6 +1,7 @@
 using System.Globalization;
 using Majorsilence.Forms;
 using Majorsilence.Recital.Core.Annotations;
+using Majorsilence.Recital.UI.Localization;
 
 namespace Majorsilence.Recital.UI
 {
@@ -12,33 +13,32 @@ namespace Majorsilence.Recital.UI
     {
         private readonly TreeView tree = new () { Dock = DockStyle.Fill, ShowLines = false, FullRowSelect = true, HideSelection = false };
         private readonly ToolStrip tool_strip = new () { Dock = DockStyle.Top, GripStyle = ToolStripGripStyle.Hidden };
-        private readonly ToolStripButton export = new ("Export…") { ToolTipText = "Save as a Markdown file" };
+        private readonly ToolStripButton export = new ();
+        private readonly ToolStripButton copy = new ();
         private readonly Label empty = new () {
             Dock = DockStyle.Fill,
-            Text = "No highlights or bookmarks yet.\nPress and hold on the text, then drag, to highlight it.",
             TextAlign = ContentAlignment.MiddleCenter,
             Visible = false,
         };
+        private readonly ToolStripMenuItem edit_note = new ();
+        private readonly ToolStripMenuItem delete_item = new ();
 
         public AnnotationsPanel ()
         {
-            var copy = new ToolStripButton ("Copy all") { ToolTipText = "Copy everything as Markdown" };
             export.Click += (_, _) => ExportRequested?.Invoke (this, EventArgs.Empty);
             copy.Click += (_, _) => CopyRequested?.Invoke (this, EventArgs.Empty);
             tool_strip.Items.AddRange ([export, copy]);
 
             var menu = new ContextMenuStrip ();
-            var editNote = new ToolStripMenuItem ("Edit note…");
-            editNote.Click += (_, _) => {
+            edit_note.Click += (_, _) => {
                 if (tree.SelectedNode?.Tag is Annotation { Kind: AnnotationKind.Highlight } a)
                     EditNoteRequested?.Invoke (this, a);
             };
-            var delete = new ToolStripMenuItem ("Delete");
-            delete.Click += (_, _) => {
+            delete_item.Click += (_, _) => {
                 if (tree.SelectedNode?.Tag is Annotation a)
                     DeleteRequested?.Invoke (this, a);
             };
-            menu.Items.AddRange ([editNote, delete]);
+            menu.Items.AddRange ([edit_note, delete_item]);
             tree.ContextMenuStrip = menu;
 
             tree.NodeMouseClick += (_, e) => {
@@ -63,9 +63,22 @@ namespace Majorsilence.Recital.UI
             Controls.Add (tree);
             Controls.Add (empty);
             Controls.Add (tool_strip);
+            ApplyLanguage ();
         }
 
         public TreeView Tree => tree;
+
+        /// <summary>Re-reads this panel's own chrome text; <see cref="ReaderView.ApplyLanguage"/> calls it.</summary>
+        public void ApplyLanguage ()
+        {
+            export.Text = Strings.Get ("Export");
+            export.ToolTipText = Strings.Get ("ExportTooltip");
+            copy.Text = Strings.Get ("CopyAll");
+            copy.ToolTipText = Strings.Get ("CopyAllTooltip");
+            edit_note.Text = Strings.Get ("EditNote");
+            delete_item.Text = Strings.Get ("Delete");
+            empty.Text = Strings.Get ("NoHighlightsYet");
+        }
 
         public event EventHandler<Annotation>? OpenRequested;
         public event EventHandler<Annotation>? EditNoteRequested;
@@ -81,7 +94,7 @@ namespace Majorsilence.Recital.UI
             TreeNode? chapterNode = null;
             string? chapter = null;
             foreach (var annotation in annotations) {
-                var title = chapterOf (annotation) ?? "Untitled section";
+                var title = chapterOf (annotation) ?? Strings.Get ("UntitledSection");
                 if (chapterNode is null || title != chapter) {
                     chapterNode = new TreeNode (title) { ForeColor = tree.ForeColor };
                     tree.Nodes.Add (chapterNode);
@@ -107,12 +120,16 @@ namespace Majorsilence.Recital.UI
             // Plain text, not an emoji: an emoji comes from whatever colour font the system has, so it looks
             // different (or missing) from one machine to the next.
             if (annotation.Kind == AnnotationKind.Bookmark)
-                return $"Bookmark, {percent}: {excerpt}";
-            var colour = HighlightColors.All.FirstOrDefault (c => c.Name == annotation.Color).Label ?? "Highlight";
+                return string.Format (CultureInfo.CurrentCulture, Strings.Get ("BookmarkLabel"), percent, excerpt);
+            var colour = annotation.Color is { } name && HighlightColors.All.Any (c => c.Name == name) ? Strings.Get ("Color" + Capitalize (name)) : Strings.Get ("Highlight");
             var label = $"{colour}: “{excerpt}”";
             return annotation.HasNote ? label + " — " + Shorten (annotation.Note!.ReplaceLineEndings (" "), 50) : label;
         }
 
         private static string Shorten (string text, int length) => text.Length <= length ? text : text[..(length - 1)].TrimEnd () + "…";
+
+        /// <summary>"yellow" to "Yellow": a <see cref="Core.Annotations.HighlightColors"/> name to the
+        /// resource key for its translated display name ("ColorYellow").</summary>
+        internal static string Capitalize (string name) => name.Length == 0 ? name : char.ToUpperInvariant (name[0]) + name[1..];
     }
 }

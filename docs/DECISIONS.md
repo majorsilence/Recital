@@ -598,3 +598,41 @@ download on request over bundling 115 MB into every mobile app.
   dropped first), so listening again costs no battery. Desktop still makes it again, which is cheap there.
 - **Default:** the device voices stay first (D-032). Recital's voices are chosen in the Engine menu.
 
+## D-034: UI localization — a live-switching language preference, not CurrentUICulture (2026-11-07)
+
+Recital's own interface (toolbar, menus, dialogs, status lines) now has text for eleven languages:
+English, Spanish, French, German, Simplified Chinese, Swahili, Portuguese, Japanese, Russian, Hindi and
+Arabic. Machine-translated in this pass; each wants a native-speaker review before a real release leans
+on it. Scope is the UI's own chrome only — a book's own text, a highlight colour's stored name
+(`Majorsilence.Recital.Core.Annotations.HighlightColors.Label`), and exported Markdown content stay in
+English; translating those would mean Core depending on UI's `Strings`, the wrong direction.
+
+- **Preference, not thread culture:** `ReaderPreferences.Language` (an IETF tag: `"en"`, `"zh-Hans"`, …)
+  joins `Theme` as a synced, per-device setting, chosen from a Language menu next to Theme in the
+  reader's toolbar — the only place preferences are changed, so no new plumbing into `LibraryView`
+  was needed. Text comes from `Strings.Get(key)`, which reads `Strings.CurrentLanguage` — an app-level
+  switch MainForm/ReaderView set from the preference — never from `CultureInfo.CurrentUICulture`,
+  which stays tied to the OS and keeps formatting dates, numbers and percentages exactly as before.
+- **Live, not a rebuild:** switching languages re-paints in place. `ThemePainter`'s pattern repeats for
+  text: each view keeps a public `ApplyLanguage()` that re-reads every `Strings.Get` call it made at
+  construction — called once at construction and again from `ReaderView.ApplyLanguage` (itself called
+  from `ChangePreferences`, alongside `ApplyTheme`) and from `MainForm.ApplyTheme`, which already runs
+  at every point preferences apply. A `TypographyPanel` combo clears and refills its items from the new
+  language while keeping the selected index, guarded by the same re-entrancy flag the `Preferences`
+  setter already used, so the refill cannot itself fire a change event.
+- **Resource format:** one JSON object per language (`Resources/strings.<code>.json`), not `.resx`. A
+  flat per-language file needs no satellite assembly, which trimming/AOT (the Android, iOS and browser
+  heads) can otherwise strip without the app ever finding out — and very nearly did anyway: the SDK's
+  default item glob treats `strings.es.json` as a *culture-qualified* resource purely because `"es"` is
+  a real `CultureInfo`, routing it into an `es/*.resources.dll` satellite under a logical name with the
+  culture stripped back out, so every language collapsed onto one name and `Strings.Get` always returned
+  the key itself. `WithCulture="false"` on the `EmbeddedResource` item keeps each file in the main
+  assembly under its own name. `LocalizationTests.EveryLanguageHasTheSameKeysAsEnglish` guards the
+  regression directly (it counts the resources found), since the symptom — every language showing
+  English — is otherwise silent and easy to mistake for "translations not loaded yet".
+- **Native names, not translated ones:** the Language menu's own entries (`SupportedLanguages`) always
+  show in their own script, regardless of the current language, so a reader who landed on the wrong one
+  can still find their way back.
+- **Not done:** right-to-left layout. Arabic's own text shapes correctly (HarfBuzz), but the toolbar and
+  reading direction stay left-to-right; mirroring the chrome is out of scope for this pass.
+

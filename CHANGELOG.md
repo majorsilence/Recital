@@ -2,6 +2,14 @@
 
 ## Unreleased: Phase 10 started
 
+- UI localization (D-034): the interface itself — toolbar, menus, dialogs, status lines — now has text
+  for English, Spanish, French, German, Simplified Chinese, Swahili, Portuguese, Japanese, Russian, Hindi
+  and Arabic, machine-translated and flagged for a native-speaker pass before a real release relies on
+  them. A Language menu sits next to Theme in the reader's toolbar; switching applies live, with no
+  restart and no rebuild, the same way a theme change already does. Scope is the UI's own chrome: a
+  book's text, a highlight colour's stored name and exported Markdown content stay in English. Right-to-
+  left layout (for Arabic) is not done — the chrome stays left-to-right, only its text is translated.
+
 - GAP-018: an unselected `TreeView` node or `ListView` item/sub-item with no colour of its own draws in
   a fixed Majorsilence.Forms default, not the control's own `ForeColor` — invisible in the Black theme,
   where the page colour is true black and that default collides with it exactly (found running the

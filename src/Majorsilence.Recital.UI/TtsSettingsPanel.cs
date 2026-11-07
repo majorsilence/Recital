@@ -1,4 +1,5 @@
 using Majorsilence.Forms;
+using Majorsilence.Recital.UI.Localization;
 
 namespace Majorsilence.Recital.UI
 {
@@ -15,55 +16,60 @@ namespace Majorsilence.Recital.UI
     /// </summary>
     public class TtsSettingsPanel : Panel
     {
+        private readonly IReadOnlyList<(string Id, string Name)> services;
         private readonly Dictionary<string, TextBox> keys = [];
-        private readonly TextBox region = new () { Width = 360, PlaceholderText = "westeurope" };
+        private readonly Dictionary<string, Label> key_captions = [];
+        private readonly TextBox region = new () { Width = 360 };
         private readonly TextBox piper = new () { Width = 360 };
         private readonly TextBox voices = new () { Width = 360 };
         private readonly FlowLayoutPanel recital = new () { AutoSize = true, FlowDirection = FlowDirection.TopDown, WrapContents = false, Visible = false, Padding = new Padding (0, 0, 0, 8) };
-        private readonly Button download = new () { Text = "Download Recital voices", AutoSize = true };
+        private readonly Button download = new () { AutoSize = true };
         private readonly Label download_status = new () { AutoSize = true, MaximumSize = new System.Drawing.Size (380, 0), Visible = false };
+        private readonly Label heading = new () { AutoSize = true };
+        private readonly Label recital_description = new () { AutoSize = true, MaximumSize = new System.Drawing.Size (380, 0), Padding = new Padding (0, 4, 0, 4) };
+        private readonly Label cloud_description = new () { AutoSize = true, MaximumSize = new System.Drawing.Size (380, 0), Padding = new Padding (0, 4, 0, 8) };
+        private readonly Label region_caption = new () { AutoSize = true, Padding = new Padding (0, 6, 0, 0) };
+        private readonly Label piper_caption = new () { AutoSize = true, MaximumSize = new System.Drawing.Size (380, 0), Padding = new Padding (0, 12, 0, 0) };
+        private readonly Label voices_caption = new () { AutoSize = true, Padding = new Padding (0, 6, 0, 0) };
+        private readonly Button save = new () { AutoSize = true };
+        private readonly Button forget = new () { AutoSize = true };
+        private readonly Button cancel = new () { AutoSize = true };
 
         public TtsSettingsPanel (IReadOnlyList<(string Id, string Name)> services)
         {
+            this.services = services;
             Visible = false;
             BorderStyle = BorderStyle.FixedSingle;
             var flow = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new Padding (16) };
-            flow.Controls.Add (new Label { Text = "Voices", AutoSize = true, Font = new Majorsilence.Forms.Drawing.Font (Font.FontFamily, Font.Size * 1.2f) });
+            flow.Controls.Add (heading);
             // Recital's own voices, where the app does not carry them (phones and tablets): asked for, never assumed.
-            recital.Controls.Add (new Label {
-                Text = "Recital voices: natural voices that run on this device, offline. A one-time download; nothing about you or your books is sent.",
-                AutoSize = true, MaximumSize = new System.Drawing.Size (380, 0), Padding = new Padding (0, 4, 0, 4),
-            });
+            recital.Controls.Add (recital_description);
             download.Click += (_, _) => DownloadRequested?.Invoke (this, EventArgs.Empty);
             recital.Controls.Add (download);
             recital.Controls.Add (download_status);
             flow.Controls.Add (recital);
-            flow.Controls.Add (new Label {
-                Text = "Cloud voices sound most natural, with your own key from the service. While you listen with one, the text being read is sent to that service; nothing is sent otherwise. Keys stay in this device's secure store.",
-                AutoSize = true, MaximumSize = new System.Drawing.Size (380, 0), Padding = new Padding (0, 4, 0, 8),
-            });
+            flow.Controls.Add (cloud_description);
             foreach (var (id, name) in services) {
-                flow.Controls.Add (new Label { Text = name + " key", AutoSize = true, Padding = new Padding (0, 6, 0, 0) });
+                var caption = new Label { AutoSize = true, Padding = new Padding (0, 6, 0, 0) };
+                key_captions[id] = caption;
+                flow.Controls.Add (caption);
                 var box = new TextBox { Width = 360, UseSystemPasswordChar = true };
                 keys[id] = box;
                 flow.Controls.Add (box);
                 if (id == "azure") {
-                    flow.Controls.Add (new Label { Text = "Azure region", AutoSize = true, Padding = new Padding (0, 6, 0, 0) });
+                    flow.Controls.Add (region_caption);
                     flow.Controls.Add (region);
                 }
             }
             // Piper is a program Recital runs: a phone or tablet cannot run one, so it is not offered there.
             if (!OperatingSystem.IsAndroid () && !OperatingSystem.IsIOS ()) {
-                flow.Controls.Add (new Label { Text = "Piper (offline voices): the piper program, if not on the PATH", AutoSize = true, MaximumSize = new System.Drawing.Size (380, 0), Padding = new Padding (0, 12, 0, 0) });
+                flow.Controls.Add (piper_caption);
                 flow.Controls.Add (piper);
-                flow.Controls.Add (new Label { Text = "Folder of Piper voices (.onnx with .onnx.json)", AutoSize = true, Padding = new Padding (0, 6, 0, 0) });
+                flow.Controls.Add (voices_caption);
                 flow.Controls.Add (voices);
             }
 
             var buttons = new FlowLayoutPanel { AutoSize = true, FlowDirection = FlowDirection.LeftToRight, WrapContents = false, Padding = new Padding (0, 12, 0, 0) };
-            var save = new Button { Text = "Save", AutoSize = true };
-            var forget = new Button { Text = "Remove all keys", AutoSize = true };
-            var cancel = new Button { Text = "Cancel", AutoSize = true };
             save.Click += (_, _) => Saved?.Invoke (this, Input (removeAll: false));
             forget.Click += (_, _) => Saved?.Invoke (this, Input (removeAll: true));
             cancel.Click += (_, _) => Visible = false;
@@ -72,6 +78,25 @@ namespace Majorsilence.Recital.UI
             buttons.Controls.Add (cancel);
             flow.Controls.Add (buttons);
             Controls.Add (flow);
+            ApplyLanguage ();
+        }
+
+        /// <summary>Re-reads this panel's own chrome text; called wherever <c>MainForm.ApplyTheme</c> runs.</summary>
+        public void ApplyLanguage ()
+        {
+            heading.Text = Strings.Get ("Voices");
+            recital_description.Text = Strings.Get ("RecitalVoicesDescription");
+            download.Text = Strings.Get ("DownloadRecitalVoicesButton");
+            cloud_description.Text = Strings.Get ("CloudVoicesDescription");
+            foreach (var (id, name) in services)
+                key_captions[id].Text = string.Format (System.Globalization.CultureInfo.CurrentCulture, Strings.Get ("ServiceKey"), name);
+            region_caption.Text = Strings.Get ("AzureRegion");
+            region.PlaceholderText = "westeurope";
+            piper_caption.Text = Strings.Get ("PiperCaption");
+            voices_caption.Text = Strings.Get ("PiperVoicesCaption");
+            save.Text = Strings.Get ("Save");
+            forget.Text = Strings.Get ("RemoveAllKeys");
+            cancel.Text = Strings.Get ("Cancel");
         }
 
         public event EventHandler<TtsSettingsInput>? Saved;
@@ -102,7 +127,7 @@ namespace Majorsilence.Recital.UI
         {
             foreach (var (id, box) in keys) {
                 box.Text = "";
-                box.PlaceholderText = keysSaved.Contains (id) ? "(saved; type to replace)" : "";
+                box.PlaceholderText = keysSaved.Contains (id) ? Strings.Get ("SavedTypeToReplace") : "";
             }
             region.Text = azureRegion ?? "";
             piper.Text = piperProgram ?? "";

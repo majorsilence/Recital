@@ -1,5 +1,6 @@
 using System.Drawing;
 using Majorsilence.Forms;
+using Majorsilence.Recital.UI.Localization;
 
 namespace Majorsilence.Recital.UI
 {
@@ -12,8 +13,9 @@ namespace Majorsilence.Recital.UI
             Multiline = true,
             AcceptsReturn = true,
             WordWrap = true,
-            PlaceholderText = "Write a note…",
         };
+        private readonly Button save = new () { AutoSize = true };
+        private readonly Button cancel = new () { AutoSize = true };
 
         public NoteEditor ()
         {
@@ -28,9 +30,7 @@ namespace Majorsilence.Recital.UI
                 WrapContents = false,
                 Padding = new Padding (0, 6, 0, 0),
             };
-            var save = new Button { Text = "Save", AutoSize = true };
             save.Click += (_, _) => Saved?.Invoke (this, NoteText);
-            var cancel = new Button { Text = "Cancel", AutoSize = true };
             cancel.Click += (_, _) => Cancelled?.Invoke (this, EventArgs.Empty);
             buttons.Controls.Add (save);
             buttons.Controls.Add (cancel);
@@ -38,6 +38,15 @@ namespace Majorsilence.Recital.UI
             Controls.Add (text);
             Controls.Add (quote);
             Controls.Add (buttons);
+            ApplyLanguage ();
+        }
+
+        /// <summary>Re-reads this editor's own chrome text; <see cref="ReaderView.ApplyLanguage"/> calls it.</summary>
+        public void ApplyLanguage ()
+        {
+            text.PlaceholderText = Strings.Get ("WriteANote");
+            save.Text = Strings.Get ("Save");
+            cancel.Text = Strings.Get ("Cancel");
         }
 
         public string NoteText {

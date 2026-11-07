@@ -11,6 +11,18 @@
     <PackageReference Include="Majorsilence.Forms" />
   </ItemGroup>
 
+  <!-- The UI's own text per language (Localization/Strings.cs), one JSON object per file. Not .resx: a
+       flat per-language JSON resource needs no satellite assembly, which trimming/AOT (the Android,
+       iOS and browser heads) can otherwise strip without the app ever finding out. WithCulture=false
+       is required: the SDK's default globs otherwise read "strings.es.json" as a culture-qualified
+       resource (its "es" is a real CultureInfo) and routes it into an "es/*.resources.dll" satellite
+       assembly instead, under a logical name with the culture stripped back out — collapsing every
+       language onto the same resource name and leaving Strings.Load unable to find any of them (TSM
+       GAP-like: found by Strings.Get always returning the key itself, in every language). -->
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\strings.*.json" WithCulture="false" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Majorsilence.Recital.Core\Majorsilence.Recital.Core.csproj" />
     <ProjectReference Include="..\Majorsilence.Recital.Platform\Majorsilence.Recital.Platform.csproj" />

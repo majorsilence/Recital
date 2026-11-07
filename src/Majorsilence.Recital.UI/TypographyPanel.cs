@@ -1,16 +1,18 @@
 using Majorsilence.Forms;
 using Majorsilence.Recital.Core.Reading;
+using Majorsilence.Recital.UI.Localization;
 
 namespace Majorsilence.Recital.UI
 {
     /// <summary>The reader's "Aa" panel: theme and typography. Raises <see cref="PreferencesChanged"/> on every edit.</summary>
     public class TypographyPanel : UserControl
     {
-        private static readonly (string Label, string? Value)[] Families = [("Book's own", null), ("Serif", "serif"), ("Sans-serif", "sans-serif"), ("Monospace", "monospace")];
-        private static readonly (string Label, float? Value)[] Spacings = [("Book's own", null), ("1.2", 1.2f), ("1.4", 1.4f), ("1.6", 1.6f), ("1.8", 1.8f), ("2.0", 2.0f)];
-        private static readonly (string Label, bool? Value)[] Alignments = [("Book's own", null), ("Justified", true), ("Left", false)];
+        private static readonly (string Key, string? Value)[] Families = [("BooksOwnFont", null), ("Serif", "serif"), ("SansSerif", "sans-serif"), ("Monospace", "monospace")];
+        private static readonly (string Key, float? Value)[] Spacings = [("BooksOwnSpacing", null), ("1.2", 1.2f), ("1.4", 1.4f), ("1.6", 1.6f), ("1.8", 1.8f), ("2.0", 2.0f)];
+        private static readonly (string Key, bool? Value)[] Alignments = [("BooksOwnAlignment", null), ("Justified", true), ("Left", false)];
+        private static readonly string[] MarginKeys = ["MarginsNarrow", "MarginsNormal", "MarginsWide"];
 
-        private readonly ComboBox theme = NewCombo (ReaderTheme.All.Select (t => t.Name));
+        private readonly ComboBox theme = NewCombo ();
         private readonly NumericUpDown font_size = new () {
             Minimum = (decimal)ReaderPreferences.MinFontSize,
             Maximum = (decimal)ReaderPreferences.MaxFontSize,
@@ -18,11 +20,17 @@ namespace Majorsilence.Recital.UI
             Increment = 1,
             Width = 120,
         };
-        private readonly ComboBox family = NewCombo (Families.Select (f => f.Label));
-        private readonly ComboBox spacing = NewCombo (Spacings.Select (s => s.Label));
-        private readonly ComboBox alignment = NewCombo (Alignments.Select (a => a.Label));
-        private readonly ComboBox margins = NewCombo (Enum.GetNames<MarginSize> ());
-        private readonly CheckBox publisher_fonts = new () { Text = "Use the book's fonts", AutoSize = true };
+        private readonly ComboBox family = NewCombo ();
+        private readonly ComboBox spacing = NewCombo ();
+        private readonly ComboBox alignment = NewCombo ();
+        private readonly ComboBox margins = NewCombo ();
+        private readonly CheckBox publisher_fonts = new () { AutoSize = true };
+        private readonly Label theme_caption = Caption ();
+        private readonly Label size_caption = Caption ();
+        private readonly Label font_caption = Caption ();
+        private readonly Label spacing_caption = Caption ();
+        private readonly Label alignment_caption = Caption ();
+        private readonly Label margins_caption = Caption ();
         private ReaderPreferences preferences = new ();
         private bool updating;
 
@@ -38,17 +46,17 @@ namespace Majorsilence.Recital.UI
                 Padding = new Padding (12),
             };
 
-            flow.Controls.Add (Caption ("Theme"));
+            flow.Controls.Add (theme_caption);
             flow.Controls.Add (theme);
-            flow.Controls.Add (Caption ("Text size"));
+            flow.Controls.Add (size_caption);
             flow.Controls.Add (font_size);
-            flow.Controls.Add (Caption ("Font"));
+            flow.Controls.Add (font_caption);
             flow.Controls.Add (family);
-            flow.Controls.Add (Caption ("Line spacing"));
+            flow.Controls.Add (spacing_caption);
             flow.Controls.Add (spacing);
-            flow.Controls.Add (Caption ("Alignment"));
+            flow.Controls.Add (alignment_caption);
             flow.Controls.Add (alignment);
-            flow.Controls.Add (Caption ("Margins"));
+            flow.Controls.Add (margins_caption);
             flow.Controls.Add (margins);
             flow.Controls.Add (publisher_fonts);
             Controls.Add (flow);
@@ -60,6 +68,8 @@ namespace Majorsilence.Recital.UI
             alignment.SelectedIndexChanged += (_, _) => Edit (p => p with { Justify = Alignments[alignment.SelectedIndex].Value });
             margins.SelectedIndexChanged += (_, _) => Edit (p => p with { Margins = (MarginSize)margins.SelectedIndex });
             publisher_fonts.CheckedChanged += (_, _) => Edit (p => p with { PublisherFonts = publisher_fonts.Checked });
+
+            ApplyLanguage ();
         }
 
         public event EventHandler<ReaderPreferences>? PreferencesChanged;
@@ -83,6 +93,33 @@ namespace Majorsilence.Recital.UI
             }
         }
 
+        /// <summary>Re-reads every caption and combo item from <see cref="Strings"/>, keeping each combo's
+        /// selection. <see cref="ReaderView.ApplyLanguage"/> calls it.</summary>
+        public void ApplyLanguage ()
+        {
+            theme_caption.Text = Strings.Get ("Theme");
+            size_caption.Text = Strings.Get ("TextSize");
+            font_caption.Text = Strings.Get ("Font");
+            spacing_caption.Text = Strings.Get ("LineSpacing");
+            alignment_caption.Text = Strings.Get ("Alignment");
+            margins_caption.Text = Strings.Get ("Margins");
+            publisher_fonts.Text = Strings.Get ("UseBooksFonts");
+
+            // Refilling a combo's Items can transiently change SelectedIndex (e.g. to -1 mid-Clear), which
+            // would otherwise reach Edit() through SelectedIndexChanged — the same re-entrancy guard the
+            // Preferences setter uses.
+            updating = true;
+            try {
+                Refill (theme, ReaderTheme.All.Select (t => Strings.ThemeName (t.Kind)));
+                Refill (family, Families.Select (f => Strings.Get (f.Key)));
+                Refill (spacing, Spacings.Select (s => s.Value is null ? Strings.Get (s.Key) : s.Key));
+                Refill (alignment, Alignments.Select (a => Strings.Get (a.Key)));
+                Refill (margins, MarginKeys.Select (Strings.Get));
+            } finally {
+                updating = false;
+            }
+        }
+
         private void Edit (Func<ReaderPreferences, ReaderPreferences> change)
         {
             if (updating)
@@ -96,19 +133,22 @@ namespace Majorsilence.Recital.UI
 
         private static int Index<T> (IEnumerable<T> values, T value) => Math.Max (0, values.ToList ().IndexOf (value));
 
-        private static Label Caption (string text) => new () {
-            Text = text,
+        private static Label Caption () => new () {
             AutoSize = true,
             Margin = new Padding (0, 10, 0, 2),
         };
 
-        private static ComboBox NewCombo (IEnumerable<string> items)
-        {
-            var combo = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 200 };
-            foreach (var item in items)
-                combo.Items.Add (item);
-            return combo;
-        }
+        private static ComboBox NewCombo () => new () { DropDownStyle = ComboBoxStyle.DropDownList, Width = 200 };
 
+        /// <summary>Replaces a combo's items with <paramref name="labels"/>, keeping whichever index was
+        /// selected (each list is always the same length, just relabelled).</summary>
+        private static void Refill (ComboBox combo, IEnumerable<string> labels)
+        {
+            var selected = combo.SelectedIndex;
+            combo.Items.Clear ();
+            foreach (var label in labels)
+                combo.Items.Add (label);
+            combo.SelectedIndex = Math.Max (0, Math.Min (selected, combo.Items.Count - 1));
+        }
     }
 }

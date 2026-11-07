@@ -28,6 +28,10 @@ namespace Majorsilence.Recital.Core.Reading
         public const float MaxFontSize = 48;
 
         public ThemeKind Theme { get; init; } = ThemeKind.Light;
+
+        /// <summary>The UI's own language, an IETF tag ("en", "zh-Hans", ...). Not the book's language.</summary>
+        public string Language { get; init; } = "en";
+
         public float FontSize { get; init; } = 18;
 
         /// <summary>A generic family ("serif", "sans-serif", "monospace"), or null for the book's own.</summary>
@@ -89,6 +93,7 @@ namespace Majorsilence.Recital.Core.Reading
 
         public IReadOnlyDictionary<string, string> ToValues () => new Dictionary<string, string> {
             ["theme"] = Theme.ToString ().ToLowerInvariant (),
+            ["language"] = Language,
             ["fontSize"] = FontSize.ToString (CultureInfo.InvariantCulture),
             ["fontFamily"] = FontFamily ?? "",
             ["lineHeight"] = LineHeight?.ToString (CultureInfo.InvariantCulture) ?? "",
@@ -107,6 +112,8 @@ namespace Majorsilence.Recital.Core.Reading
 
             if (Enum.TryParse<ThemeKind> (Get ("theme"), ignoreCase: true, out var theme))
                 result = result with { Theme = theme };
+            if (Get ("language") is { Length: > 0 } language)
+                result = result with { Language = language };
             if (float.TryParse (Get ("fontSize"), NumberStyles.Float, CultureInfo.InvariantCulture, out var size))
                 result = result with { FontSize = Math.Clamp (size, MinFontSize, MaxFontSize) };
             if (Get ("fontFamily") is { } family)

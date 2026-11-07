@@ -6,6 +6,7 @@ using Majorsilence.Recital.Core.Library;
 using Majorsilence.Recital.Core.Reading;
 using Majorsilence.Recital.Epub;
 using Majorsilence.Recital.Tts;
+using Majorsilence.Recital.UI.Localization;
 using SkiaSharp;
 
 namespace Majorsilence.Recital.UI
@@ -32,12 +33,15 @@ namespace Majorsilence.Recital.UI
         private readonly ToolStripStatusLabel chapter_label = new () { Spring = true, TextAlign = ContentAlignment.MiddleLeft };
         private readonly ToolStripStatusLabel page_label = new ();
         private readonly ToolStripStatusLabel percent_label = new ();
-        private readonly ToolStripButton contents_button = new ("Contents") { CheckOnClick = false };
+        private readonly ToolStripButton contents_button = new () { CheckOnClick = false };
         private readonly ToolStripButton typography_button = new ("Aa");
-        private readonly ToolStripButton notes_button = new ("Notes") { ToolTipText = "Highlights, notes and bookmarks" };
-        private readonly ToolStripButton bookmark_button = new ("Bookmark") { ToolTipText = "Bookmark this page" };
-        private readonly ToolStripButton listen_button = new ("Listen") { ToolTipText = "Read aloud from this page" };
-        private readonly ToolStripButton return_button = new ("Back") { ToolTipText = "Back to where you were before following a link", Visible = false };
+        private readonly ToolStripButton notes_button = new ();
+        private readonly ToolStripButton bookmark_button = new ();
+        private readonly ToolStripButton listen_button = new ();
+        private readonly ToolStripButton return_button = new () { Visible = false };
+        private readonly ToolStripDropDownButton themes = new () { Tag = ToolbarIcons.Kind.Theme };
+        private readonly ToolStripDropDownButton languages = new () { Tag = ToolbarIcons.Kind.Language };
+        private readonly ToolStripButton back_to_library = new ();
         private readonly TtsBar tts_bar = new ();
         private ITtsEngine? tts_engine;
         private TtsPlayer? player;
@@ -80,8 +84,7 @@ namespace Majorsilence.Recital.UI
 
             PageView = new BookPageView { Dock = DockStyle.Fill };
 
-            var back = new ToolStripButton ("Library");
-            back.Click += (_, _) => CloseRequested?.Invoke (this, EventArgs.Empty);
+            back_to_library.Click += (_, _) => CloseRequested?.Invoke (this, EventArgs.Empty);
             contents_button.Click += (_, _) => ToggleSide (contents);
             typography_button.Click += (_, _) => ToggleSide (typography);
             notes_button.Click += (_, _) => ToggleSide (notes);
@@ -95,21 +98,25 @@ namespace Majorsilence.Recital.UI
             tts_bar.SettingsRequested += (_, _) => VoiceSettingsRequested?.Invoke (this, EventArgs.Empty);
             title_label.Text = book.Title;
 
-            back.Tag = ToolbarIcons.Kind.NavBack;
+            back_to_library.Tag = ToolbarIcons.Kind.NavBack;
             return_button.Tag = ToolbarIcons.Kind.NavBack;
             contents_button.Tag = ToolbarIcons.Kind.Contents;
             notes_button.Tag = ToolbarIcons.Kind.Notes;
             bookmark_button.Tag = ToolbarIcons.Kind.Bookmark;
             listen_button.Tag = ToolbarIcons.Kind.Listen;
 
-            var themes = new ToolStripDropDownButton ("Theme") { Tag = ToolbarIcons.Kind.Theme };
             foreach (var theme in ReaderTheme.All) {
-                var item = new ToolStripMenuItem (theme.Name);
+                var item = new ToolStripMenuItem { Tag = theme.Kind };
                 item.Click += (_, _) => ChangePreferences (this.preferences with { Theme = theme.Kind });
                 themes.DropDownItems.Add (item);
             }
+            foreach (var language in SupportedLanguages.All) {
+                var item = new ToolStripMenuItem (language.NativeName) { Tag = language.Code };
+                item.Click += (_, _) => ChangePreferences (this.preferences with { Language = language.Code });
+                languages.DropDownItems.Add (item);
+            }
 
-            tool_strip.Items.AddRange ([back, new ToolStripSeparator (), return_button, contents_button, notes_button, typography_button, themes, bookmark_button, listen_button, new ToolStripSeparator (), title_label]);
+            tool_strip.Items.AddRange ([back_to_library, new ToolStripSeparator (), return_button, contents_button, notes_button, typography_button, themes, languages, bookmark_button, listen_button, new ToolStripSeparator (), title_label]);
             status_strip.Items.AddRange ([chapter_label, page_label, percent_label]);
 
             split.Panel2.Controls.Add (PageView);
@@ -171,6 +178,7 @@ namespace Majorsilence.Recital.UI
             };
 
             ApplyTheme ();
+            ApplyLanguage ();
         }
 
         public LibraryBook Book => book;
@@ -351,6 +359,7 @@ namespace Majorsilence.Recital.UI
                 return;
             var relayout = next.AffectsLayout (preferences);
             var ttsChanged = next.TtsRate != preferences.TtsRate || next.TtsVoice != preferences.TtsVoice;
+            var languageChanged = next.Language != preferences.Language;
             preferences = next;
             if (ttsChanged) {
                 tts_bar.Rate = next.TtsRate;
@@ -363,6 +372,8 @@ namespace Majorsilence.Recital.UI
             if (typography.Preferences != next)
                 typography.Preferences = next;
             ApplyTheme ();
+            if (languageChanged)
+                ApplyLanguage ();
             if (relayout)
                 RequestRelayout ();
             PreferencesChanged?.Invoke (this, next);
@@ -463,6 +474,38 @@ namespace Majorsilence.Recital.UI
             PageView.OverrideTextColor = theme.OverrideBookColors;
         }
 
+        /// <summary>Re-reads every piece of chrome text from <see cref="Strings"/>, for the language
+        /// <see cref="preferences"/> now names. Cascades to every child that has text of its own.</summary>
+        private void ApplyLanguage ()
+        {
+            Strings.CurrentLanguage = preferences.Language;
+
+            back_to_library.Text = Strings.Get ("Library");
+            return_button.Text = Strings.Get ("Back");
+            return_button.ToolTipText = Strings.Get ("ReturnFromLinkTooltip");
+            contents_button.Text = Strings.Get ("Contents");
+            notes_button.Text = Strings.Get ("Notes");
+            notes_button.ToolTipText = Strings.Get ("NotesTooltip");
+            bookmark_button.Text = Strings.Get ("Bookmark");
+            listen_button.Text = Strings.Get ("Listen");
+            listen_button.ToolTipText = Strings.Get ("ListenTooltip");
+            themes.Text = Strings.Get ("Theme");
+            foreach (ToolStripMenuItem item in themes.DropDownItems)
+                item.Text = Strings.ThemeName ((ThemeKind)item.Tag!);
+            languages.Text = Strings.Get ("Language");
+
+            notes.ApplyLanguage ();
+            typography.ApplyLanguage ();
+            highlight_bar.ApplyLanguage ();
+            note_editor.ApplyLanguage ();
+            tts_bar.ApplyLanguage ();
+
+            if (session is not null)
+                ShowCurrent ();
+            if (tts_bar.Visible)
+                operations.Run (ShowVoicesAsync);
+        }
+
         private LayoutSettings? CurrentLayoutSettings ()
         {
             var size = PageView.ClientSize;
@@ -524,7 +567,7 @@ namespace Majorsilence.Recital.UI
             PageView.ShowPage (session.Page, session.Settings);
             RefreshMarks ();
             chapter_label.Text = session.CurrentTocEntry ()?.Title ?? book.Title;
-            page_label.Text = string.Format (CultureInfo.CurrentCulture, "Page {0} of {1}", session.PageIndex + 1, session.Chapter.Pages.Count);
+            page_label.Text = string.Format (CultureInfo.CurrentCulture, Strings.Get ("PageOfPages"), session.PageIndex + 1, session.Chapter.Pages.Count);
             percent_label.Text = session.Locator.Percent.ToString ("P0", CultureInfo.CurrentCulture);
             return_button.Visible = session.CanReturn;
             if (side_content == contents)
@@ -545,7 +588,7 @@ namespace Majorsilence.Recital.UI
             }
             if (Engine () is null) {
                 tts_bar.Visible = true;
-                tts_bar.StatusText = "No voices on this device: add a cloud key or Piper in Voice settings";
+                tts_bar.StatusText = Strings.Get ("NoVoicesOnDevice");
                 tts_bar.ShowEngines ([], null);
                 listen_button.Checked = true;
                 ArrangeChildren ();
@@ -705,9 +748,9 @@ namespace Majorsilence.Recital.UI
             PageView.Spoken = [];
             ShowListening (false, false);
             tts_bar.StatusText = e.Reason switch {
-                TtsStopReason.EndOfBook => "The end",
-                TtsStopReason.SleepTimer => "Sleep timer stopped reading",
-                TtsStopReason.Error => e.Message ?? "Reading aloud failed",
+                TtsStopReason.EndOfBook => Strings.Get ("TheEnd"),
+                TtsStopReason.SleepTimer => Strings.Get ("SleepTimerStopped"),
+                TtsStopReason.Error => e.Message ?? Strings.Get ("ReadingAloudFailed"),
                 _ => "",
             };
             if (e.Reason == TtsStopReason.SleepTimer) {
@@ -789,10 +832,10 @@ namespace Majorsilence.Recital.UI
         private async Task ExportToFileAsync ()
         {
             using var dialog = new SaveFileDialog {
-                Title = "Export highlights and notes",
-                Filter = "Markdown (*.md)|*.md|All files (*.*)|*.*",
+                Title = Strings.Get ("ExportHighlightsAndNotes"),
+                Filter = $"{Strings.Get ("FilterMarkdown")} (*.md)|*.md|{Strings.Get ("FilterAllFiles")} (*.*)|*.*",
                 DefaultExt = "md",
-                FileName = SafeFileName (book.Title) + " - notes.md",
+                FileName = SafeFileName (book.Title) + Strings.Get ("NotesFileSuffix") + ".md",
             };
             if (await dialog.ShowDialogAsync () != DialogResult.OK || string.IsNullOrEmpty (dialog.FileName))
                 return;
@@ -805,7 +848,7 @@ namespace Majorsilence.Recital.UI
         {
             var invalid = Path.GetInvalidFileNameChars ().Concat (['/', '\\', ':', '*', '?', '"', '<', '>', '|']).ToHashSet ();
             var safe = new string (name.Select (c => invalid.Contains (c) ? ' ' : c).ToArray ()).Trim ();
-            return safe.Length == 0 ? "Book" : safe.Length > 80 ? safe[..80].TrimEnd () : safe;
+            return safe.Length == 0 ? Strings.Get ("UntitledBook") : safe.Length > 80 ? safe[..80].TrimEnd () : safe;
         }
 
         private async Task FillNotesAsync ()
@@ -826,7 +869,7 @@ namespace Majorsilence.Recital.UI
             var bookmarked = session.BookmarkOnPage (annotations) is not null;
             PageView.Bookmarked = bookmarked;
             bookmark_button.Checked = bookmarked;
-            bookmark_button.ToolTipText = bookmarked ? "Remove this page's bookmark" : "Bookmark this page";
+            bookmark_button.ToolTipText = Strings.Get (bookmarked ? "RemoveBookmark" : "BookmarkThisPage");
         }
 
         private void OnSelectionMade (PageSelectionEventArgs e)
@@ -931,7 +974,7 @@ namespace Majorsilence.Recital.UI
             if (entries.Count == 0) {
                 // No table of contents: list the spine instead, so every chapter can still be reached.
                 entries = session.Book.Spine.Where (s => s.Linear)
-                    .Select (s => new TocEntry { Title = $"Section {s.Index + 1}", SpineIndex = s.Index, Path = s.Content.Path })
+                    .Select (s => new TocEntry { Title = string.Format (CultureInfo.CurrentCulture, Strings.Get ("SectionN"), s.Index + 1), SpineIndex = s.Index, Path = s.Content.Path })
                     .ToList ();
             }
             foreach (var entry in entries)
